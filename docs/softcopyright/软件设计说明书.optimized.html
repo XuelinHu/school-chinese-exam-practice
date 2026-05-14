@@ -1,0 +1,153 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>马来西亚留学生汉语练习平台软件设计说明书</title><style>
+@page { size: A4; margin: 18mm 14mm 18mm; }
+body { font-family: "Noto Sans CJK SC", "Microsoft YaHei", Arial, sans-serif; color:#202124; font-size:12px; line-height:1.62; }
+h1 { text-align:center; font-size:25px; margin:8px 0 18px; letter-spacing:0; }
+h2 { font-size:17px; margin:18px 0 8px; padding-bottom:4px; border-bottom:1.2px solid #2f3a45; page-break-after:avoid; }
+h3 { font-size:14px; margin:13px 0 6px; page-break-after:avoid; }
+p { margin:5px 0; text-align:justify; }
+.cover { height:210mm; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; page-break-after:always; }
+.cover .title { font-size:30px; font-weight:700; margin-bottom:18px; }
+.cover .sub { font-size:18px; margin:4px 0; }
+.muted { color:#5f6368; }
+.summary { border-left:4px solid #49657d; padding:8px 12px; background:#f7f9fb; margin:10px 0; }
+table { width:100%; border-collapse:collapse; margin:8px 0 12px; font-size:10.2px; border-top:1.4px solid #111; border-bottom:1.4px solid #111; page-break-inside:auto; }
+thead { display:table-header-group; }
+th { border-bottom:1px solid #111; text-align:left; font-weight:700; }
+th,td { padding:4px 6px; vertical-align:top; }
+figure { margin:10px 0 16px; text-align:center; page-break-inside:avoid; }
+figure img { max-width:100%; object-fit:contain; }
+figure.diagram img { max-height:170mm; }
+figure.screen img { width:100%; max-height:155mm; border:1px solid #d0d7de; }
+figcaption { margin-top:5px; font-size:10.5px; color:#333; text-align:center; }
+.req-shot { page-break-before:auto; }
+.toc p { margin:3px 0; }
+.two-col { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+</style></head><body>
+    <section class="cover">
+      <div class="title">马来西亚留学生汉语练习平台软件设计说明书</div>
+      <div class="sub">软件版本：V1.0</div>
+      <div class="sub">文档类型：软件著作权登记材料</div>
+      <div class="sub muted">前台目录：fronter　后台目录：admin</div>
+    </section>
+    <h1>马来西亚留学生汉语练习平台软件设计说明书</h1>
+    <div class="summary">本文档重新优化了版式结构、表格排版、图示位置和三语运行截图呈现方式。所有 H5 运行截图均按中文、英文、马来语三列并排展示，并按需求功能逐项插入。</div>
+
+    <h2>1 引言</h2>
+    <h3>1.1 编写目的</h3>
+    <p>马来西亚留学生汉语练习平台用于马来西亚留学生汉语练习与教学管理，本文档说明软件需求、模块、架构、流程、数据、接口、部署、安全和验证情况。文档中的运行截图来自真实启动的 H5 前台与后台管理界面，图示依据已核验源码、路由、接口和数据库脚本生成。</p>
+    <h3>1.2 适用范围</h3>
+    <p>软件包含学生端与管理端。学生端支持注册登录、三语界面、练习列表、在线答题、成绩记录、错题本和个人中心；管理端支持数据看板、学生管理查看、题库管理查看、练习试卷查看和成绩记录管理查看。后台提供认证、学习练习和管理查询 API，数据库负责用户、题库、试卷、成绩、错题和翻译数据存储。</p>
+
+    <h2>2 需求分析</h2>
+    <h3>2.1 功能需求清单</h3>
+    <table><thead><tr><th>编号</th><th>需求说明</th><th>页面</th><th>路由</th><th>接口或入口</th><th>数据对象</th></tr></thead><tbody><tr><td>FR-01 用户登录</td><td>学生和管理员可通过用户名与密码登录，后台签发 JWT，前端保存登录状态并依据角色展示页面入口。</td><td>登录页面</td><td>/login</td><td>/api/auth/login</td><td>users</td></tr><tr><td>FR-02 学生注册</td><td>学生可填写账号、密码、姓名、邮箱、电话、学号、国籍和语言信息完成注册。</td><td>注册页面</td><td>/register</td><td>/api/auth/register</td><td>users</td></tr><tr><td>FR-03 学生首页导航</td><td>登录学生可在首页进入练习、错题本、成绩记录和个人中心，导航栏保留语言切换和退出入口。</td><td>学生首页</td><td>/</td><td>前端路由</td><td>localStorage、users</td></tr><tr><td>FR-04 练习列表</td><td>学生可查看已发布练习，列表展示试卷标题、说明、等级、题数和总分，内容随语言切换。</td><td>练习列表</td><td>/practice</td><td>/api/learning/papers</td><td>papers、paper_translations、levels</td></tr><tr><td>FR-05 在线答题</td><td>学生进入试卷后逐题阅读题干、选项、分类和难度，选择答案后进入下一题或提交。</td><td>答题详情</td><td>/practice/1</td><td>/api/learning/papers/:id</td><td>questions、question_options</td></tr><tr><td>FR-06 成绩记录</td><td>学生提交后可查看历史练习标题、题数、正确数、错误数、得分和提交时间。</td><td>成绩记录</td><td>/records</td><td>/api/learning/records</td><td>study_records、user_answers</td></tr><tr><td>FR-07 错题本</td><td>系统根据答题结果维护错题数据，学生可查看错题复习入口、错误次数和解析信息。</td><td>错题本</td><td>/wrong-book</td><td>/api/learning/wrong-questions</td><td>wrong_questions</td></tr><tr><td>FR-08 个人资料</td><td>学生可维护姓名、邮箱、电话、国籍和语言偏好，后台按当前登录用户更新资料。</td><td>个人中心</td><td>/profile</td><td>/api/auth/profile</td><td>users</td></tr><tr><td>FR-09 管理看板</td><td>管理员可查看学生数、题目数、练习数、答题记录和平均分等平台指标。</td><td>管理台看板</td><td>/admin</td><td>/api/admin/stats</td><td>users、questions、papers、study_records</td></tr><tr><td>FR-10 学生管理查看</td><td>管理员可查看用户编号、用户名、姓名、角色、学号、国籍、语言和状态。</td><td>学生管理列表</td><td>/admin/users</td><td>/api/admin/users</td><td>users</td></tr><tr><td>FR-11 题库管理查看</td><td>管理员可查看题目标题、等级、分类、题型、难度、分值和状态。</td><td>题库管理列表</td><td>/admin/questions</td><td>/api/admin/questions</td><td>questions、question_translations</td></tr><tr><td>FR-12 练习试卷查看</td><td>管理员可查看练习试卷的类型、题目数量、总分、时长和发布状态。</td><td>练习试卷列表</td><td>/admin/papers</td><td>/api/admin/papers</td><td>papers、paper_questions</td></tr><tr><td>FR-13 成绩管理查看</td><td>管理员可查看全量学习记录，包括学生、练习、题数、正确数、错误数、分数和提交时间。</td><td>成绩记录管理</td><td>/admin/records</td><td>/api/admin/records</td><td>study_records、users</td></tr></tbody></table>
+    <h3>2.2 非功能需求</h3>
+    <table><thead><tr><th>类别</th><th>要求</th><th>实现依据</th></tr></thead><tbody><tr><td>权限安全</td><td>登录用户通过 JWT 访问受保护资源，管理员接口需要角色校验。</td><td>auth.js、role.js、router.beforeEach</td></tr><tr><td>国际化</td><td>界面文案和题库内容支持中文、英文、马来语。</td><td>i18n/index.js、*_translations 数据表、lang 查询参数</td></tr><tr><td>数据一致性</td><td>答题提交涉及学习记录、用户答案和错题本多表写入，需要事务保护。</td><td>tx 函数、/api/learning/papers/:id/submit</td></tr><tr><td>运行审计</td><td>后台记录请求路径、状态、耗时和异常信息，并脱敏敏感字段。</td><td>logger.js、requestLogger.js</td></tr><tr><td>部署可维护</td><td>前后台独立目录、独立 package 脚本，数据库可初始化。</td><td>admin、fronter、schema.sql、seed.sql</td></tr></tbody></table>
+
+    <h2>3 系统概述</h2>
+    <h3>3.1 用户角色与用例</h3>
+    <figure class="diagram"><img src="../assets/diagrams/01_use_case.svg"><figcaption>图 3-1 横向用例图：学生与管理员两个角色并列展示，并连接到各自可访问的功能用例。该图用于说明软件的角色边界、权限范围和功能归属。</figcaption></figure>
+    <h3>3.2 模块结构表</h3>
+    <table><thead><tr><th>模块</th><th>服务角色</th><th>核心职责</th><th>页面或接口</th><th>数据对象</th></tr></thead><tbody><tr><td>认证与权限模块</td><td>学生、管理员</td><td>登录、注册、个人资料、JWT 校验、角色守卫</td><td>/login、/register、/profile、/api/auth/*</td><td>users</td></tr><tr><td>学生练习模块</td><td>学生</td><td>练习列表、试卷详情、逐题答题、提交判分</td><td>/practice、/practice/:id、/api/learning/papers*</td><td>papers、questions、question_options</td></tr><tr><td>成绩记录模块</td><td>学生、管理员</td><td>个人成绩查看、管理端全量成绩查看</td><td>/records、/admin/records</td><td>study_records、user_answers</td></tr><tr><td>错题复习模块</td><td>学生</td><td>错题收集、错误次数、解决状态、解析查看</td><td>/wrong-book、/api/learning/wrong-questions</td><td>wrong_questions</td></tr><tr><td>国际化模块</td><td>学生、管理员</td><td>中文、英文、马来语界面与题库内容切换</td><td>顶部语言选择、lang 查询参数</td><td>translation 系列表</td></tr><tr><td>管理看板模块</td><td>管理员</td><td>学生数、题目数、练习数、记录数、平均分统计</td><td>/admin、/api/admin/stats</td><td>users、questions、papers、study_records</td></tr><tr><td>题库与试卷管理查看模块</td><td>管理员</td><td>题库列表、练习试卷列表、题目和试卷基础状态查看</td><td>/admin/questions、/admin/papers</td><td>questions、papers、paper_questions</td></tr><tr><td>日志与运维模块</td><td>运维人员</td><td>请求日志、错误日志、数据库初始化、种子数据写入</td><td>logger.js、requestLogger.js、initDb.js</td><td>logs/app.log、schema.sql、seed.sql</td></tr></tbody></table>
+
+    <h2>4 总体设计</h2>
+    <h3>4.1 系统架构</h3>
+    <figure class="diagram"><img src="../assets/diagrams/02_architecture.svg"><figcaption>图 4-1 系统架构图：前台 fronter、后台 admin 与 MySQL 数据库构成三层结构，前台负责页面、路由、国际化和 API 调用，后台负责认证、练习、管理、日志和数据库事务。</figcaption></figure>
+    <h3>4.2 部署结构</h3>
+    <figure class="diagram"><img src="../assets/diagrams/03_deployment.svg"><figcaption>图 4-2 部署图：浏览器加载前端静态资源后调用后台 JSON API，后台通过连接池访问 MySQL，并将运行日志写入日志文件。部署地址在材料中按规则脱敏。</figcaption></figure>
+
+    <h2>5 详细设计</h2>
+    <h3>5.1 答题流程设计</h3>
+    <figure class="diagram"><img src="../assets/diagrams/04_practice_flow.svg"><figcaption>图 5-1 答题业务流程图：学生登录后选择练习、逐题作答、提交答案，后台计算分数并写入成绩、答案和错题本数据。该流程对应系统最核心的学习闭环。</figcaption></figure>
+    <h3>5.2 提交时序设计</h3>
+    <figure class="diagram"><img src="../assets/diagrams/05_submit_sequence.svg"><figcaption>图 5-2 提交答案时序图：页面提交答案后，API Client 调用 learning 路由，后台在事务中查询正确答案、计算分数、写入记录并更新错题本，然后返回结果给前台。</figcaption></figure>
+
+    <h2>6 数据设计</h2>
+    <h3>6.1 数据关系</h3>
+    <figure class="diagram"><img src="../assets/diagrams/06_er.svg"><figcaption>图 6-1 ER 图：用户、题库、试卷、学习记录、用户答案和错题本共同支撑练习、判分、成绩回看和错题复习。</figcaption></figure>
+    <h3>6.2 数据表说明</h3>
+    <table><thead><tr><th>表名</th><th>核心字段</th><th>字段用途和约束说明</th></tr></thead><tbody><tr><td>users</td><td>id、username、password、role、student_no、language、status</td><td>保存学生和管理员账号，username 唯一，role 区分 student/admin，status 控制账号可用状态。</td></tr><tr><td>levels / level_translations</td><td>code、sort_order、language_code、name、description</td><td>保存 HSK 和校园汉语等级，多语言表按 language_code 提供三语展示。</td></tr><tr><td>question_categories / translations</td><td>parent_id、code、language_code、name</td><td>保存拼音、词汇、语法、阅读等题目分类及多语言名称。</td></tr><tr><td>questions / question_translations</td><td>level_id、category_id、question_type、difficulty、score、title、content、analysis</td><td>保存题目主数据、题干、内容和解析，题目从属于等级和分类。</td></tr><tr><td>question_options / translations</td><td>question_id、option_key、is_correct、sort_order、content</td><td>保存选项、顺序和正确答案标记，选项内容支持三语。</td></tr><tr><td>papers / paper_translations</td><td>paper_type、level_id、total_score、duration_minutes、title、description</td><td>保存练习试卷基础信息和多语言标题说明。</td></tr><tr><td>paper_questions</td><td>paper_id、question_id、sort_order、score</td><td>维护试卷与题目的多对多关系和题目分值。</td></tr><tr><td>study_records</td><td>user_id、paper_id、correct_count、wrong_count、total_score、duration_seconds</td><td>保存学生每次提交的汇总成绩。</td></tr><tr><td>user_answers</td><td>user_id、question_id、study_record_id、selected_option_ids、is_correct、score</td><td>保存学生每题作答明细。</td></tr><tr><td>wrong_questions</td><td>user_id、question_id、wrong_count、resolved、last_wrong_at</td><td>保存错题次数、解决状态和最近出错时间。</td></tr></tbody></table>
+
+    <h2>7 接口设计</h2>
+    <table><thead><tr><th>接口</th><th>方法</th><th>角色</th><th>功能说明</th></tr></thead><tbody><tr><td>/api/health</td><td>GET</td><td>公开</td><td>服务健康检查。</td></tr><tr><td>/api/auth/register</td><td>POST</td><td>公开</td><td>学生注册并写入 users。</td></tr><tr><td>/api/auth/login</td><td>POST</td><td>公开</td><td>校验账号密码并返回 JWT。</td></tr><tr><td>/api/auth/profile</td><td>GET/PUT</td><td>登录用户</td><td>查询或更新个人资料。</td></tr><tr><td>/api/learning/papers</td><td>GET</td><td>公开</td><td>查询已发布练习列表。</td></tr><tr><td>/api/learning/papers/:id</td><td>GET</td><td>学生</td><td>查询试卷详情、题目和选项。</td></tr><tr><td>/api/learning/papers/:id/submit</td><td>POST</td><td>学生</td><td>提交答案、判分、写入成绩和错题。</td></tr><tr><td>/api/learning/records</td><td>GET</td><td>学生</td><td>查询个人成绩记录。</td></tr><tr><td>/api/learning/wrong-questions</td><td>GET</td><td>学生</td><td>查询个人错题本。</td></tr><tr><td>/api/admin/stats</td><td>GET</td><td>管理员</td><td>查询管理台统计指标。</td></tr><tr><td>/api/admin/users</td><td>GET</td><td>管理员</td><td>查询用户列表。</td></tr><tr><td>/api/admin/questions</td><td>GET</td><td>管理员</td><td>查询题库列表。</td></tr><tr><td>/api/admin/papers</td><td>GET</td><td>管理员</td><td>查询练习试卷列表。</td></tr><tr><td>/api/admin/records</td><td>GET</td><td>管理员</td><td>查询全量成绩记录。</td></tr></tbody></table>
+
+    <h2>8 功能截图与三语界面</h2>
+    <p>本章按需求功能逐项放置运行截图。每张图均由同一页面的中文、英文、马来语界面横向合成，截图经过等比缩放，保证页面整体结构可见且不拉伸变形。</p>
+    
+    <h3>1. FR-01 用户登录：登录页面</h3>
+    <p>学生和管理员可通过用户名与密码登录，后台签发 JWT，前端保存登录状态并依据角色展示页面入口。该功能对应访问路径 /login，主要接口或路由为 /api/auth/login，核心数据对象为 users。下图采用中文、英文、马来语三语并排方式展示同一功能页面，便于核验国际化状态、页面布局一致性和业务字段展示效果。</p>
+    <figure class="screen req-shot"><img src="../assets/screenshots_trilingual/login_trilingual.png"><figcaption>图 8-1 登录页面三语并排运行截图</figcaption></figure>
+  
+
+    <h3>2. FR-02 学生注册：注册页面</h3>
+    <p>学生可填写账号、密码、姓名、邮箱、电话、学号、国籍和语言信息完成注册。该功能对应访问路径 /register，主要接口或路由为 /api/auth/register，核心数据对象为 users。下图采用中文、英文、马来语三语并排方式展示同一功能页面，便于核验国际化状态、页面布局一致性和业务字段展示效果。</p>
+    <figure class="screen req-shot"><img src="../assets/screenshots_trilingual/register_trilingual.png"><figcaption>图 8-2 注册页面三语并排运行截图</figcaption></figure>
+  
+
+    <h3>3. FR-03 学生首页导航：学生首页</h3>
+    <p>登录学生可在首页进入练习、错题本、成绩记录和个人中心，导航栏保留语言切换和退出入口。该功能对应访问路径 /，主要接口或路由为 前端路由，核心数据对象为 localStorage、users。下图采用中文、英文、马来语三语并排方式展示同一功能页面，便于核验国际化状态、页面布局一致性和业务字段展示效果。</p>
+    <figure class="screen req-shot"><img src="../assets/screenshots_trilingual/home_trilingual.png"><figcaption>图 8-3 学生首页三语并排运行截图</figcaption></figure>
+  
+
+    <h3>4. FR-04 练习列表：练习列表</h3>
+    <p>学生可查看已发布练习，列表展示试卷标题、说明、等级、题数和总分，内容随语言切换。该功能对应访问路径 /practice，主要接口或路由为 /api/learning/papers，核心数据对象为 papers、paper_translations、levels。下图采用中文、英文、马来语三语并排方式展示同一功能页面，便于核验国际化状态、页面布局一致性和业务字段展示效果。</p>
+    <figure class="screen req-shot"><img src="../assets/screenshots_trilingual/practice_list_trilingual.png"><figcaption>图 8-4 练习列表三语并排运行截图</figcaption></figure>
+  
+
+    <h3>5. FR-05 在线答题：答题详情</h3>
+    <p>学生进入试卷后逐题阅读题干、选项、分类和难度，选择答案后进入下一题或提交。该功能对应访问路径 /practice/1，主要接口或路由为 /api/learning/papers/:id，核心数据对象为 questions、question_options。下图采用中文、英文、马来语三语并排方式展示同一功能页面，便于核验国际化状态、页面布局一致性和业务字段展示效果。</p>
+    <figure class="screen req-shot"><img src="../assets/screenshots_trilingual/practice_detail_trilingual.png"><figcaption>图 8-5 答题详情三语并排运行截图</figcaption></figure>
+  
+
+    <h3>6. FR-06 成绩记录：成绩记录</h3>
+    <p>学生提交后可查看历史练习标题、题数、正确数、错误数、得分和提交时间。该功能对应访问路径 /records，主要接口或路由为 /api/learning/records，核心数据对象为 study_records、user_answers。下图采用中文、英文、马来语三语并排方式展示同一功能页面，便于核验国际化状态、页面布局一致性和业务字段展示效果。</p>
+    <figure class="screen req-shot"><img src="../assets/screenshots_trilingual/records_trilingual.png"><figcaption>图 8-6 成绩记录三语并排运行截图</figcaption></figure>
+  
+
+    <h3>7. FR-07 错题本：错题本</h3>
+    <p>系统根据答题结果维护错题数据，学生可查看错题复习入口、错误次数和解析信息。该功能对应访问路径 /wrong-book，主要接口或路由为 /api/learning/wrong-questions，核心数据对象为 wrong_questions。下图采用中文、英文、马来语三语并排方式展示同一功能页面，便于核验国际化状态、页面布局一致性和业务字段展示效果。</p>
+    <figure class="screen req-shot"><img src="../assets/screenshots_trilingual/wrong_book_trilingual.png"><figcaption>图 8-7 错题本三语并排运行截图</figcaption></figure>
+  
+
+    <h3>8. FR-08 个人资料：个人中心</h3>
+    <p>学生可维护姓名、邮箱、电话、国籍和语言偏好，后台按当前登录用户更新资料。该功能对应访问路径 /profile，主要接口或路由为 /api/auth/profile，核心数据对象为 users。下图采用中文、英文、马来语三语并排方式展示同一功能页面，便于核验国际化状态、页面布局一致性和业务字段展示效果。</p>
+    <figure class="screen req-shot"><img src="../assets/screenshots_trilingual/profile_trilingual.png"><figcaption>图 8-8 个人中心三语并排运行截图</figcaption></figure>
+  
+
+    <h3>9. FR-09 管理看板：管理台看板</h3>
+    <p>管理员可查看学生数、题目数、练习数、答题记录和平均分等平台指标。该功能对应访问路径 /admin，主要接口或路由为 /api/admin/stats，核心数据对象为 users、questions、papers、study_records。下图采用中文、英文、马来语三语并排方式展示同一功能页面，便于核验国际化状态、页面布局一致性和业务字段展示效果。</p>
+    <figure class="screen req-shot"><img src="../assets/screenshots_trilingual/admin_dashboard_trilingual.png"><figcaption>图 8-9 管理台看板三语并排运行截图</figcaption></figure>
+  
+
+    <h3>10. FR-10 学生管理查看：学生管理列表</h3>
+    <p>管理员可查看用户编号、用户名、姓名、角色、学号、国籍、语言和状态。该功能对应访问路径 /admin/users，主要接口或路由为 /api/admin/users，核心数据对象为 users。下图采用中文、英文、马来语三语并排方式展示同一功能页面，便于核验国际化状态、页面布局一致性和业务字段展示效果。</p>
+    <figure class="screen req-shot"><img src="../assets/screenshots_trilingual/admin_users_trilingual.png"><figcaption>图 8-10 学生管理列表三语并排运行截图</figcaption></figure>
+  
+
+    <h3>11. FR-11 题库管理查看：题库管理列表</h3>
+    <p>管理员可查看题目标题、等级、分类、题型、难度、分值和状态。该功能对应访问路径 /admin/questions，主要接口或路由为 /api/admin/questions，核心数据对象为 questions、question_translations。下图采用中文、英文、马来语三语并排方式展示同一功能页面，便于核验国际化状态、页面布局一致性和业务字段展示效果。</p>
+    <figure class="screen req-shot"><img src="../assets/screenshots_trilingual/admin_questions_trilingual.png"><figcaption>图 8-11 题库管理列表三语并排运行截图</figcaption></figure>
+  
+
+    <h3>12. FR-12 练习试卷查看：练习试卷列表</h3>
+    <p>管理员可查看练习试卷的类型、题目数量、总分、时长和发布状态。该功能对应访问路径 /admin/papers，主要接口或路由为 /api/admin/papers，核心数据对象为 papers、paper_questions。下图采用中文、英文、马来语三语并排方式展示同一功能页面，便于核验国际化状态、页面布局一致性和业务字段展示效果。</p>
+    <figure class="screen req-shot"><img src="../assets/screenshots_trilingual/admin_papers_trilingual.png"><figcaption>图 8-12 练习试卷列表三语并排运行截图</figcaption></figure>
+  
+
+    <h3>13. FR-13 成绩管理查看：成绩记录管理</h3>
+    <p>管理员可查看全量学习记录，包括学生、练习、题数、正确数、错误数、分数和提交时间。该功能对应访问路径 /admin/records，主要接口或路由为 /api/admin/records，核心数据对象为 study_records、users。下图采用中文、英文、马来语三语并排方式展示同一功能页面，便于核验国际化状态、页面布局一致性和业务字段展示效果。</p>
+    <figure class="screen req-shot"><img src="../assets/screenshots_trilingual/admin_records_trilingual.png"><figcaption>图 8-13 成绩记录管理三语并排运行截图</figcaption></figure>
+  
+
+    <h2>9 运行与部署设计</h2>
+    <p>后台位于 admin 目录，提供 npm run db:init、npm run seed:users、npm run dev 和 npm start。前台位于 fronter 目录，提供 npm run dev、npm run build 和 npm run preview。数据库初始化脚本位于 admin/sql，前端生产构建输出为静态资源，可交由 Web 服务托管。接口地址、主机信息和数据库连接信息在文档中均按脱敏规则处理。</p>
+
+    <h2>10 安全、日志与异常处理</h2>
+    <p>系统使用 bcryptjs 对密码进行哈希存储，登录成功后生成 JWT。前端路由根据登录态和角色控制页面访问，后台中间件对接口进行令牌校验和角色校验。日志模块记录 HTTP 请求状态、路径、耗时和用户标识，错误处理中记录异常信息，并对 authorization、password、token 等字段进行脱敏，降低运行日志泄露风险。</p>
+
+    <h2>11 测试与验证</h2>
+    <p>已完成数据库初始化、种子用户写入、前端生产构建、接口 smoke test、数据库结构核验和浏览器运行截图采集。数据库核验结果为 17 张表齐全、23 个外键存在、试卷题目无孤儿关联，题库三语翻译数据完整。接口验证覆盖学生登录、练习列表、试卷详情、答题提交、成绩记录、管理员登录、管理统计和用户列表。</p>
+
+    <h2>12 结论</h2>
+    <p>马来西亚留学生汉语练习平台已经形成学生端学习练习与管理端教学查看两条主线。系统模块边界明确，数据关系完整，三语界面和题库内容可运行验证，后台日志与权限控制已接入，能够满足当前软件著作权登记材料的软件设计说明要求。</p>
+  </body></html>
