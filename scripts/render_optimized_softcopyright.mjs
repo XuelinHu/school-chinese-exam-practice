@@ -213,7 +213,6 @@ function designHtml() {
       <div class="sub">文档类型：软件著作权登记材料</div>
     </section>
     <h1>${softwareName}软件设计说明书</h1>
-    <div class="summary">本文档重新优化了版式结构、表格排版、图示位置和三语运行截图呈现方式。所有 H5 运行截图均按中文、英文、马来语三列并排展示，并按需求功能逐项插入。</div>
 
     <h2>1 引言</h2>
     <h3>1.1 编写目的</h3>

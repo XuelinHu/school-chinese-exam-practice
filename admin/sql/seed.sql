@@ -126,3 +126,89 @@ ON DUPLICATE KEY UPDATE content=VALUES(content);
 INSERT INTO paper_questions (paper_id, question_id, sort_order, score) VALUES
 (1, 1, 1, 1), (1, 2, 2, 1), (1, 3, 3, 1), (1, 4, 4, 1), (1, 5, 5, 1)
 ON DUPLICATE KEY UPDATE sort_order=VALUES(sort_order), score=VALUES(score);
+
+INSERT INTO papers (id, paper_type, level_id, total_score, duration_minutes, status)
+SELECT 2, 'practice', id, 5, 18, 'published' FROM levels WHERE code='HSK2'
+ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), total_score=VALUES(total_score), duration_minutes=VALUES(duration_minutes), status=VALUES(status);
+INSERT INTO papers (id, paper_type, level_id, total_score, duration_minutes, status)
+SELECT 3, 'daily', id, 5, 12, 'published' FROM levels WHERE code='CAMPUS'
+ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), total_score=VALUES(total_score), duration_minutes=VALUES(duration_minutes), status=VALUES(status);
+
+INSERT INTO paper_translations (paper_id, language_code, title, description) VALUES
+(2, 'zh-CN', 'HSK2 基础语法练习', '围绕常用词汇、语序和日常问答的基础练习'),
+(2, 'en-US', 'HSK2 Grammar Practice', 'Elementary practice for common vocabulary, word order and daily questions'),
+(2, 'ms-MY', 'Latihan Tatabahasa HSK2', 'Latihan asas untuk kosa kata biasa, susunan kata dan soalan harian'),
+(3, 'zh-CN', '校园生活汉语练习', '围绕报到、图书馆、食堂和课堂交流的校园场景练习'),
+(3, 'en-US', 'Campus Chinese Practice', 'Campus practice for registration, library, cafeteria and classroom communication'),
+(3, 'ms-MY', 'Latihan Bahasa Cina Kampus', 'Latihan kampus untuk pendaftaran, perpustakaan, kafeteria dan komunikasi kelas')
+ON DUPLICATE KEY UPDATE title=VALUES(title), description=VALUES(description);
+
+INSERT INTO questions (id, level_id, category_id, question_type, difficulty, score, status)
+SELECT 6, l.id, c.id, 'single_choice', 'normal', 1, 'published' FROM levels l JOIN question_categories c ON c.code='grammar' WHERE l.code='HSK2'
+ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), category_id=VALUES(category_id), difficulty=VALUES(difficulty), status='published';
+INSERT INTO questions (id, level_id, category_id, question_type, difficulty, score, status)
+SELECT 7, l.id, c.id, 'single_choice', 'normal', 1, 'published' FROM levels l JOIN question_categories c ON c.code='vocabulary' WHERE l.code='HSK2'
+ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), category_id=VALUES(category_id), difficulty=VALUES(difficulty), status='published';
+INSERT INTO questions (id, level_id, category_id, question_type, difficulty, score, status)
+SELECT 8, l.id, c.id, 'single_choice', 'hard', 1, 'published' FROM levels l JOIN question_categories c ON c.code='reading' WHERE l.code='HSK2'
+ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), category_id=VALUES(category_id), difficulty=VALUES(difficulty), status='published';
+INSERT INTO questions (id, level_id, category_id, question_type, difficulty, score, status)
+SELECT 9, l.id, c.id, 'single_choice', 'normal', 1, 'published' FROM levels l JOIN question_categories c ON c.code='vocabulary' WHERE l.code='CAMPUS'
+ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), category_id=VALUES(category_id), difficulty=VALUES(difficulty), status='published';
+INSERT INTO questions (id, level_id, category_id, question_type, difficulty, score, status)
+SELECT 10, l.id, c.id, 'single_choice', 'normal', 1, 'published' FROM levels l JOIN question_categories c ON c.code='reading' WHERE l.code='CAMPUS'
+ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), category_id=VALUES(category_id), difficulty=VALUES(difficulty), status='published';
+
+INSERT INTO question_translations (question_id, language_code, title, content, analysis) VALUES
+(6, 'zh-CN', '选择合适的量词。', '我买了三___书。', '“书”常用量词是“本”。'),
+(6, 'en-US', 'Choose the right measure word.', 'I bought three ___ books.', 'The common measure word for books is 本.'),
+(6, 'ms-MY', 'Pilih penjodoh bilangan yang sesuai.', 'Saya membeli tiga ___ buku.', 'Penjodoh bilangan biasa untuk buku ialah 本.'),
+(7, 'zh-CN', '“昨天”表示什么时间？', '请选择正确答案。', '“昨天”表示今天的前一天。'),
+(7, 'en-US', 'What time does “昨天” refer to?', 'Choose the correct answer.', '昨天 means the day before today.'),
+(7, 'ms-MY', 'Apakah masa yang dirujuk oleh “昨天”?', 'Pilih jawapan yang betul.', '昨天 bermaksud hari sebelum hari ini.'),
+(8, 'zh-CN', '阅读：老师让学生明天上午九点到教室。学生应该什么时候到？', '请选择正确答案。', '短文说明时间是明天上午九点。'),
+(8, 'en-US', 'Reading: The teacher asks students to arrive at the classroom at 9 a.m. tomorrow. When should they arrive?', 'Choose the correct answer.', 'The passage states 9 a.m. tomorrow.'),
+(8, 'ms-MY', 'Bacaan: Guru meminta pelajar tiba di kelas pada pukul 9 pagi esok. Bilakah mereka perlu tiba?', 'Pilih jawapan yang betul.', 'Petikan menyatakan pukul 9 pagi esok.'),
+(9, 'zh-CN', '在图书馆借书应该说什么？', '请选择合适表达。', '借书时可以说“我想借这本书”。'),
+(9, 'en-US', 'What should you say when borrowing a book at the library?', 'Choose the suitable expression.', 'You can say 我想借这本书 when borrowing a book.'),
+(9, 'ms-MY', 'Apakah yang patut dikatakan semasa meminjam buku di perpustakaan?', 'Pilih ungkapan yang sesuai.', 'Anda boleh berkata 我想借这本书 semasa meminjam buku.'),
+(10, 'zh-CN', '阅读：小丽中午去食堂吃饭，然后去上课。小丽中午先去哪里？', '请选择正确答案。', '短文说小丽中午先去食堂吃饭。'),
+(10, 'en-US', 'Reading: Xiaoli goes to the cafeteria for lunch and then goes to class. Where does Xiaoli go first at noon?', 'Choose the correct answer.', 'The passage says Xiaoli first goes to the cafeteria.'),
+(10, 'ms-MY', 'Bacaan: Xiaoli pergi ke kafeteria untuk makan tengah hari, kemudian pergi ke kelas. Ke mana Xiaoli pergi dahulu?', 'Pilih jawapan yang betul.', 'Petikan menyatakan Xiaoli pergi ke kafeteria dahulu.')
+ON DUPLICATE KEY UPDATE title=VALUES(title), content=VALUES(content), analysis=VALUES(analysis);
+
+INSERT INTO question_options (id, question_id, option_key, is_correct, sort_order) VALUES
+(21, 6, 'A', 0, 1), (22, 6, 'B', 1, 2), (23, 6, 'C', 0, 3), (24, 6, 'D', 0, 4),
+(25, 7, 'A', 1, 1), (26, 7, 'B', 0, 2), (27, 7, 'C', 0, 3), (28, 7, 'D', 0, 4),
+(29, 8, 'A', 0, 1), (30, 8, 'B', 1, 2), (31, 8, 'C', 0, 3), (32, 8, 'D', 0, 4),
+(33, 9, 'A', 1, 1), (34, 9, 'B', 0, 2), (35, 9, 'C', 0, 3), (36, 9, 'D', 0, 4),
+(37, 10, 'A', 0, 1), (38, 10, 'B', 1, 2), (39, 10, 'C', 0, 3), (40, 10, 'D', 0, 4)
+ON DUPLICATE KEY UPDATE is_correct=VALUES(is_correct), sort_order=VALUES(sort_order);
+
+INSERT INTO question_option_translations (option_id, language_code, content) VALUES
+(21, 'zh-CN', '个'), (21, 'en-US', '个'), (21, 'ms-MY', '个'),
+(22, 'zh-CN', '本'), (22, 'en-US', '本'), (22, 'ms-MY', '本'),
+(23, 'zh-CN', '张'), (23, 'en-US', '张'), (23, 'ms-MY', '张'),
+(24, 'zh-CN', '杯'), (24, 'en-US', '杯'), (24, 'ms-MY', '杯'),
+(25, 'zh-CN', '今天的前一天'), (25, 'en-US', 'The day before today'), (25, 'ms-MY', 'Hari sebelum hari ini'),
+(26, 'zh-CN', '今天的后一天'), (26, 'en-US', 'The day after today'), (26, 'ms-MY', 'Hari selepas hari ini'),
+(27, 'zh-CN', '现在'), (27, 'en-US', 'Now'), (27, 'ms-MY', 'Sekarang'),
+(28, 'zh-CN', '下个月'), (28, 'en-US', 'Next month'), (28, 'ms-MY', 'Bulan depan'),
+(29, 'zh-CN', '今天上午九点'), (29, 'en-US', '9 a.m. today'), (29, 'ms-MY', 'Pukul 9 pagi hari ini'),
+(30, 'zh-CN', '明天上午九点'), (30, 'en-US', '9 a.m. tomorrow'), (30, 'ms-MY', 'Pukul 9 pagi esok'),
+(31, 'zh-CN', '明天下午三点'), (31, 'en-US', '3 p.m. tomorrow'), (31, 'ms-MY', 'Pukul 3 petang esok'),
+(32, 'zh-CN', '晚上九点'), (32, 'en-US', '9 p.m.'), (32, 'ms-MY', 'Pukul 9 malam'),
+(33, 'zh-CN', '我想借这本书。'), (33, 'en-US', '我想借这本书。'), (33, 'ms-MY', '我想借这本书。'),
+(34, 'zh-CN', '我要去机场。'), (34, 'en-US', '我要去机场。'), (34, 'ms-MY', '我要去机场。'),
+(35, 'zh-CN', '请给我一杯水。'), (35, 'en-US', '请给我一杯水。'), (35, 'ms-MY', '请给我一杯水。'),
+(36, 'zh-CN', '我不认识路。'), (36, 'en-US', '我不认识路。'), (36, 'ms-MY', '我不认识路。'),
+(37, 'zh-CN', '教室'), (37, 'en-US', 'Classroom'), (37, 'ms-MY', 'Kelas'),
+(38, 'zh-CN', '食堂'), (38, 'en-US', 'Cafeteria'), (38, 'ms-MY', 'Kafeteria'),
+(39, 'zh-CN', '图书馆'), (39, 'en-US', 'Library'), (39, 'ms-MY', 'Perpustakaan'),
+(40, 'zh-CN', '宿舍'), (40, 'en-US', 'Dormitory'), (40, 'ms-MY', 'Asrama')
+ON DUPLICATE KEY UPDATE content=VALUES(content);
+
+INSERT INTO paper_questions (paper_id, question_id, sort_order, score) VALUES
+(2, 3, 1, 1), (2, 6, 2, 1), (2, 7, 3, 1), (2, 8, 4, 1), (2, 5, 5, 1),
+(3, 4, 1, 1), (3, 9, 2, 1), (3, 10, 3, 1), (3, 2, 4, 1), (3, 7, 5, 1)
+ON DUPLICATE KEY UPDATE sort_order=VALUES(sort_order), score=VALUES(score);

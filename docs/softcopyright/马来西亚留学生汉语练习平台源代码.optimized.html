@@ -614,21 +614,66 @@ pre { margin:5px 0 12px; padding:7px 9px; border:1px solid #d8dee4; background:#
    4  
    5  const users = [
    6    ['admin', '***', '系统管理员', 'admin', '***@***', 'Malaysia'],
-   7    ['student', '***', 'Amin', 'student', '***@***', 'Malaysia']
-   8  ];
-   9  
-  10  for (const [username, password, name, role, email, nationality] of users) {
-  11    const hash = await bcrypt.hash(password, 10);
-  12    await pool.execute(
-  13      `INSERT INTO users (username, password, name, email, role, nationality, language, status)
-  14       VALUES (?, ?, ?, ?, ?, ?, 'zh-CN', 'active')
-  15       ON DUPLICATE KEY UPDATE password=VALUES(password), name=VALUES(name), role=VALUES(role), email=VALUES(email), nationality=VALUES(nationality), status='active'`,
-  16      [username, hash, name, email, role, nationality]
-  17    );
-  18  }
-  19  
-  20  logger.info('Seed users ready for admin and student accounts');
-  21  await pool.end();</pre>
+   7    ['student', '***', 'Amin', 'student', '***@***', 'Malaysia'],
+   8    ['nurul', '***', 'Nurul Aisyah', 'student', '***@***', 'Malaysia'],
+   9    ['weijie', '***', 'Tan Wei Jie', 'student', '***@***', 'Malaysia'],
+  10    ['siti', '***', 'Siti Mariam', 'student', '***@***', 'Malaysia'],
+  11    ['raj', '***', 'Raj Kumar', 'student', '***@***', 'Malaysia']
+  12  ];
+  13  
+  14  for (const [username, password, name, role, email, nationality] of users) {
+  15    const hash = await bcrypt.hash(password, 10);
+  16    await pool.execute(
+  17      `INSERT INTO users (username, password, name, email, role, nationality, language, status)
+  18       VALUES (?, ?, ?, ?, ?, ?, 'zh-CN', 'active')
+  19       ON DUPLICATE KEY UPDATE password=VALUES(password), name=VALUES(name), role=VALUES(role), email=VALUES(email), nationality=VALUES(nationality), status='active'`,
+  20      [username, hash, name, email, role, nationality]
+  21    );
+  22  }
+  23  
+  24  const [studentRows] = await pool.execute(
+  25    `SELECT id, username FROM users WHERE username IN ('student', 'nurul', 'weijie', 'siti', 'raj')`
+  26  );
+  27  const userId = Object.fromEntries(studentRows.map((user) =&gt; [user.username, user.id]));
+  28  
+  29  const records = [
+  30    [101, userId.student, 1, 5, 3, 2, 3, 245, '2026-05-10 09:20:00'],
+  31    [102, userId.student, 2, 5, 4, 1, 4, 312, '2026-05-12 14:05:00'],
+  32    [103, userId.nurul, 1, 5, 5, 0, 5, 198, '2026-05-11 10:30:00'],
+  33    [104, userId.weijie, 3, 5, 4, 1, 4, 260, '2026-05-12 16:40:00'],
+  34    [105, userId.siti, 2, 5, 2, 3, 2, 420, '2026-05-13 11:15:00'],
+  35    [106, userId.raj, 3, 5, 3, 2, 3, 338, '2026-05-13 19:25:00']
+  36  ].filter((record) =&gt; record[1]);
+  37  
+  38  for (const record of records) {
+  39    await pool.execute(
+  40      `INSERT INTO study_records (id, user_id, paper_id, total_questions, correct_count, wrong_count, total_score, duration_seconds, started_at, submitted_at)
+  41       VALUES (?, ?, ?, ?, ?, ?, ?, ?, DATE_SUB(?, INTERVAL ? SECOND), ?)
+  42       ON DUPLICATE KEY UPDATE user_id=VALUES(user_id), paper_id=VALUES(paper_id), total_questions=VALUES(total_questions),
+  43         correct_count=VALUES(correct_count), wrong_count=VALUES(wrong_count), total_score=VALUES(total_score),
+  44         duration_seconds=VALUES(duration_seconds), started_at=VALUES(started_at), submitted_at=VALUES(submitted_at)`,
+  45      [...record, record[7], record[8]]
+  46    );
+  47  }
+  48  
+  49  const wrongQuestions = [
+  50    [userId.student, 2, 2, 0, '2026-05-12 14:05:00'],
+  51    [userId.student, 6, 1, 0, '2026-05-12 14:05:00'],
+  52    [userId.siti, 7, 3, 0, '2026-05-13 11:15:00'],
+  53    [userId.raj, 10, 1, 0, '2026-05-13 19:25:00']
+  54  ].filter((item) =&gt; item[0]);
+  55  
+  56  for (const item of wrongQuestions) {
+  57    await pool.execute(
+  58      `INSERT INTO wrong_questions (user_id, question_id, wrong_count, resolved, last_wrong_at)
+  59       VALUES (?, ?, ?, ?, ?)
+  60       ON DUPLICATE KEY UPDATE wrong_count=VALUES(wrong_count), resolved=VALUES(resolved), last_wrong_at=VALUES(last_wrong_at)`,
+  61      item
+  62    );
+  63  }
+  64  
+  65  logger.info('Seed users ready for admin and student accounts');
+  66  await pool.end();</pre>
     
 
       <h2>文件：admin/sql/schema.sql</h2>
@@ -963,7 +1008,93 @@ pre { margin:5px 0 12px; padding:7px 9px; border:1px solid #d8dee4; background:#
  125  
  126  INSERT INTO paper_questions (paper_id, question_id, sort_order, score) VALUES
  127  (1, 1, 1, 1), (1, 2, 2, 1), (1, 3, 3, 1), (1, 4, 4, 1), (1, 5, 5, 1)
- 128  ON DUPLICATE KEY UPDATE sort_order=VALUES(sort_order), score=VALUES(score);</pre>
+ 128  ON DUPLICATE KEY UPDATE sort_order=VALUES(sort_order), score=VALUES(score);
+ 129  
+ 130  INSERT INTO papers (id, paper_type, level_id, total_score, duration_minutes, status)
+ 131  SELECT 2, 'practice', id, 5, 18, 'published' FROM levels WHERE code='HSK2'
+ 132  ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), total_score=VALUES(total_score), duration_minutes=VALUES(duration_minutes), status=VALUES(status);
+ 133  INSERT INTO papers (id, paper_type, level_id, total_score, duration_minutes, status)
+ 134  SELECT 3, 'daily', id, 5, 12, 'published' FROM levels WHERE code='CAMPUS'
+ 135  ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), total_score=VALUES(total_score), duration_minutes=VALUES(duration_minutes), status=VALUES(status);
+ 136  
+ 137  INSERT INTO paper_translations (paper_id, language_code, title, description) VALUES
+ 138  (2, 'zh-CN', 'HSK2 基础语法练习', '围绕常用词汇、语序和日常问答的基础练习'),
+ 139  (2, 'en-US', 'HSK2 Grammar Practice', 'Elementary practice for common vocabulary, word order and daily questions'),
+ 140  (2, 'ms-MY', 'Latihan Tatabahasa HSK2', 'Latihan asas untuk kosa kata biasa, susunan kata dan soalan harian'),
+ 141  (3, 'zh-CN', '校园生活汉语练习', '围绕报到、图书馆、食堂和课堂交流的校园场景练习'),
+ 142  (3, 'en-US', 'Campus Chinese Practice', 'Campus practice for registration, library, cafeteria and classroom communication'),
+ 143  (3, 'ms-MY', 'Latihan Bahasa Cina Kampus', 'Latihan kampus untuk pendaftaran, perpustakaan, kafeteria dan komunikasi kelas')
+ 144  ON DUPLICATE KEY UPDATE title=VALUES(title), description=VALUES(description);
+ 145  
+ 146  INSERT INTO questions (id, level_id, category_id, question_type, difficulty, score, status)
+ 147  SELECT 6, l.id, c.id, 'single_choice', 'normal', 1, 'published' FROM levels l JOIN question_categories c ON c.code='grammar' WHERE l.code='HSK2'
+ 148  ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), category_id=VALUES(category_id), difficulty=VALUES(difficulty), status='published';
+ 149  INSERT INTO questions (id, level_id, category_id, question_type, difficulty, score, status)
+ 150  SELECT 7, l.id, c.id, 'single_choice', 'normal', 1, 'published' FROM levels l JOIN question_categories c ON c.code='vocabulary' WHERE l.code='HSK2'
+ 151  ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), category_id=VALUES(category_id), difficulty=VALUES(difficulty), status='published';
+ 152  INSERT INTO questions (id, level_id, category_id, question_type, difficulty, score, status)
+ 153  SELECT 8, l.id, c.id, 'single_choice', 'hard', 1, 'published' FROM levels l JOIN question_categories c ON c.code='reading' WHERE l.code='HSK2'
+ 154  ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), category_id=VALUES(category_id), difficulty=VALUES(difficulty), status='published';
+ 155  INSERT INTO questions (id, level_id, category_id, question_type, difficulty, score, status)
+ 156  SELECT 9, l.id, c.id, 'single_choice', 'normal', 1, 'published' FROM levels l JOIN question_categories c ON c.code='vocabulary' WHERE l.code='CAMPUS'
+ 157  ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), category_id=VALUES(category_id), difficulty=VALUES(difficulty), status='published';
+ 158  INSERT INTO questions (id, level_id, category_id, question_type, difficulty, score, status)
+ 159  SELECT 10, l.id, c.id, 'single_choice', 'normal', 1, 'published' FROM levels l JOIN question_categories c ON c.code='reading' WHERE l.code='CAMPUS'
+ 160  ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), category_id=VALUES(category_id), difficulty=VALUES(difficulty), status='published';
+ 161  
+ 162  INSERT INTO question_translations (question_id, language_code, title, content, analysis) VALUES
+ 163  (6, 'zh-CN', '选择合适的量词。', '我买了三___书。', '“书”常用量词是“本”。'),
+ 164  (6, 'en-US', 'Choose the right measure word.', 'I bought three ___ books.', 'The common measure word for books is 本.'),
+ 165  (6, 'ms-MY', 'Pilih penjodoh bilangan yang sesuai.', 'Saya membeli tiga ___ buku.', 'Penjodoh bilangan biasa untuk buku ialah 本.'),
+ 166  (7, 'zh-CN', '“昨天”表示什么时间？', '请选择正确答案。', '“昨天”表示今天的前一天。'),
+ 167  (7, 'en-US', 'What time does “昨天” refer to?', 'Choose the correct answer.', '昨天 means the day before today.'),
+ 168  (7, 'ms-MY', 'Apakah masa yang dirujuk oleh “昨天”?', 'Pilih jawapan yang betul.', '昨天 bermaksud hari sebelum hari ini.'),
+ 169  (8, 'zh-CN', '阅读：老师让学生明天上午九点到教室。学生应该什么时候到？', '请选择正确答案。', '短文说明时间是明天上午九点。'),
+ 170  (8, 'en-US', 'Reading: The teacher asks students to arrive at the classroom at 9 a.m. tomorrow. When should they arrive?', 'Choose the correct answer.', 'The passage states 9 a.m. tomorrow.'),
+ 171  (8, 'ms-MY', 'Bacaan: Guru meminta pelajar tiba di kelas pada pukul 9 pagi esok. Bilakah mereka perlu tiba?', 'Pilih jawapan yang betul.', 'Petikan menyatakan pukul 9 pagi esok.'),
+ 172  (9, 'zh-CN', '在图书馆借书应该说什么？', '请选择合适表达。', '借书时可以说“我想借这本书”。'),
+ 173  (9, 'en-US', 'What should you say when borrowing a book at the library?', 'Choose the suitable expression.', 'You can say 我想借这本书 when borrowing a book.'),
+ 174  (9, 'ms-MY', 'Apakah yang patut dikatakan semasa meminjam buku di perpustakaan?', 'Pilih ungkapan yang sesuai.', 'Anda boleh berkata 我想借这本书 semasa meminjam buku.'),
+ 175  (10, 'zh-CN', '阅读：小丽中午去食堂吃饭，然后去上课。小丽中午先去哪里？', '请选择正确答案。', '短文说小丽中午先去食堂吃饭。'),
+ 176  (10, 'en-US', 'Reading: Xiaoli goes to the cafeteria for lunch and then goes to class. Where does Xiaoli go first at noon?', 'Choose the correct answer.', 'The passage says Xiaoli first goes to the cafeteria.'),
+ 177  (10, 'ms-MY', 'Bacaan: Xiaoli pergi ke kafeteria untuk makan tengah hari, kemudian pergi ke kelas. Ke mana Xiaoli pergi dahulu?', 'Pilih jawapan yang betul.', 'Petikan menyatakan Xiaoli pergi ke kafeteria dahulu.')
+ 178  ON DUPLICATE KEY UPDATE title=VALUES(title), content=VALUES(content), analysis=VALUES(analysis);
+ 179  
+ 180  INSERT INTO question_options (id, question_id, option_key, is_correct, sort_order) VALUES
+ 181  (21, 6, 'A', 0, 1), (22, 6, 'B', 1, 2), (23, 6, 'C', 0, 3), (24, 6, 'D', 0, 4),
+ 182  (25, 7, 'A', 1, 1), (26, 7, 'B', 0, 2), (27, 7, 'C', 0, 3), (28, 7, 'D', 0, 4),
+ 183  (29, 8, 'A', 0, 1), (30, 8, 'B', 1, 2), (31, 8, 'C', 0, 3), (32, 8, 'D', 0, 4),
+ 184  (33, 9, 'A', 1, 1), (34, 9, 'B', 0, 2), (35, 9, 'C', 0, 3), (36, 9, 'D', 0, 4),
+ 185  (37, 10, 'A', 0, 1), (38, 10, 'B', 1, 2), (39, 10, 'C', 0, 3), (40, 10, 'D', 0, 4)
+ 186  ON DUPLICATE KEY UPDATE is_correct=VALUES(is_correct), sort_order=VALUES(sort_order);
+ 187  
+ 188  INSERT INTO question_option_translations (option_id, language_code, content) VALUES
+ 189  (21, 'zh-CN', '个'), (21, 'en-US', '个'), (21, 'ms-MY', '个'),
+ 190  (22, 'zh-CN', '本'), (22, 'en-US', '本'), (22, 'ms-MY', '本'),
+ 191  (23, 'zh-CN', '张'), (23, 'en-US', '张'), (23, 'ms-MY', '张'),
+ 192  (24, 'zh-CN', '杯'), (24, 'en-US', '杯'), (24, 'ms-MY', '杯'),
+ 193  (25, 'zh-CN', '今天的前一天'), (25, 'en-US', 'The day before today'), (25, 'ms-MY', 'Hari sebelum hari ini'),
+ 194  (26, 'zh-CN', '今天的后一天'), (26, 'en-US', 'The day after today'), (26, 'ms-MY', 'Hari selepas hari ini'),
+ 195  (27, 'zh-CN', '现在'), (27, 'en-US', 'Now'), (27, 'ms-MY', 'Sekarang'),
+ 196  (28, 'zh-CN', '下个月'), (28, 'en-US', 'Next month'), (28, 'ms-MY', 'Bulan depan'),
+ 197  (29, 'zh-CN', '今天上午九点'), (29, 'en-US', '9 a.m. today'), (29, 'ms-MY', 'Pukul 9 pagi hari ini'),
+ 198  (30, 'zh-CN', '明天上午九点'), (30, 'en-US', '9 a.m. tomorrow'), (30, 'ms-MY', 'Pukul 9 pagi esok'),
+ 199  (31, 'zh-CN', '明天下午三点'), (31, 'en-US', '3 p.m. tomorrow'), (31, 'ms-MY', 'Pukul 3 petang esok'),
+ 200  (32, 'zh-CN', '晚上九点'), (32, 'en-US', '9 p.m.'), (32, 'ms-MY', 'Pukul 9 malam'),
+ 201  (33, 'zh-CN', '我想借这本书。'), (33, 'en-US', '我想借这本书。'), (33, 'ms-MY', '我想借这本书。'),
+ 202  (34, 'zh-CN', '我要去机场。'), (34, 'en-US', '我要去机场。'), (34, 'ms-MY', '我要去机场。'),
+ 203  (35, 'zh-CN', '请给我一杯水。'), (35, 'en-US', '请给我一杯水。'), (35, 'ms-MY', '请给我一杯水。'),
+ 204  (36, 'zh-CN', '我不认识路。'), (36, 'en-US', '我不认识路。'), (36, 'ms-MY', '我不认识路。'),
+ 205  (37, 'zh-CN', '教室'), (37, 'en-US', 'Classroom'), (37, 'ms-MY', 'Kelas'),
+ 206  (38, 'zh-CN', '食堂'), (38, 'en-US', 'Cafeteria'), (38, 'ms-MY', 'Kafeteria'),
+ 207  (39, 'zh-CN', '图书馆'), (39, 'en-US', 'Library'), (39, 'ms-MY', 'Perpustakaan'),
+ 208  (40, 'zh-CN', '宿舍'), (40, 'en-US', 'Dormitory'), (40, 'ms-MY', 'Asrama')
+ 209  ON DUPLICATE KEY UPDATE content=VALUES(content);
+ 210  
+ 211  INSERT INTO paper_questions (paper_id, question_id, sort_order, score) VALUES
+ 212  (2, 3, 1, 1), (2, 6, 2, 1), (2, 7, 3, 1), (2, 8, 4, 1), (2, 5, 5, 1),
+ 213  (3, 4, 1, 1), (3, 9, 2, 1), (3, 10, 3, 1), (3, 2, 4, 1), (3, 7, 5, 1)
+ 214  ON DUPLICATE KEY UPDATE sort_order=VALUES(sort_order), score=VALUES(score);</pre>
     
 
       <h2>文件：fronter/src/main.js</h2>
