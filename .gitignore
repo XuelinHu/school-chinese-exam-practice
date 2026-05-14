@@ -1,0 +1,12 @@
+node_modules/
+dist/
+logs/
+.tmp/
+.playwright-mcp/
+
+.DS_Store
+*.log
+*.tmp
+
+admin/logs/
+fronter/dist/
