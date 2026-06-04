@@ -1,4 +1,6 @@
-# 马来西亚留学生汉语练习平台
+# school-chinese-exam-practice
+
+马来西亚留学生汉语练习平台
 
 一个基于 Vue3、Node.js/Express 和 MySQL 的三语汉语练习平台 MVP，支持中文、英文、马来语。
 
@@ -31,3 +33,7 @@ npm run dev
 - 学生：`student / student123456`
 
 默认 API 地址为 `http://localhost:3000/api`。如需修改，前端可设置 `VITE_API_BASE`。
+
+## 开源协议
+
+本项目使用 GNU General Public License v2.0（GPL-2.0）开源，详见 `LICENSE`。
