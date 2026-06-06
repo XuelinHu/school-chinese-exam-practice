@@ -1,0 +1,3793 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>面向马来西亚留学生的汉语练习平台V1.0源代码</title><style>
+@page{size:A4;margin:0;} body{font-family:"Noto Sans CJK SC","Microsoft YaHei",Arial,sans-serif;color:#111;font-size:11.8px;line-height:1.48;margin:0;padding:13mm 12mm 9mm;box-sizing:border-box;} .pdf-header{position:fixed;top:0;left:0;right:0;text-align:center;font-size:9px;line-height:12px;color:#555;} h1{text-align:center;font-size:21px;} h2{font-size:15px;margin:12px 0 6px;border-bottom:1px solid #333;padding-bottom:3px;} h3{font-size:12px;margin:9px 0 5px;page-break-after:avoid;} p{margin:3px 0;text-align:justify;} pre{white-space:pre-wrap;word-break:break-word;font-family:"Noto Sans Mono CJK SC",Consolas,monospace;font-size:10.6px;line-height:1.42;border:1px solid #d8dee4;background:#fff;padding:7px 8px;margin:6px 0 10px;} table{width:100%;border-collapse:collapse;border-top:1.2px solid #111;border-bottom:1.2px solid #111;} th{border-bottom:1px solid #111;} th,td{padding:4px 6px;text-align:left;vertical-align:top;}
+</style></head><body><div class="pdf-header">面向马来西亚留学生的汉语练习平台V1.0源代码</div><h1>面向马来西亚留学生的汉语练习平台V1.0源代码</h1>
+<h2>一、源代码属性结构说明</h2>
+<p>1. 软件名称：面向马来西亚留学生的汉语练习平台V1.0</p>
+<p>2. 源码根目录：当前项目根目录，源码稿仅列出相对路径，不暴露真实服务器路径。</p>
+<p>3. 选入范围：自研前端页面、后端服务、数据库 SQL、配置文件、业务测试脚本和业务运行脚本。排除第三方依赖、构建产物、锁文件、图片、缓存、文档输出目录以及与目标软件运行无关的材料辅助工具。</p>
+<p>4. 脱敏说明：数据库口令、令牌密钥、账号密码、邮箱、手机号、主机地址和接口地址已统一脱敏为 *** 或等价占位值。</p>
+<h2>二、三级目录结构</h2>
+<pre><code>README.md
+admin/.env.example
+admin/package.json
+admin/sql/schema.sql
+admin/sql/seed.sql
+admin/src/app.js
+admin/src/config
+admin/src/middleware
+admin/src/routes
+admin/src/server.js
+admin/src/utils
+fronter/index.html
+fronter/package.json
+fronter/src/App.vue
+fronter/src/api
+fronter/src/assets
+fronter/src/i18n
+fronter/src/main.js
+fronter/src/router
+fronter/src/stores
+fronter/src/views
+fronter/vite.config.js</code></pre>
+<h2>三、逐文件源码正文</h2>
+<h3>3.1 README.md</h3>
+<p>文件路径：README.md</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code># school-chinese-exam-practice
+
+马来西亚留学生汉语练习平台
+
+一个基于 Vue3、Node.js/Express 和 MySQL 的三语汉语练习平台 MVP，支持中文、英文、马来语。
+
+## 功能
+
+- 学生 H5：注册登录、练习列表、答题提交、成绩记录、错题本、个人中心
+- 管理台：学生列表、题库列表、练习/试卷列表、成绩记录、数据看板
+- 题库：等级、分类、题目、选项、解析全部三语
+- 数据库：MySQL，建表和演示题库位于 `admin/sql`
+
+## 启动
+</code></pre>
+<p>cd admin npm install npm run db:init npm run seed:users npm run dev</p>
+<pre><code></code></pre>
+<p>cd fronter npm install npm run dev</p>
+<pre><code>
+默认账号：
+
+- 管理员：`admin / ***`
+- 学生：`student / ***`
+
+默认 API 地址为 `http://***:3000/api`。如需修改，前端可设置 `VITE_API_BASE`。
+
+## 开源协议
+
+本项目使用 GNU General Public License v2.0（GPL-2.0）开源，详见 `LICENSE`。</code></pre>
+<h3>3.2 admin/.env.example</h3>
+<p>文件路径：admin/.env.example</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>PORT=3000
+JWT_SECRET=***
+DB_HOST=***
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=***
+DB_NAME=school_chinese_exam_practice</code></pre>
+<h3>3.3 admin/package.json</h3>
+<p>文件路径：admin/package.json</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>{
+  &quot;name&quot;: &quot;school-chinese-exam-practice-admin&quot;,
+  &quot;version&quot;: &quot;1.0.0&quot;,
+  &quot;type&quot;: &quot;module&quot;,
+  &quot;scripts&quot;: {
+    &quot;dev&quot;: &quot;nodemon src/server.js&quot;,
+    &quot;start&quot;: &quot;node src/server.js&quot;,
+    &quot;db:init&quot;: &quot;node src/utils/initDb.js&quot;,
+    &quot;seed:users&quot;: &quot;node src/utils/seedUsers.js&quot;
+  },
+  &quot;dependencies&quot;: {
+    &quot;bcryptjs&quot;: &quot;^2.4.3&quot;,
+    &quot;cors&quot;: &quot;^2.8.5&quot;,
+    &quot;dotenv&quot;: &quot;^16.4.7&quot;,
+    &quot;express&quot;: &quot;^4.21.2&quot;,
+    &quot;jsonwebtoken&quot;: &quot;^9.0.2&quot;,
+    &quot;mysql2&quot;: &quot;^3.11.5&quot;
+  },
+  &quot;devDependencies&quot;: {
+    &quot;nodemon&quot;: &quot;^3.1.9&quot;
+  }
+}</code></pre>
+<h3>3.4 admin/sql/schema.sql</h3>
+<p>文件路径：admin/sql/schema.sql</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>CREATE DATABASE IF NOT EXISTS school_chinese_exam_practice DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE school_chinese_exam_practice;
+
+CREATE TABLE IF NOT EXISTS users (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  username VARCHAR(50) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  name VARCHAR(100),
+  email VARCHAR(120),
+  phone VARCHAR(30),
+  role ENUM('student','admin') NOT NULL DEFAULT 'student',
+  student_no VARCHAR(50),
+  nationality VARCHAR(80),
+  language VARCHAR(20) DEFAULT 'zh-CN',
+  status ENUM('active','disabled') NOT NULL DEFAULT 'active',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS levels (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  code VARCHAR(40) NOT NULL UNIQUE,
+  sort_order INT NOT NULL DEFAULT 0,
+  status ENUM('active','disabled') NOT NULL DEFAULT 'active',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS level_translations (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  level_id BIGINT NOT NULL,
+  language_code VARCHAR(20) NOT NULL,
+  name VARCHAR(120) NOT NULL,
+  description VARCHAR(500),
+  UNIQUE KEY uk_level_lang (level_id, language_code),
+  CONSTRAINT fk_level_translations_level FOREIGN KEY (level_id) REFERENCES levels(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS question_categories (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  parent_id BIGINT,
+  code VARCHAR(60) NOT NULL UNIQUE,
+  sort_order INT NOT NULL DEFAULT 0,
+  status ENUM('active','disabled') NOT NULL DEFAULT 'active',
+  CONSTRAINT fk_categories_parent FOREIGN KEY (parent_id) REFERENCES question_categories(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS question_category_translations (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  category_id BIGINT NOT NULL,
+  language_code VARCHAR(20) NOT NULL,
+  name VARCHAR(120) NOT NULL,
+  description VARCHAR(500),
+  UNIQUE KEY uk_category_lang (category_id, language_code),
+  CONSTRAINT fk_category_translations_category FOREIGN KEY (category_id) REFERENCES question_categories(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS questions (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  level_id BIGINT NOT NULL,
+  category_id BIGINT NOT NULL,
+  question_type ENUM('single_choice','multiple_choice','true_false','fill_blank') NOT NULL DEFAULT 'single_choice',
+  difficulty ENUM('easy','normal','hard') NOT NULL DEFAULT 'easy',
+  score DECIMAL(5,2) NOT NULL DEFAULT 1.00,
+  audio_url VARCHAR(500),
+  image_url VARCHAR(500),
+  status ENUM('published','draft','disabled') NOT NULL DEFAULT 'published',
+  created_by BIGINT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_questions_level FOREIGN KEY (level_id) REFERENCES levels(id),
+  CONSTRAINT fk_questions_category FOREIGN KEY (category_id) REFERENCES question_categories(id),
+  CONSTRAINT fk_questions_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS question_translations (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  question_id BIGINT NOT NULL,
+  language_code VARCHAR(20) NOT NULL,
+  title VARCHAR(500) NOT NULL,
+  content TEXT,
+  analysis TEXT,
+  UNIQUE KEY uk_question_lang (question_id, language_code),
+  CONSTRAINT fk_question_translations_question FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS question_options (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  question_id BIGINT NOT NULL,
+  option_key VARCHAR(10) NOT NULL,
+  is_correct TINYINT(1) NOT NULL DEFAULT 0,
+  sort_order INT NOT NULL DEFAULT 0,
+  UNIQUE KEY uk_question_option_key (question_id, option_key),
+  CONSTRAINT fk_options_question FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS question_option_translations (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  option_id BIGINT NOT NULL,
+  language_code VARCHAR(20) NOT NULL,
+  content VARCHAR(500) NOT NULL,
+  UNIQUE KEY uk_option_lang (option_id, language_code),
+  CONSTRAINT fk_option_translations_option FOREIGN KEY (option_id) REFERENCES question_options(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS papers (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  paper_type ENUM('practice','exam','daily') NOT NULL DEFAULT 'practice',
+  level_id BIGINT,
+  total_score DECIMAL(8,2) NOT NULL DEFAULT 0,
+  duration_minutes INT NOT NULL DEFAULT 0,
+  status ENUM('published','draft','disabled') NOT NULL DEFAULT 'published',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_papers_level FOREIGN KEY (level_id) REFERENCES levels(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS paper_translations (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  paper_id BIGINT NOT NULL,
+  language_code VARCHAR(20) NOT NULL,
+  title VARCHAR(200) NOT NULL,
+  description VARCHAR(500),
+  UNIQUE KEY uk_paper_lang (paper_id, language_code),
+  CONSTRAINT fk_paper_translations_paper FOREIGN KEY (paper_id) REFERENCES papers(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS paper_questions (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  paper_id BIGINT NOT NULL,
+  question_id BIGINT NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  score DECIMAL(5,2) NOT NULL DEFAULT 1.00,
+  UNIQUE KEY uk_paper_question (paper_id, question_id),
+  CONSTRAINT fk_paper_questions_paper FOREIGN KEY (paper_id) REFERENCES papers(id) ON DELETE CASCADE,
+  CONSTRAINT fk_paper_questions_question FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS study_records (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT NOT NULL,
+  paper_id BIGINT,
+  total_questions INT NOT NULL DEFAULT 0,
+  correct_count INT NOT NULL DEFAULT 0,
+  wrong_count INT NOT NULL DEFAULT 0,
+  total_score DECIMAL(8,2) NOT NULL DEFAULT 0,
+  duration_seconds INT NOT NULL DEFAULT 0,
+  started_at DATETIME,
+  submitted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_study_records_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_study_records_paper FOREIGN KEY (paper_id) REFERENCES papers(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS user_answers (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT NOT NULL,
+  question_id BIGINT NOT NULL,
+  paper_id BIGINT,
+  study_record_id BIGINT,
+  selected_option_ids VARCHAR(255),
+  answer_text TEXT,
+  is_correct TINYINT(1) NOT NULL DEFAULT 0,
+  score DECIMAL(5,2) NOT NULL DEFAULT 0,
+  answered_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_answers_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_answers_question FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE,
+  CONSTRAINT fk_answers_paper FOREIGN KEY (paper_id) REFERENCES papers(id) ON DELETE SET NULL,
+  CONSTRAINT fk_answers_record FOREIGN KEY (study_record_id) REFERENCES study_records(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS wrong_questions (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT NOT NULL,
+  question_id BIGINT NOT NULL,
+  wrong_count INT NOT NULL DEFAULT 1,
+  resolved TINYINT(1) NOT NULL DEFAULT 0,
+  last_wrong_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_wrong_user_question (user_id, question_id),
+  CONSTRAINT fk_wrong_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_wrong_question FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS favorite_questions (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT NOT NULL,
+  question_id BIGINT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_favorite_user_question (user_id, question_id),
+  CONSTRAINT fk_favorite_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_favorite_question FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS i18n_messages (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  module VARCHAR(80) NOT NULL,
+  message_key VARCHAR(120) NOT NULL,
+  language_code VARCHAR(20) NOT NULL,
+  message_value VARCHAR(1000) NOT NULL,
+  UNIQUE KEY uk_i18n_message (module, message_key, language_code)
+);</code></pre>
+<h3>3.5 admin/sql/seed.sql</h3>
+<p>文件路径：admin/sql/seed.sql</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>USE school_chinese_exam_practice;
+
+INSERT INTO levels (code, sort_order, status) VALUES
+('HSK1', 1, 'active'),
+('HSK2', 2, 'active'),
+('CAMPUS', 3, 'active')
+ON DUPLICATE KEY UPDATE sort_order=VALUES(sort_order), status=VALUES(status);
+
+INSERT INTO level_translations (level_id, language_code, name, description)
+SELECT l.id, v.language_code, v.name, v.description
+FROM levels l
+JOIN (
+  SELECT 'HSK1' code, 'zh-CN' language_code, 'HSK 1 入门' name, '适合零基础和初级学习者' description UNION ALL
+  SELECT 'HSK1', 'en-US', 'HSK 1 Beginner', 'For new and beginner learners' UNION ALL
+  SELECT 'HSK1', 'ms-MY', 'HSK 1 Permulaan', 'Untuk pelajar baharu dan tahap asas' UNION ALL
+  SELECT 'HSK2', 'zh-CN', 'HSK 2 基础', '掌握常用词汇和基础句型' UNION ALL
+  SELECT 'HSK2', 'en-US', 'HSK 2 Elementary', 'Common vocabulary and basic sentence patterns' UNION ALL
+  SELECT 'HSK2', 'ms-MY', 'HSK 2 Asas', 'Kosa kata biasa dan pola ayat asas' UNION ALL
+  SELECT 'CAMPUS', 'zh-CN', '校园生活汉语', '面向马来西亚留学生的校园场景练习' UNION ALL
+  SELECT 'CAMPUS', 'en-US', 'Campus Chinese', 'Campus scenarios for Malaysian international students' UNION ALL
+  SELECT 'CAMPUS', 'ms-MY', 'Bahasa Cina Kampus', 'Latihan situasi kampus untuk pelajar Malaysia'
+) v ON v.code = l.code
+ON DUPLICATE KEY UPDATE name=VALUES(name), description=VALUES(description);
+
+INSERT INTO question_categories (code, sort_order, status) VALUES
+('pinyin', 1, 'active'),
+('vocabulary', 2, 'active'),
+('grammar', 3, 'active'),
+('reading', 4, 'active')
+ON DUPLICATE KEY UPDATE sort_order=VALUES(sort_order), status=VALUES(status);
+
+INSERT INTO question_category_translations (category_id, language_code, name, description)
+SELECT c.id, v.language_code, v.name, v.description
+FROM question_categories c
+JOIN (
+  SELECT 'pinyin' code, 'zh-CN' language_code, '拼音' name, '声母、韵母和声调练习' description UNION ALL
+  SELECT 'pinyin', 'en-US', 'Pinyin', 'Initials, finals and tones' UNION ALL
+  SELECT 'pinyin', 'ms-MY', 'Pinyin', 'Awalan, akhiran dan nada' UNION ALL
+  SELECT 'vocabulary', 'zh-CN', '词汇', '常用汉语词汇' UNION ALL
+  SELECT 'vocabulary', 'en-US', 'Vocabulary', 'Common Chinese words' UNION ALL
+  SELECT 'vocabulary', 'ms-MY', 'Kosa Kata', 'Perkataan Cina biasa' UNION ALL
+  SELECT 'grammar', 'zh-CN', '语法', '基础句型和语序' UNION ALL
+  SELECT 'grammar', 'en-US', 'Grammar', 'Basic patterns and word order' UNION ALL
+  SELECT 'grammar', 'ms-MY', 'Tatabahasa', 'Pola asas dan susunan kata' UNION ALL
+  SELECT 'reading', 'zh-CN', '阅读', '短文理解练习' UNION ALL
+  SELECT 'reading', 'en-US', 'Reading', 'Short passage comprehension' UNION ALL
+  SELECT 'reading', 'ms-MY', 'Bacaan', 'Pemahaman petikan pendek'
+) v ON v.code = c.code
+ON DUPLICATE KEY UPDATE name=VALUES(name), description=VALUES(description);
+
+INSERT INTO papers (id, paper_type, level_id, total_score, duration_minutes, status)
+SELECT 1, 'practice', id, 5, 15, 'published' FROM levels WHERE code='HSK1'
+ON DUPLICATE KEY UPDATE total_score=VALUES(total_score), duration_minutes=VALUES(duration_minutes), status=VALUES(status);
+
+INSERT INTO paper_translations (paper_id, language_code, title, description) VALUES
+(1, 'zh-CN', 'HSK1 每日练习', '5 道入门汉语练习题'),
+(1, 'en-US', 'HSK1 Daily Practice', 'Five beginner Chinese practice questions'),
+(1, 'ms-MY', 'Latihan Harian HSK1', 'Lima soalan latihan Bahasa Cina tahap permulaan')
+ON DUPLICATE KEY UPDATE title=VALUES(title), description=VALUES(description);
+
+INSERT INTO questions (id, level_id, category_id, question_type, difficulty, score, status)
+SELECT 1, l.id, c.id, 'single_choice', 'easy', 1, 'published' FROM levels l JOIN question_categories c ON c.code='pinyin' WHERE l.code='HSK1'
+ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), category_id=VALUES(category_id), status='published';
+INSERT INTO questions (id, level_id, category_id, question_type, difficulty, score, status)
+SELECT 2, l.id, c.id, 'single_choice', 'easy', 1, 'published' FROM levels l JOIN question_categories c ON c.code='vocabulary' WHERE l.code='HSK1'
+ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), category_id=VALUES(category_id), status='published';
+INSERT INTO questions (id, level_id, category_id, question_type, difficulty, score, status)
+SELECT 3, l.id, c.id, 'single_choice', 'easy', 1, 'published' FROM levels l JOIN question_categories c ON c.code='grammar' WHERE l.code='HSK1'
+ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), category_id=VALUES(category_id), status='published';
+INSERT INTO questions (id, level_id, category_id, question_type, difficulty, score, status)
+SELECT 4, l.id, c.id, 'single_choice', 'normal', 1, 'published' FROM levels l JOIN question_categories c ON c.code='vocabulary' WHERE l.code='HSK1'
+ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), category_id=VALUES(category_id), status='published';
+INSERT INTO questions (id, level_id, category_id, question_type, difficulty, score, status)
+SELECT 5, l.id, c.id, 'single_choice', 'normal', 1, 'published' FROM levels l JOIN question_categories c ON c.code='reading' WHERE l.code='HSK1'
+ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), category_id=VALUES(category_id), status='published';
+
+INSERT INTO question_translations (question_id, language_code, title, content, analysis) VALUES
+(1, 'zh-CN', '“你”的拼音是什么？', '请选择正确答案。', '“你”的拼音是 ni，第三声。'),
+(1, 'en-US', 'What is the pinyin for “你”?', 'Choose the correct answer.', 'The pinyin for 你 is ni with the third tone.'),
+(1, 'ms-MY', 'Apakah pinyin bagi “你”?', 'Pilih jawapan yang betul.', 'Pinyin untuk 你 ialah ni dengan nada ketiga.'),
+(2, 'zh-CN', '“谢谢”是什么意思？', '请选择最合适的英文意思。', '“谢谢”表示感谢。'),
+(2, 'en-US', 'What does “谢谢” mean?', 'Choose the best English meaning.', '谢谢 means thank you.'),
+(2, 'ms-MY', 'Apakah maksud “谢谢”?', 'Pilih maksud Bahasa Inggeris yang paling sesuai.', '谢谢 bermaksud terima kasih.'),
+(3, 'zh-CN', '选择正确的句子。', '哪一句的语序正确？', '汉语常用语序是主语 + 谓语 + 宾语。'),
+(3, 'en-US', 'Choose the correct sentence.', 'Which sentence has the correct word order?', 'Basic Chinese word order is subject + verb + object.'),
+(3, 'ms-MY', 'Pilih ayat yang betul.', 'Ayat manakah mempunyai susunan kata yang betul?', 'Susunan kata asas Bahasa Cina ialah subjek + kata kerja + objek.'),
+(4, 'zh-CN', '“学校”的意思是？', '请选择正确答案。', '学校是学习的地方。'),
+(4, 'en-US', 'What does “学校” mean?', 'Choose the correct answer.', '学校 means school.'),
+(4, 'ms-MY', 'Apakah maksud “学校”?', 'Pilih jawapan yang betul.', '学校 bermaksud sekolah.'),
+(5, 'zh-CN', '阅读：我叫阿明。我是马来西亚学生。我学习汉语。阿明来自哪里？', '请选择正确答案。', '短文说“我是马来西亚学生”。'),
+(5, 'en-US', 'Reading: My name is Amin. I am a Malaysian student. I study Chinese. Where is Amin from?', 'Choose the correct answer.', 'The passage says he is a Malaysian student.'),
+(5, 'ms-MY', 'Bacaan: Nama saya Amin. Saya pelajar Malaysia. Saya belajar Bahasa Cina. Amin berasal dari mana?', 'Pilih jawapan yang betul.', 'Petikan menyatakan dia pelajar Malaysia.')
+ON DUPLICATE KEY UPDATE title=VALUES(title), content=VALUES(content), analysis=VALUES(analysis);
+
+INSERT INTO question_options (id, question_id, option_key, is_correct, sort_order) VALUES
+(1, 1, 'A', 1, 1), (2, 1, 'B', 0, 2), (3, 1, 'C', 0, 3), (4, 1, 'D', 0, 4),
+(5, 2, 'A', 0, 1), (6, 2, 'B', 1, 2), (7, 2, 'C', 0, 3), (8, 2, 'D', 0, 4),
+(9, 3, 'A', 1, 1), (10, 3, 'B', 0, 2), (11, 3, 'C', 0, 3), (12, 3, 'D', 0, 4),
+(13, 4, 'A', 0, 1), (14, 4, 'B', 1, 2), (15, 4, 'C', 0, 3), (16, 4, 'D', 0, 4),
+(17, 5, 'A', 0, 1), (18, 5, 'B', 1, 2), (19, 5, 'C', 0, 3), (20, 5, 'D', 0, 4)
+ON DUPLICATE KEY UPDATE is_correct=VALUES(is_correct), sort_order=VALUES(sort_order);
+
+INSERT INTO question_option_translations (option_id, language_code, content) VALUES
+(1, 'zh-CN', 'nǐ'), (1, 'en-US', 'nǐ'), (1, 'ms-MY', 'nǐ'),
+(2, 'zh-CN', 'wǒ'), (2, 'en-US', 'wǒ'), (2, 'ms-MY', 'wǒ'),
+(3, 'zh-CN', 'tā'), (3, 'en-US', 'tā'), (3, 'ms-MY', 'tā'),
+(4, 'zh-CN', 'hǎo'), (4, 'en-US', 'hǎo'), (4, 'ms-MY', 'hǎo'),
+(5, 'zh-CN', 'Hello'), (5, 'en-US', 'Hello'), (5, 'ms-MY', 'Hello'),
+(6, 'zh-CN', 'Thank you'), (6, 'en-US', 'Thank you'), (6, 'ms-MY', 'Thank you'),
+(7, 'zh-CN', 'Goodbye'), (7, 'en-US', 'Goodbye'), (7, 'ms-MY', 'Goodbye'),
+(8, 'zh-CN', 'Teacher'), (8, 'en-US', 'Teacher'), (8, 'ms-MY', 'Teacher'),
+(9, 'zh-CN', '我学习汉语。'), (9, 'en-US', '我学习汉语。'), (9, 'ms-MY', '我学习汉语。'),
+(10, 'zh-CN', '学习我汉语。'), (10, 'en-US', '学习我汉语。'), (10, 'ms-MY', '学习我汉语。'),
+(11, 'zh-CN', '汉语我学习。'), (11, 'en-US', '汉语我学习。'), (11, 'ms-MY', '汉语我学习。'),
+(12, 'zh-CN', '我汉语学习。'), (12, 'en-US', '我汉语学习。'), (12, 'ms-MY', '我汉语学习。'),
+(13, 'zh-CN', 'Hospital'), (13, 'en-US', 'Hospital'), (13, 'ms-MY', 'Hospital'),
+(14, 'zh-CN', 'School'), (14, 'en-US', 'School'), (14, 'ms-MY', 'School'),
+(15, 'zh-CN', 'Library'), (15, 'en-US', 'Library'), (15, 'ms-MY', 'Library'),
+(16, 'zh-CN', 'Restaurant'), (16, 'en-US', 'Restaurant'), (16, 'ms-MY', 'Restaurant'),
+(17, 'zh-CN', '中国'), (17, 'en-US', 'China'), (17, 'ms-MY', 'China'),
+(18, 'zh-CN', '马来西亚'), (18, 'en-US', 'Malaysia'), (18, 'ms-MY', 'Malaysia'),
+(19, 'zh-CN', '日本'), (19, 'en-US', 'Japan'), (19, 'ms-MY', 'Jepun'),
+(20, 'zh-CN', '英国'), (20, 'en-US', 'United Kingdom'), (20, 'ms-MY', 'United Kingdom')
+ON DUPLICATE KEY UPDATE content=VALUES(content);
+
+INSERT INTO paper_questions (paper_id, question_id, sort_order, score) VALUES
+(1, 1, 1, 1), (1, 2, 2, 1), (1, 3, 3, 1), (1, 4, 4, 1), (1, 5, 5, 1)
+ON DUPLICATE KEY UPDATE sort_order=VALUES(sort_order), score=VALUES(score);
+
+INSERT INTO papers (id, paper_type, level_id, total_score, duration_minutes, status)
+SELECT 2, 'practice', id, 5, 18, 'published' FROM levels WHERE code='HSK2'
+ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), total_score=VALUES(total_score), duration_minutes=VALUES(duration_minutes), status=VALUES(status);
+INSERT INTO papers (id, paper_type, level_id, total_score, duration_minutes, status)
+SELECT 3, 'daily', id, 5, 12, 'published' FROM levels WHERE code='CAMPUS'
+ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), total_score=VALUES(total_score), duration_minutes=VALUES(duration_minutes), status=VALUES(status);
+
+INSERT INTO paper_translations (paper_id, language_code, title, description) VALUES
+(2, 'zh-CN', 'HSK2 基础语法练习', '围绕常用词汇、语序和日常问答的基础练习'),
+(2, 'en-US', 'HSK2 Grammar Practice', 'Elementary practice for common vocabulary, word order and daily questions'),
+(2, 'ms-MY', 'Latihan Tatabahasa HSK2', 'Latihan asas untuk kosa kata biasa, susunan kata dan soalan harian'),
+(3, 'zh-CN', '校园生活汉语练习', '围绕报到、图书馆、食堂和课堂交流的校园场景练习'),
+(3, 'en-US', 'Campus Chinese Practice', 'Campus practice for registration, library, cafeteria and classroom communication'),
+(3, 'ms-MY', 'Latihan Bahasa Cina Kampus', 'Latihan kampus untuk pendaftaran, perpustakaan, kafeteria dan komunikasi kelas')
+ON DUPLICATE KEY UPDATE title=VALUES(title), description=VALUES(description);
+
+INSERT INTO questions (id, level_id, category_id, question_type, difficulty, score, status)
+SELECT 6, l.id, c.id, 'single_choice', 'normal', 1, 'published' FROM levels l JOIN question_categories c ON c.code='grammar' WHERE l.code='HSK2'
+ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), category_id=VALUES(category_id), difficulty=VALUES(difficulty), status='published';
+INSERT INTO questions (id, level_id, category_id, question_type, difficulty, score, status)
+SELECT 7, l.id, c.id, 'single_choice', 'normal', 1, 'published' FROM levels l JOIN question_categories c ON c.code='vocabulary' WHERE l.code='HSK2'
+ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), category_id=VALUES(category_id), difficulty=VALUES(difficulty), status='published';
+INSERT INTO questions (id, level_id, category_id, question_type, difficulty, score, status)
+SELECT 8, l.id, c.id, 'single_choice', 'hard', 1, 'published' FROM levels l JOIN question_categories c ON c.code='reading' WHERE l.code='HSK2'
+ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), category_id=VALUES(category_id), difficulty=VALUES(difficulty), status='published';
+INSERT INTO questions (id, level_id, category_id, question_type, difficulty, score, status)
+SELECT 9, l.id, c.id, 'single_choice', 'normal', 1, 'published' FROM levels l JOIN question_categories c ON c.code='vocabulary' WHERE l.code='CAMPUS'
+ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), category_id=VALUES(category_id), difficulty=VALUES(difficulty), status='published';
+INSERT INTO questions (id, level_id, category_id, question_type, difficulty, score, status)
+SELECT 10, l.id, c.id, 'single_choice', 'normal', 1, 'published' FROM levels l JOIN question_categories c ON c.code='reading' WHERE l.code='CAMPUS'
+ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), category_id=VALUES(category_id), difficulty=VALUES(difficulty), status='published';
+
+INSERT INTO question_translations (question_id, language_code, title, content, analysis) VALUES
+(6, 'zh-CN', '选择合适的量词。', '我买了三___书。', '“书”常用量词是“本”。'),
+(6, 'en-US', 'Choose the right measure word.', 'I bought three ___ books.', 'The common measure word for books is 本.'),
+(6, 'ms-MY', 'Pilih penjodoh bilangan yang sesuai.', 'Saya membeli tiga ___ buku.', 'Penjodoh bilangan biasa untuk buku ialah 本.'),
+(7, 'zh-CN', '“昨天”表示什么时间？', '请选择正确答案。', '“昨天”表示今天的前一天。'),
+(7, 'en-US', 'What time does “昨天” refer to?', 'Choose the correct answer.', '昨天 means the day before today.'),
+(7, 'ms-MY', 'Apakah masa yang dirujuk oleh “昨天”?', 'Pilih jawapan yang betul.', '昨天 bermaksud hari sebelum hari ini.'),
+(8, 'zh-CN', '阅读：老师让学生明天上午九点到教室。学生应该什么时候到？', '请选择正确答案。', '短文说明时间是明天上午九点。'),
+(8, 'en-US', 'Reading: The teacher asks students to arrive at the classroom at 9 a.m. tomorrow. When should they arrive?', 'Choose the correct answer.', 'The passage states 9 a.m. tomorrow.'),
+(8, 'ms-MY', 'Bacaan: Guru meminta pelajar tiba di kelas pada pukul 9 pagi esok. Bilakah mereka perlu tiba?', 'Pilih jawapan yang betul.', 'Petikan menyatakan pukul 9 pagi esok.'),
+(9, 'zh-CN', '在图书馆借书应该说什么？', '请选择合适表达。', '借书时可以说“我想借这本书”。'),
+(9, 'en-US', 'What should you say when borrowing a book at the library?', 'Choose the suitable expression.', 'You can say 我想借这本书 when borrowing a book.'),
+(9, 'ms-MY', 'Apakah yang patut dikatakan semasa meminjam buku di perpustakaan?', 'Pilih ungkapan yang sesuai.', 'Anda boleh berkata 我想借这本书 semasa meminjam buku.'),
+(10, 'zh-CN', '阅读：小丽中午去食堂吃饭，然后去上课。小丽中午先去哪里？', '请选择正确答案。', '短文说小丽中午先去食堂吃饭。'),
+(10, 'en-US', 'Reading: Xiaoli goes to the cafeteria for lunch and then goes to class. Where does Xiaoli go first at noon?', 'Choose the correct answer.', 'The passage says Xiaoli first goes to the cafeteria.'),
+(10, 'ms-MY', 'Bacaan: Xiaoli pergi ke kafeteria untuk makan tengah hari, kemudian pergi ke kelas. Ke mana Xiaoli pergi dahulu?', 'Pilih jawapan yang betul.', 'Petikan menyatakan Xiaoli pergi ke kafeteria dahulu.')
+ON DUPLICATE KEY UPDATE title=VALUES(title), content=VALUES(content), analysis=VALUES(analysis);
+
+INSERT INTO question_options (id, question_id, option_key, is_correct, sort_order) VALUES
+(21, 6, 'A', 0, 1), (22, 6, 'B', 1, 2), (23, 6, 'C', 0, 3), (24, 6, 'D', 0, 4),
+(25, 7, 'A', 1, 1), (26, 7, 'B', 0, 2), (27, 7, 'C', 0, 3), (28, 7, 'D', 0, 4),
+(29, 8, 'A', 0, 1), (30, 8, 'B', 1, 2), (31, 8, 'C', 0, 3), (32, 8, 'D', 0, 4),
+(33, 9, 'A', 1, 1), (34, 9, 'B', 0, 2), (35, 9, 'C', 0, 3), (36, 9, 'D', 0, 4),
+(37, 10, 'A', 0, 1), (38, 10, 'B', 1, 2), (39, 10, 'C', 0, 3), (40, 10, 'D', 0, 4)
+ON DUPLICATE KEY UPDATE is_correct=VALUES(is_correct), sort_order=VALUES(sort_order);
+
+INSERT INTO question_option_translations (option_id, language_code, content) VALUES
+(21, 'zh-CN', '个'), (21, 'en-US', '个'), (21, 'ms-MY', '个'),
+(22, 'zh-CN', '本'), (22, 'en-US', '本'), (22, 'ms-MY', '本'),
+(23, 'zh-CN', '张'), (23, 'en-US', '张'), (23, 'ms-MY', '张'),
+(24, 'zh-CN', '杯'), (24, 'en-US', '杯'), (24, 'ms-MY', '杯'),
+(25, 'zh-CN', '今天的前一天'), (25, 'en-US', 'The day before today'), (25, 'ms-MY', 'Hari sebelum hari ini'),
+(26, 'zh-CN', '今天的后一天'), (26, 'en-US', 'The day after today'), (26, 'ms-MY', 'Hari selepas hari ini'),
+(27, 'zh-CN', '现在'), (27, 'en-US', 'Now'), (27, 'ms-MY', 'Sekarang'),
+(28, 'zh-CN', '下个月'), (28, 'en-US', 'Next month'), (28, 'ms-MY', 'Bulan depan'),
+(29, 'zh-CN', '今天上午九点'), (29, 'en-US', '9 a.m. today'), (29, 'ms-MY', 'Pukul 9 pagi hari ini'),
+(30, 'zh-CN', '明天上午九点'), (30, 'en-US', '9 a.m. tomorrow'), (30, 'ms-MY', 'Pukul 9 pagi esok'),
+(31, 'zh-CN', '明天下午三点'), (31, 'en-US', '3 p.m. tomorrow'), (31, 'ms-MY', 'Pukul 3 petang esok'),
+(32, 'zh-CN', '晚上九点'), (32, 'en-US', '9 p.m.'), (32, 'ms-MY', 'Pukul 9 malam'),
+(33, 'zh-CN', '我想借这本书。'), (33, 'en-US', '我想借这本书。'), (33, 'ms-MY', '我想借这本书。'),
+(34, 'zh-CN', '我要去机场。'), (34, 'en-US', '我要去机场。'), (34, 'ms-MY', '我要去机场。'),
+(35, 'zh-CN', '请给我一杯水。'), (35, 'en-US', '请给我一杯水。'), (35, 'ms-MY', '请给我一杯水。'),
+(36, 'zh-CN', '我不认识路。'), (36, 'en-US', '我不认识路。'), (36, 'ms-MY', '我不认识路。'),
+(37, 'zh-CN', '教室'), (37, 'en-US', 'Classroom'), (37, 'ms-MY', 'Kelas'),
+(38, 'zh-CN', '食堂'), (38, 'en-US', 'Cafeteria'), (38, 'ms-MY', 'Kafeteria'),
+(39, 'zh-CN', '图书馆'), (39, 'en-US', 'Library'), (39, 'ms-MY', 'Perpustakaan'),
+(40, 'zh-CN', '宿舍'), (40, 'en-US', 'Dormitory'), (40, 'ms-MY', 'Asrama')
+ON DUPLICATE KEY UPDATE content=VALUES(content);
+
+INSERT INTO paper_questions (paper_id, question_id, sort_order, score) VALUES
+(2, 3, 1, 1), (2, 6, 2, 1), (2, 7, 3, 1), (2, 8, 4, 1), (2, 5, 5, 1),
+(3, 4, 1, 1), (3, 9, 2, 1), (3, 10, 3, 1), (3, 2, 4, 1), (3, 7, 5, 1)
+ON DUPLICATE KEY UPDATE sort_order=VALUES(sort_order), score=VALUES(score);</code></pre>
+<h3>3.6 admin/src/app.js</h3>
+<p>文件路径：admin/src/app.js</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import authRoutes from './routes/auth.js';
+import learningRoutes from './routes/learning.js';
+import adminRoutes from './routes/admin.js';
+import { requestLogger } from './middleware/requestLogger.js';
+import { logger } from './utils/logger.js';
+
+dotenv.config();
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(requestLogger);
+
+app.get('/api/health', (_req, res) =&gt; res.json({ code: 200, message: 'success', data: { status: 'ok' } }));
+app.use('/api/auth', authRoutes);
+app.use('/api/learning', learningRoutes);
+app.use('/api/admin', adminRoutes);
+
+app.use((req, res) =&gt; res.status(404).json({ code: 404, message: `Not found: ${req.path}` }));
+app.use((err, req, res, _next) =&gt; {
+  const status = err.status || 500;
+  logger.error('HTTP request failed', {
+    method: req.method,
+    path: req.originalUrl,
+    status,
+    message: err.message,
+    stack: process.env.NODE_ENV === 'production' ? undefined : err.stack
+  });
+  res.status(status).json({ code: status, message: err.message || 'Internal server error' });
+});
+
+export default app;</code></pre>
+<h3>3.7 admin/src/config/db.js</h3>
+<p>文件路径：admin/src/config/db.js</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>import mysql from 'mysql2/promise';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+export const pool = mysql.createPool({
+  host: process.env.DB_HOST || '***',
+  port: Number(process.env.DB_PORT || 3306),
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '***',
+  database: process.env.DB_NAME || 'school_chinese_exam_practice',
+  waitForConnections: true,
+  connectionLimit: 10,
+  namedPlaceholders: true
+});
+
+export async function tx(work) {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const result = await work(conn);
+    await conn.commit();
+    return result;
+  } catch (error) {
+    await conn.rollback();
+    throw error;
+  } finally {
+    conn.release();
+  }
+}</code></pre>
+<h3>3.8 admin/src/middleware/auth.js</h3>
+<p>文件路径：admin/src/middleware/auth.js</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>import jwt from 'jsonwebtoken';
+import { HttpError } from '../utils/errors.js';
+
+export function auth(required = true) {
+  return (req, _res, next) =&gt; {
+    const header = req.headers.authorization || '';
+    const token = header.startsWith('Bearer ') ? header.slice(7) : '';
+    if (!token) {
+      if (!required) return next();
+      return next(new HttpError(401, 'Unauthorized'));
+    }
+    try {
+      req.user = jwt.verify(token, process.env.JWT_SECRET || '***');
+      return next();
+    } catch {
+      return next(new HttpError(401, 'Invalid token'));
+    }
+  };
+}</code></pre>
+<h3>3.9 admin/src/middleware/requestLogger.js</h3>
+<p>文件路径：admin/src/middleware/requestLogger.js</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>import { logger } from '../utils/logger.js';
+
+export function requestLogger(req, res, next) {
+  const startedAt = Date.now();
+  res.on('finish', () =&gt; {
+    const durationMs = Date.now() - startedAt;
+    logger.info('HTTP request completed', {
+      method: req.method,
+      path: req.originalUrl,
+      status: res.statusCode,
+      durationMs,
+      userId: req.user?.id || null
+    });
+  });
+  next();
+}</code></pre>
+<h3>3.10 admin/src/middleware/role.js</h3>
+<p>文件路径：admin/src/middleware/role.js</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>import { HttpError } from '../utils/errors.js';
+
+export function allow(...roles) {
+  return (req, _res, next) =&gt; {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return next(new HttpError(403, 'Forbidden'));
+    }
+    return next();
+  };
+}</code></pre>
+<h3>3.11 admin/src/routes/admin.js</h3>
+<p>文件路径：admin/src/routes/admin.js</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>import { Router } from 'express';
+import { pool } from '../config/db.js';
+import { auth } from '../middleware/auth.js';
+import { allow } from '../middleware/role.js';
+import { asyncHandler, ok } from '../utils/response.js';
+
+const router = Router();
+router.use(auth(), allow('admin'));
+
+router.get('/stats', asyncHandler(async (_req, res) =&gt; {
+  const [[users]] = await pool.execute(`SELECT COUNT(*) count FROM users WHERE role='student'`);
+  const [[questions]] = await pool.execute(`SELECT COUNT(*) count FROM questions`);
+  const [[papers]] = await pool.execute(`SELECT COUNT(*) count FROM papers`);
+  const [[records]] = await pool.execute(`SELECT COUNT(*) count, COALESCE(AVG(total_score),0) avg_score FROM study_records`);
+  ok(res, {
+    students: users.count,
+    questions: questions.count,
+    papers: papers.count,
+    records: records.count,
+    avgScore: Number(records.avg_score).toFixed(1)
+  });
+}));
+
+router.get('/users', asyncHandler(async (_req, res) =&gt; {
+  const [rows] = await pool.execute(
+    `SELECT id, username, name, email, phone, role, student_no, nationality, language, status, created_at
+     FROM users ORDER BY id DESC`
+  );
+  ok(res, rows);
+}));
+
+router.get('/questions', asyncHandler(async (req, res) =&gt; {
+  const language = req.query.lang || 'zh-CN';
+  const [rows] = await pool.execute(
+    `SELECT q.id, qt.title, q.question_type, q.difficulty, q.score, q.status, lt.name level_name, ct.name category_name
+     FROM questions q
+     JOIN question_translations qt ON qt.question_id = q.id AND qt.language_code = ?
+     JOIN level_translations lt ON lt.level_id = q.level_id AND lt.language_code = ?
+     JOIN question_category_translations ct ON ct.category_id = q.category_id AND ct.language_code = ?
+     ORDER BY q.id DESC`,
+    [language, language, language]
+  );
+  ok(res, rows);
+}));
+
+router.get('/papers', asyncHandler(async (req, res) =&gt; {
+  const language = req.query.lang || 'zh-CN';
+  const [rows] = await pool.execute(
+    `SELECT p.id, pt.title, p.paper_type, p.total_score, p.duration_minutes, p.status, COUNT(pq.id) question_count
+     FROM papers p
+     JOIN paper_translations pt ON pt.paper_id = p.id AND pt.language_code = ?
+     LEFT JOIN paper_questions pq ON pq.paper_id = p.id
+     GROUP BY p.id, pt.title, p.paper_type, p.total_score, p.duration_minutes, p.status
+     ORDER BY p.id DESC`,
+    [language]
+  );
+  ok(res, rows);
+}));
+
+router.get('/records', asyncHandler(async (req, res) =&gt; {
+  const language = req.query.lang || 'zh-CN';
+  const [rows] = await pool.execute(
+    `SELECT r.id, u.username, u.name, pt.title paper_title, r.total_questions, r.correct_count, r.wrong_count, r.total_score, r.submitted_at
+     FROM study_records r
+     JOIN users u ON u.id = r.user_id
+     LEFT JOIN paper_translations pt ON pt.paper_id = r.paper_id AND pt.language_code = ?
+     ORDER BY r.submitted_at DESC`,
+    [language]
+  );
+  ok(res, rows);
+}));
+
+export default router;</code></pre>
+<h3>3.12 admin/src/routes/auth.js</h3>
+<p>文件路径：admin/src/routes/auth.js</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>import { Router } from 'express';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { pool } from '../config/db.js';
+import { auth } from '../middleware/auth.js';
+import { asyncHandler, ok } from '../utils/response.js';
+import { HttpError } from '../utils/errors.js';
+
+const router = Router();
+const publicUserFields = 'id, username, name, email, phone, role, student_no, nationality, language, status, created_at';
+
+router.post('/register', asyncHandler(async (req, res) =&gt; {
+  const { username, password, name, email, phone, student_no, nationality, language = 'zh-CN' } = req.body;
+  if (!username || !password) throw new HttpError(400, 'Username and password are required');
+  const hash = await bcrypt.hash(password, 10);
+  await pool.execute(
+    `INSERT INTO users (username, password, name, email, phone, role, student_no, nationality, language, status)
+     VALUES (?, ?, ?, ?, ?, 'student', ?, ?, ?, 'active')`,
+    [username, hash, name || username, email || null, phone || null, student_no || null, nationality || 'Malaysia', language]
+  );
+  ok(res, null, 'registered');
+}));
+
+router.post('/login', asyncHandler(async (req, res) =&gt; {
+  const { username, password } = req.body;
+  const [rows] = await pool.execute(`SELECT * FROM users WHERE username = ? AND status = 'active'`, [username]);
+  const user = rows[0];
+  if (!user || !(await bcrypt.compare(password || '', user.password))) {
+    throw new HttpError(401, 'Invalid username or password');
+  }
+  const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, process.env.JWT_SECRET || '***', { expiresIn: '7d' });
+  delete user.password;
+  ok(res, { token, user });
+}));
+
+router.get('/profile', auth(), asyncHandler(async (req, res) =&gt; {
+  const [rows] = await pool.execute(`SELECT ${publicUserFields} FROM users WHERE id = ?`, [req.user.id]);
+  ok(res, rows[0]);
+}));
+
+router.put('/profile', auth(), asyncHandler(async (req, res) =&gt; {
+  const { name, email, phone, nationality, language } = req.body;
+  await pool.execute(
+    'UPDATE users SET name=?, email=?, phone=?, nationality=?, language=? WHERE id=?',
+    [name, email, phone, nationality, language, req.user.id]
+  );
+  ok(res);
+}));
+
+export default router;</code></pre>
+<h3>3.13 admin/src/routes/learning.js</h3>
+<p>文件路径：admin/src/routes/learning.js</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>import { Router } from 'express';
+import { pool, tx } from '../config/db.js';
+import { auth } from '../middleware/auth.js';
+import { asyncHandler, ok } from '../utils/response.js';
+import { HttpError } from '../utils/errors.js';
+
+const router = Router();
+
+function lang(req) {
+  return req.query.lang || req.body.language || 'zh-CN';
+}
+
+async function getQuestionsByPaper(paperId, language) {
+  const [rows] = await pool.execute(
+    `SELECT q.id, q.question_type, q.difficulty, pq.score, qt.title, qt.content, qt.analysis,
+            l.code level_code, lt.name level_name, c.code category_code, ct.name category_name
+     FROM paper_questions pq
+     JOIN questions q ON q.id = pq.question_id
+     JOIN question_translations qt ON qt.question_id = q.id AND qt.language_code = ?
+     JOIN levels l ON l.id = q.level_id
+     JOIN level_translations lt ON lt.level_id = l.id AND lt.language_code = ?
+     JOIN question_categories c ON c.id = q.category_id
+     JOIN question_category_translations ct ON ct.category_id = c.id AND ct.language_code = ?
+     WHERE pq.paper_id = ? AND q.status = 'published'
+     ORDER BY pq.sort_order ASC`,
+    [language, language, language, paperId]
+  );
+  if (!rows.length) return [];
+  const ids = rows.map((row) =&gt; row.id);
+  const [options] = await pool.query(
+    `SELECT o.id, o.question_id, o.option_key, ot.content
+     FROM question_options o
+     JOIN question_option_translations ot ON ot.option_id = o.id AND ot.language_code = ?
+     WHERE o.question_id IN (?)
+     ORDER BY o.question_id, o.sort_order`,
+    [language, ids]
+  );
+  return rows.map((question) =&gt; ({
+    ...question,
+    options: options.filter((option) =&gt; option.question_id === question.id).map(({ question_id, ...option }) =&gt; option)
+  }));
+}
+
+router.get('/levels', asyncHandler(async (req, res) =&gt; {
+  const language = lang(req);
+  const [rows] = await pool.execute(
+    `SELECT l.id, l.code, lt.name, lt.description
+     FROM levels l
+     JOIN level_translations lt ON lt.level_id = l.id AND lt.language_code = ?
+     WHERE l.status = 'active'
+     ORDER BY l.sort_order`,
+    [language]
+  );
+  ok(res, rows);
+}));
+
+router.get('/categories', asyncHandler(async (req, res) =&gt; {
+  const language = lang(req);
+  const [rows] = await pool.execute(
+    `SELECT c.id, c.code, ct.name, ct.description
+     FROM question_categories c
+     JOIN question_category_translations ct ON ct.category_id = c.id AND ct.language_code = ?
+     WHERE c.status = 'active'
+     ORDER BY c.sort_order`,
+    [language]
+  );
+  ok(res, rows);
+}));
+
+router.get('/papers', asyncHandler(async (req, res) =&gt; {
+  const language = lang(req);
+  const [rows] = await pool.execute(
+    `SELECT p.id, p.paper_type, p.total_score, p.duration_minutes, pt.title, pt.description, lt.name level_name,
+            COUNT(pq.id) question_count
+     FROM papers p
+     JOIN paper_translations pt ON pt.paper_id = p.id AND pt.language_code = ?
+     LEFT JOIN level_translations lt ON lt.level_id = p.level_id AND lt.language_code = ?
+     LEFT JOIN paper_questions pq ON pq.paper_id = p.id
+     WHERE p.status = 'published'
+     GROUP BY p.id, p.paper_type, p.total_score, p.duration_minutes, pt.title, pt.description, lt.name
+     ORDER BY p.id DESC`,
+    [language, language]
+  );
+  ok(res, rows);
+}));
+
+router.get('/papers/:id', auth(), asyncHandler(async (req, res) =&gt; {
+  const language = lang(req);
+  const paperId = Number(req.params.id);
+  const [[paper]] = await pool.execute(
+    `SELECT p.id, p.paper_type, p.total_score, p.duration_minutes, pt.title, pt.description
+     FROM papers p
+     JOIN paper_translations pt ON pt.paper_id = p.id AND pt.language_code = ?
+     WHERE p.id = ? AND p.status = 'published'`,
+    [language, paperId]
+  );
+  if (!paper) throw new HttpError(404, 'Paper not found');
+  paper.questions = await getQuestionsByPaper(paperId, language);
+  ok(res, paper);
+}));
+
+router.post('/papers/:id/submit', auth(), asyncHandler(async (req, res) =&gt; {
+  const paperId = Number(req.params.id);
+  const answers = Array.isArray(req.body.answers) ? req.body.answers : [];
+  const durationSeconds = Number(req.body.duration_seconds || 0);
+  const result = await tx(async (conn) =&gt; {
+    const [questions] = await conn.execute(
+      `SELECT pq.question_id, pq.score, GROUP_CONCAT(o.id ORDER BY o.id) correct_option_ids
+       FROM paper_questions pq
+       JOIN question_options o ON o.question_id = pq.question_id AND o.is_correct = 1
+       WHERE pq.paper_id = ?
+       GROUP BY pq.question_id, pq.score`,
+      [paperId]
+    );
+    if (!questions.length) throw new HttpError(404, 'Paper not found');
+    const byQuestion = new Map(questions.map((q) =&gt; [Number(q.question_id), q]));
+    let correctCount = 0;
+    let totalScore = 0;
+    const answerResults = [];
+
+    for (const item of answers) {
+      const questionId = Number(item.question_id);
+      const question = byQuestion.get(questionId);
+      if (!question) continue;
+      const selectedIds = (item.selected_option_ids || []).map(Number).sort((a, b) =&gt; a - b);
+      const correctIds = String(question.correct_option_ids).split(',').map(Number).sort((a, b) =&gt; a - b);
+      const isCorrect = JSON.stringify(selectedIds) === JSON.stringify(correctIds);
+      const score = isCorrect ? Number(question.score) : 0;
+      if (isCorrect) correctCount += 1;
+      totalScore += score;
+      answerResults.push({ question_id: questionId, selected_option_ids: selectedIds, correct_option_ids: correctIds, is_correct: isCorrect, score });
+    }
+
+    const wrongCount = questions.length - correctCount;
+    const [record] = await conn.execute(
+      `INSERT INTO study_records (user_id, paper_id, total_questions, correct_count, wrong_count, total_score, duration_seconds, started_at, submitted_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, DATE_SUB(NOW(), INTERVAL ? SECOND), NOW())`,
+      [req.user.id, paperId, questions.length, correctCount, wrongCount, totalScore, durationSeconds, durationSeconds]
+    );
+
+    for (const item of answerResults) {
+      await conn.execute(
+        `INSERT INTO user_answers (user_id, question_id, paper_id, study_record_id, selected_option_ids, is_correct, score)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [req.user.id, item.question_id, paperId, record.insertId, item.selected_option_ids.join(','), item.is_correct ? 1 : 0, item.score]
+      );
+      if (!item.is_correct) {
+        await conn.execute(
+          `INSERT INTO wrong_questions (user_id, question_id, wrong_count, resolved, last_wrong_at)
+           VALUES (?, ?, 1, 0, NOW())
+           ON DUPLICATE KEY UPDATE wrong_count = wrong_count + 1, resolved = 0, last_wrong_at = NOW()`,
+          [req.user.id, item.question_id]
+        );
+      } else {
+        await conn.execute('UPDATE wrong_questions SET resolved = 1 WHERE user_id = ? AND question_id = ?', [req.user.id, item.question_id]);
+      }
+    }
+
+    return {
+      record_id: record.insertId,
+      total_questions: questions.length,
+      correct_count: correctCount,
+      wrong_count: wrongCount,
+      total_score: totalScore,
+      answers: answerResults
+    };
+  });
+  ok(res, result);
+}));
+
+router.get('/records', auth(), asyncHandler(async (req, res) =&gt; {
+  const language = lang(req);
+  const [rows] = await pool.execute(
+    `SELECT r.*, pt.title paper_title
+     FROM study_records r
+     LEFT JOIN paper_translations pt ON pt.paper_id = r.paper_id AND pt.language_code = ?
+     WHERE r.user_id = ?
+     ORDER BY r.submitted_at DESC`,
+    [language, req.user.id]
+  );
+  ok(res, rows);
+}));
+
+router.get('/wrong-questions', auth(), asyncHandler(async (req, res) =&gt; {
+  const language = lang(req);
+  const [rows] = await pool.execute(
+    `SELECT w.id, w.wrong_count, w.resolved, w.last_wrong_at, q.id question_id, qt.title, qt.analysis, ct.name category_name
+     FROM wrong_questions w
+     JOIN questions q ON q.id = w.question_id
+     JOIN question_translations qt ON qt.question_id = q.id AND qt.language_code = ?
+     JOIN question_category_translations ct ON ct.category_id = q.category_id AND ct.language_code = ?
+     WHERE w.user_id = ?
+     ORDER BY w.resolved ASC, w.last_wrong_at DESC`,
+    [language, language, req.user.id]
+  );
+  ok(res, rows);
+}));
+
+export default router;</code></pre>
+<h3>3.14 admin/src/server.js</h3>
+<p>文件路径：admin/src/server.js</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>import app from './app.js';
+import { logger } from './utils/logger.js';
+
+const port = Number(process.env.PORT || 3000);
+app.listen(port, () =&gt; {
+  logger.info(`Chinese practice API running at http://***:${port}`);
+});</code></pre>
+<h3>3.15 admin/src/utils/errors.js</h3>
+<p>文件路径：admin/src/utils/errors.js</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>export class HttpError extends Error {
+  constructor(status, message) {
+    super(message);
+    this.status = status;
+  }
+}</code></pre>
+<h3>3.16 admin/src/utils/initDb.js</h3>
+<p>文件路径：admin/src/utils/initDb.js</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import mysql from 'mysql2/promise';
+import dotenv from 'dotenv';
+import { logger } from './logger.js';
+
+dotenv.config();
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const root = path.resolve(__dirname, '../..');
+
+const connection = await mysql.createConnection({
+  host: process.env.DB_HOST || '***',
+  port: Number(process.env.DB_PORT || 3306),
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '***',
+  multipleStatements: true
+});
+
+for (const file of ['schema.sql', 'seed.sql']) {
+  const sql = await fs.readFile(path.join(root, 'sql', file), 'utf8');
+  await connection.query(sql);
+  logger.info(`Executed ${file}`);
+}
+
+await connection.end();
+logger.info('Database initialized.');</code></pre>
+<h3>3.17 admin/src/utils/logger.js</h3>
+<p>文件路径：admin/src/utils/logger.js</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const root = path.resolve(__dirname, '../..');
+const logDir = process.env.LOG_DIR || path.join(root, 'logs');
+const logFile = path.join(logDir, 'app.log');
+
+function ensureLogDir() {
+  fs.mkdirSync(logDir, { recursive: true });
+}
+
+function mask(value) {
+  if (value == null) return value;
+  const text = typeof value === 'string' ? value : JSON.stringify(value);
+  return text
+    .replace(/(authorization[&quot;']?\s*[:=]\s*[&quot;']?Bearer\s+)[^&quot;',\s]+/gi, '$1***')
+    .replace(/(password[&quot;']?\s*[:=]\s*[&quot;']?)[^&quot;',\s]+/gi, '$1***')
+    .replace(/(token[&quot;']?\s*[:=]\s*[&quot;']?)[^&quot;',\s]+/gi, '$1***');
+}
+
+function write(level, message, meta) {
+  const timestamp = new Date().toISOString();
+  const extra = meta === undefined ? '' : ` ${mask(meta)}`;
+  const line = `[${timestamp}] [${level}] ${message}${extra}`;
+  ensureLogDir();
+  fs.appendFileSync(logFile, `${line}\n`, 'utf8');
+
+  if (level === 'ERROR') {
+    console.error(line);
+  } else {
+    console.log(line);
+  }
+}
+
+export const logger = {
+  info(message, meta) {
+    write('INFO', message, meta);
+  },
+  warn(message, meta) {
+    write('WARN', message, meta);
+  },
+  error(message, meta) {
+    write('ERROR', message, meta);
+  }
+};
+
+export { logFile };</code></pre>
+<h3>3.18 admin/src/utils/response.js</h3>
+<p>文件路径：admin/src/utils/response.js</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>export function ok(res, data = null, message = 'success') {
+  return res.json({ code: 200, message, data });
+}
+
+export function asyncHandler(fn) {
+  return (req, res, next) =&gt; Promise.resolve(fn(req, res, next)).catch(next);
+}</code></pre>
+<h3>3.19 admin/src/utils/seedUsers.js</h3>
+<p>文件路径：admin/src/utils/seedUsers.js</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>import bcrypt from 'bcryptjs';
+import { pool } from '../config/db.js';
+import { logger } from './logger.js';
+
+const users = [
+  ['admin', '***', '系统管理员', 'admin', '***@***', 'Malaysia'],
+  ['student', '***', 'Amin', 'student', '***@***', 'Malaysia'],
+  ['nurul', '***', 'Nurul Aisyah', 'student', '***@***', 'Malaysia'],
+  ['weijie', '***', 'Tan Wei Jie', 'student', '***@***', 'Malaysia'],
+  ['siti', '***', 'Siti Mariam', 'student', '***@***', 'Malaysia'],
+  ['raj', '***', 'Raj Kumar', 'student', '***@***', 'Malaysia']
+];
+
+for (const [username, password, name, role, email, nationality] of users) {
+  const hash = await bcrypt.hash(password, 10);
+  await pool.execute(
+    `INSERT INTO users (username, password, name, email, role, nationality, language, status)
+     VALUES (?, ?, ?, ?, ?, ?, 'zh-CN', 'active')
+     ON DUPLICATE KEY UPDATE password=VALUES(password), name=VALUES(name), role=VALUES(role), email=VALUES(email), nationality=VALUES(nationality), status='active'`,
+    [username, hash, name, email, role, nationality]
+  );
+}
+
+const [studentRows] = await pool.execute(
+  `SELECT id, username FROM users WHERE username IN ('student', 'nurul', 'weijie', 'siti', 'raj')`
+);
+const userId = Object.fromEntries(studentRows.map((user) =&gt; [user.username, user.id]));
+
+const records = [
+  [101, userId.student, 1, 5, 3, 2, 3, 245, '2026-05-10 09:20:00'],
+  [102, userId.student, 2, 5, 4, 1, 4, 312, '2026-05-12 14:05:00'],
+  [103, userId.nurul, 1, 5, 5, 0, 5, 198, '2026-05-11 10:30:00'],
+  [104, userId.weijie, 3, 5, 4, 1, 4, 260, '2026-05-12 16:40:00'],
+  [105, userId.siti, 2, 5, 2, 3, 2, 420, '2026-05-13 11:15:00'],
+  [106, userId.raj, 3, 5, 3, 2, 3, 338, '2026-05-13 19:25:00']
+].filter((record) =&gt; record[1]);
+
+for (const record of records) {
+  await pool.execute(
+    `INSERT INTO study_records (id, user_id, paper_id, total_questions, correct_count, wrong_count, total_score, duration_seconds, started_at, submitted_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, DATE_SUB(?, INTERVAL ? SECOND), ?)
+     ON DUPLICATE KEY UPDATE user_id=VALUES(user_id), paper_id=VALUES(paper_id), total_questions=VALUES(total_questions),
+       correct_count=VALUES(correct_count), wrong_count=VALUES(wrong_count), total_score=VALUES(total_score),
+       duration_seconds=VALUES(duration_seconds), started_at=VALUES(started_at), submitted_at=VALUES(submitted_at)`,
+    [...record, record[7], record[8]]
+  );
+}
+
+const wrongQuestions = [
+  [userId.student, 2, 2, 0, '2026-05-12 14:05:00'],
+  [userId.student, 6, 1, 0, '2026-05-12 14:05:00'],
+  [userId.siti, 7, 3, 0, '2026-05-13 11:15:00'],
+  [userId.raj, 10, 1, 0, '2026-05-13 19:25:00']
+].filter((item) =&gt; item[0]);
+
+for (const item of wrongQuestions) {
+  await pool.execute(
+    `INSERT INTO wrong_questions (user_id, question_id, wrong_count, resolved, last_wrong_at)
+     VALUES (?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE wrong_count=VALUES(wrong_count), resolved=VALUES(resolved), last_wrong_at=VALUES(last_wrong_at)`,
+    item
+  );
+}
+
+logger.info('Seed users ready for admin and student accounts');
+await pool.end();</code></pre>
+<h3>3.20 fronter/index.html</h3>
+<p>文件路径：fronter/index.html</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>&lt;!doctype html&gt;
+&lt;html lang=&quot;zh-CN&quot;&gt;
+  &lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot; /&gt;
+    &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;link rel=&quot;icon&quot; href=&quot;data:,&quot; /&gt;
+    &lt;title&gt;Chinese Practice Platform&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;div id=&quot;app&quot;&gt;&lt;/div&gt;
+    &lt;script type=&quot;module&quot; src=&quot;/src/main.js&quot;&gt;&lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</code></pre>
+<h3>3.21 fronter/package.json</h3>
+<p>文件路径：fronter/package.json</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>{
+  &quot;name&quot;: &quot;school-chinese-exam-practice-fronter&quot;,
+  &quot;version&quot;: &quot;1.0.0&quot;,
+  &quot;type&quot;: &quot;module&quot;,
+  &quot;scripts&quot;: {
+    &quot;dev&quot;: &quot;vite --host 0.0.0.0&quot;,
+    &quot;build&quot;: &quot;vite build&quot;,
+    &quot;preview&quot;: &quot;vite preview --host 0.0.0.0&quot;
+  },
+  &quot;dependencies&quot;: {
+    &quot;@vitejs/plugin-vue&quot;: &quot;^5.2.1&quot;,
+    &quot;vite&quot;: &quot;^6.0.3&quot;,
+    &quot;vue&quot;: &quot;^3.5.13&quot;,
+    &quot;vue-router&quot;: &quot;^4.5.0&quot;
+  },
+  &quot;devDependencies&quot;: {}
+}</code></pre>
+<h3>3.22 fronter/src/App.vue</h3>
+<p>文件路径：fronter/src/App.vue</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>&lt;template&gt;
+  &lt;div class=&quot;app-shell&quot;&gt;
+    &lt;header class=&quot;topbar&quot;&gt;
+      &lt;router-link class=&quot;brand&quot; to=&quot;/&quot;&gt;{{ t('app') }}&lt;/router-link&gt;
+      &lt;nav class=&quot;toolbar&quot;&gt;
+        &lt;router-link to=&quot;/&quot;&gt;{{ t('home') }}&lt;/router-link&gt;
+        &lt;router-link v-if=&quot;auth.user&quot; to=&quot;/practice&quot;&gt;{{ t('practice') }}&lt;/router-link&gt;
+        &lt;router-link v-if=&quot;auth.user&quot; to=&quot;/records&quot;&gt;{{ t('records') }}&lt;/router-link&gt;
+        &lt;router-link v-if=&quot;auth.user&quot; to=&quot;/wrong-book&quot;&gt;{{ t('wrongBook') }}&lt;/router-link&gt;
+        &lt;router-link v-if=&quot;auth.user&quot; to=&quot;/profile&quot;&gt;{{ t('profile') }}&lt;/router-link&gt;
+        &lt;router-link v-if=&quot;auth.user?.role === 'admin'&quot; to=&quot;/admin&quot;&gt;{{ t('dashboard') }}&lt;/router-link&gt;
+        &lt;router-link v-if=&quot;!auth.user&quot; to=&quot;/login&quot;&gt;{{ t('login') }}&lt;/router-link&gt;
+        &lt;button v-if=&quot;auth.user&quot; @click=&quot;logout&quot;&gt;{{ t('logout') }}&lt;/button&gt;
+        &lt;select :value=&quot;state.lang&quot; @change=&quot;setLang($event.target.value)&quot;&gt;
+          &lt;option value=&quot;zh-CN&quot;&gt;中文&lt;/option&gt;
+          &lt;option value=&quot;en-US&quot;&gt;English&lt;/option&gt;
+          &lt;option value=&quot;ms-MY&quot;&gt;Bahasa Melayu&lt;/option&gt;
+        &lt;/select&gt;
+      &lt;/nav&gt;
+    &lt;/header&gt;
+    &lt;main class=&quot;content&quot;&gt;
+      &lt;router-view /&gt;
+    &lt;/main&gt;
+  &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { useRouter } from 'vue-router';
+import { authStore as auth } from './stores/auth.js';
+import { state, t, setLang } from './i18n/index.js';
+
+const router = useRouter();
+function logout() {
+  auth.logout();
+  router.push('/login');
+}
+&lt;/script&gt;</code></pre>
+<h3>3.23 fronter/src/api/client.js</h3>
+<p>文件路径：fronter/src/api/client.js</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>const API_BASE = import.meta.env.VITE_API_BASE || 'http://***:3000/api';
+
+export function token() {
+  return localStorage.getItem('token') || '';
+}
+
+export async function request(path, options = {}) {
+  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+  if (token()) headers.Authorization = `Bearer ${token()}`;
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers,
+    body: options.body ? JSON.stringify(options.body) : undefined
+  });
+  const payload = await response.json().catch(() =&gt; ({ message: 'Network error' }));
+  if (!response.ok || payload.code &gt;= 400) throw new Error(payload.message || 'Request failed');
+  return payload.data;
+}</code></pre>
+<h3>3.24 fronter/src/assets/style.css</h3>
+<p>文件路径：fronter/src/assets/style.css</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>* { box-sizing: border-box; }
+body { margin: 0; font-family: Arial, &quot;Microsoft YaHei&quot;, sans-serif; background: #f4f6f8; color: #172033; }
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font: inherit; }
+.app-shell { max-width: 1080px; min-height: 100vh; margin: 0 auto; background: #fff; }
+.topbar { position: sticky; top: 0; z-index: 5; display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 12px 14px; background: #14304d; color: #fff; }
+.brand { font-weight: 700; line-height: 1.3; }
+.toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.toolbar a, .toolbar button, .toolbar select { border: 0; border-radius: 6px; padding: 8px 10px; background: rgba(255,255,255,.12); color: #fff; cursor: pointer; }
+.toolbar select option { color: #172033; }
+.content { padding: 16px; }
+.hero { display: grid; gap: 14px; padding: 20px 0; }
+.grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.card { border: 1px solid #e4e8ef; border-radius: 8px; padding: 14px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+.card h3, .card h4 { margin-top: 0; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.split { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr) 280px; }
+.form { display: grid; gap: 12px; max-width: 480px; }
+.form input, .form select, .form textarea { width: 100%; border: 1px solid #ccd4df; border-radius: 6px; padding: 10px; }
+.btn { border: 0; border-radius: 6px; padding: 10px 12px; background: #0d6efd; color: #fff; cursor: pointer; }
+.btn.secondary { background: #5c667a; }
+.btn.ghost { background: #eef3f8; color: #14304d; }
+.muted { color: #687386; }
+.pill { display: inline-block; border-radius: 999px; padding: 3px 8px; font-size: 12px; background: #e9edf3; color: #40506a; }
+.option { display: block; width: 100%; margin: 8px 0; border: 1px solid #d8dee8; border-radius: 8px; padding: 12px; background: #fff; text-align: left; color: #172033; }
+.option.active { border-color: #0d6efd; background: #eef5ff; }
+.option.correct { border-color: #249653; background: #e7f7ee; }
+.option.wrong { border-color: #c0392b; background: #fdecec; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { border-bottom: 1px solid #e7ebf0; padding: 10px; text-align: left; vertical-align: top; }
+@media (max-width: 760px) {
+  .topbar { align-items: flex-start; flex-direction: column; }
+  .toolbar a, .toolbar button, .toolbar select { padding: 7px 8px; font-size: 13px; }
+  .split { grid-template-columns: 1fr; }
+  th, td { padding: 8px 6px; font-size: 12px; }
+}</code></pre>
+<h3>3.25 fronter/src/i18n/index.js</h3>
+<p>文件路径：fronter/src/i18n/index.js</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>import { reactive } from 'vue';
+
+export const state = reactive({
+  lang: localStorage.getItem('lang') || 'zh-CN'
+});
+
+const messages = {
+  'zh-CN': {
+    app: '马来西亚留学生汉语练习平台',
+    login: '登录',
+    register: '注册',
+    logout: '退出',
+    home: '首页',
+    practice: '练习',
+    records: '成绩',
+    wrongBook: '错题本',
+    profile: '个人中心',
+    dashboard: '管理台',
+    users: '学生管理',
+    questions: '题库',
+    papers: '练习/试卷',
+    adminRecords: '成绩记录',
+    username: '用户名',
+    password: '密码',
+    name: '姓名',
+    email: '邮箱',
+    phone: '电话',
+    studentNo: '学号',
+    nationality: '国籍',
+    language: '语言',
+    start: '开始练习',
+    submit: '提交',
+    next: '下一题',
+    result: '练习结果',
+    correct: '正确',
+    wrong: '错误',
+    score: '得分',
+    questionCount: '题数',
+    duration: '时长',
+    level: '等级',
+    category: '分类',
+    difficulty: '难度',
+    status: '状态',
+    role: '角色',
+    title: '标题',
+    createdAt: '创建时间',
+    submittedAt: '提交时间',
+    empty: '暂无数据',
+    chooseAnswer: '请选择答案',
+    analysis: '解析',
+    totalStudents: '学生数',
+    totalQuestions: '题目数',
+    totalPapers: '练习数',
+    totalRecords: '答题记录',
+    avgScore: '平均分'
+  },
+  'en-US': {
+    app: 'Chinese Practice Platform for Malaysian Students',
+    login: 'Login',
+    register: 'Register',
+    logout: 'Logout',
+    home: 'Home',
+    practice: 'Practice',
+    records: 'Scores',
+    wrongBook: 'Wrong Book',
+    profile: 'Profile',
+    dashboard: 'Admin',
+    users: 'Students',
+    questions: 'Question Bank',
+    papers: 'Practices',
+    adminRecords: 'Score Records',
+    username: 'Username',
+    password: 'Password',
+    name: 'Name',
+    email: 'Email',
+    phone: 'Phone',
+    studentNo: 'Student No.',
+    nationality: 'Nationality',
+    language: 'Language',
+    start: 'Start',
+    submit: 'Submit',
+    next: 'Next',
+    result: 'Result',
+    correct: 'Correct',
+    wrong: 'Wrong',
+    score: 'Score',
+    questionCount: 'Questions',
+    duration: 'Duration',
+    level: 'Level',
+    category: 'Category',
+    difficulty: 'Difficulty',
+    status: 'Status',
+    role: 'Role',
+    title: 'Title',
+    createdAt: 'Created',
+    submittedAt: 'Submitted',
+    empty: 'No data',
+    chooseAnswer: 'Please choose an answer',
+    analysis: 'Analysis',
+    totalStudents: 'Students',
+    totalQuestions: 'Questions',
+    totalPapers: 'Practices',
+    totalRecords: 'Records',
+    avgScore: 'Avg Score'
+  },
+  'ms-MY': {
+    app: 'Platform Latihan Bahasa Cina untuk Pelajar Malaysia',
+    login: 'Log Masuk',
+    register: 'Daftar',
+    logout: 'Log Keluar',
+    home: 'Laman Utama',
+    practice: 'Latihan',
+    records: 'Markah',
+    wrongBook: 'Buku Salah',
+    profile: 'Profil',
+    dashboard: 'Admin',
+    users: 'Pelajar',
+    questions: 'Bank Soalan',
+    papers: 'Latihan',
+    adminRecords: 'Rekod Markah',
+    username: 'Nama Pengguna',
+    password: 'Kata Laluan',
+    name: 'Nama',
+    email: 'E-mel',
+    phone: 'Telefon',
+    studentNo: 'No. Pelajar',
+    nationality: 'Kewarganegaraan',
+    language: 'Bahasa',
+    start: 'Mula',
+    submit: 'Hantar',
+    next: 'Seterusnya',
+    result: 'Keputusan',
+    correct: 'Betul',
+    wrong: 'Salah',
+    score: 'Markah',
+    questionCount: 'Soalan',
+    duration: 'Tempoh',
+    level: 'Tahap',
+    category: 'Kategori',
+    difficulty: 'Kesukaran',
+    status: 'Status',
+    role: 'Peranan',
+    title: 'Tajuk',
+    createdAt: 'Dicipta',
+    submittedAt: 'Dihantar',
+    empty: 'Tiada data',
+    chooseAnswer: 'Sila pilih jawapan',
+    analysis: 'Analisis',
+    totalStudents: 'Pelajar',
+    totalQuestions: 'Soalan',
+    totalPapers: 'Latihan',
+    totalRecords: 'Rekod',
+    avgScore: 'Purata'
+  }
+};
+
+export function t(key) {
+  return messages[state.lang]?.[key] || key;
+}
+
+export function setLang(lang) {
+  state.lang = lang;
+  localStorage.setItem('lang', lang);
+}</code></pre>
+<h3>3.26 fronter/src/main.js</h3>
+<p>文件路径：fronter/src/main.js</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>import { createApp } from 'vue';
+import App from './App.vue';
+import router from './router/index.js';
+import './assets/style.css';
+
+createApp(App).use(router).mount('#app');</code></pre>
+<h3>3.27 fronter/src/router/index.js</h3>
+<p>文件路径：fronter/src/router/index.js</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>import { createRouter, createWebHistory } from 'vue-router';
+import { authStore } from '../stores/auth.js';
+import Login from '../views/Login.vue';
+import Register from '../views/Register.vue';
+import Home from '../views/Home.vue';
+import PracticeList from '../views/PracticeList.vue';
+import PracticeDetail from '../views/PracticeDetail.vue';
+import Records from '../views/Records.vue';
+import WrongBook from '../views/WrongBook.vue';
+import Profile from '../views/Profile.vue';
+import Dashboard from '../views/Dashboard.vue';
+import AdminTable from '../views/AdminTable.vue';
+
+const routes = [
+  { path: '/', component: Home },
+  { path: '/login', component: Login },
+  { path: '/register', component: Register },
+  { path: '/practice', component: PracticeList, meta: { auth: true } },
+  { path: '/practice/:id', component: PracticeDetail, meta: { auth: true } },
+  { path: '/records', component: Records, meta: { auth: true } },
+  { path: '/wrong-book', component: WrongBook, meta: { auth: true } },
+  { path: '/profile', component: Profile, meta: { auth: true } },
+  { path: '/admin', component: Dashboard, meta: { auth: true, admin: true } },
+  { path: '/admin/users', component: AdminTable, props: { type: 'users' }, meta: { auth: true, admin: true } },
+  { path: '/admin/questions', component: AdminTable, props: { type: 'questions' }, meta: { auth: true, admin: true } },
+  { path: '/admin/papers', component: AdminTable, props: { type: 'papers' }, meta: { auth: true, admin: true } },
+  { path: '/admin/records', component: AdminTable, props: { type: 'records' }, meta: { auth: true, admin: true } }
+];
+
+const router = createRouter({ history: createWebHistory(), routes });
+
+router.beforeEach((to) =&gt; {
+  if (to.meta.auth &amp;&amp; !authStore.isAuthed) return '/login';
+  if (to.meta.admin &amp;&amp; authStore.user?.role !== 'admin') return '/';
+  return true;
+});
+
+export default router;</code></pre>
+<h3>3.28 fronter/src/stores/auth.js</h3>
+<p>文件路径：fronter/src/stores/auth.js</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>import { reactive } from 'vue';
+import { request } from '../api/client.js';
+
+export const authStore = reactive({
+  user: JSON.parse(localStorage.getItem('user') || 'null'),
+  get isAuthed() {
+    return Boolean(localStorage.getItem('token'));
+  },
+  async login(form) {
+    const data = await request('/auth/login', { method: 'POST', body: form });
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    this.user = data.user;
+  },
+  logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    this.user = null;
+  }
+});</code></pre>
+<h3>3.29 fronter/src/views/AdminTable.vue</h3>
+<p>文件路径：fronter/src/views/AdminTable.vue</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>&lt;template&gt;
+  &lt;section&gt;
+    &lt;h1&gt;{{ title }}&lt;/h1&gt;
+    &lt;div class=&quot;card&quot; style=&quot;overflow:auto&quot;&gt;
+      &lt;table&gt;
+        &lt;thead&gt;
+          &lt;tr&gt;
+            &lt;th v-for=&quot;header in headers&quot; :key=&quot;header&quot;&gt;{{ label(header) }}&lt;/th&gt;
+          &lt;/tr&gt;
+        &lt;/thead&gt;
+        &lt;tbody&gt;
+          &lt;tr v-for=&quot;row in rows&quot; :key=&quot;row.id&quot;&gt;
+            &lt;td v-for=&quot;header in headers&quot; :key=&quot;header&quot;&gt;{{ format(row[header]) }}&lt;/td&gt;
+          &lt;/tr&gt;
+        &lt;/tbody&gt;
+      &lt;/table&gt;
+      &lt;p v-if=&quot;!rows.length&quot; class=&quot;muted&quot;&gt;{{ t('empty') }}&lt;/p&gt;
+    &lt;/div&gt;
+  &lt;/section&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { computed, onMounted, ref, watch } from 'vue';
+import { request } from '../api/client.js';
+import { state, t } from '../i18n/index.js';
+
+const props = defineProps({ type: { type: String, required: true } });
+const rows = ref([]);
+const title = computed(() =&gt; t(props.type === 'records' ? 'adminRecords' : props.type));
+const headerMap = {
+  users: ['id', 'username', 'name', 'role', 'student_no', 'nationality', 'language', 'status'],
+  questions: ['id', 'title', 'level_name', 'category_name', 'question_type', 'difficulty', 'score', 'status'],
+  papers: ['id', 'title', 'paper_type', 'question_count', 'total_score', 'duration_minutes', 'status'],
+  records: ['id', 'username', 'name', 'paper_title', 'total_questions', 'correct_count', 'wrong_count', 'total_score', 'submitted_at']
+};
+const labelMap = {
+  id: 'ID',
+  username: t('username'),
+  name: t('name'),
+  role: t('role'),
+  student_no: t('studentNo'),
+  nationality: t('nationality'),
+  language: t('language'),
+  status: t('status'),
+  title: t('title'),
+  level_name: t('level'),
+  category_name: t('category'),
+  question_type: 'Type',
+  difficulty: t('difficulty'),
+  score: t('score'),
+  paper_type: 'Type',
+  question_count: t('questionCount'),
+  total_score: t('score'),
+  duration_minutes: t('duration'),
+  paper_title: t('title'),
+  total_questions: t('questionCount'),
+  correct_count: t('correct'),
+  wrong_count: t('wrong'),
+  submitted_at: t('submittedAt')
+};
+const headers = computed(() =&gt; headerMap[props.type] || ['id']);
+
+function label(key) {
+  return labelMap[key] || key;
+}
+function format(value) {
+  if (value == null) return '';
+  if (typeof value === 'string' &amp;&amp; value.length &gt; 80) return `${value.slice(0, 80)}...`;
+  return value;
+}
+async function load() {
+  rows.value = await request(`/admin/${props.type}?lang=${state.lang}`);
+}
+onMounted(load);
+watch(() =&gt; [props.type, state.lang], load);
+&lt;/script&gt;</code></pre>
+<h3>3.30 fronter/src/views/Dashboard.vue</h3>
+<p>文件路径：fronter/src/views/Dashboard.vue</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>&lt;template&gt;
+  &lt;section&gt;
+    &lt;h1&gt;{{ t('dashboard') }}&lt;/h1&gt;
+    &lt;div class=&quot;grid&quot;&gt;
+      &lt;div class=&quot;card&quot;&gt;&lt;h3&gt;{{ stats.students }}&lt;/h3&gt;&lt;p&gt;{{ t('totalStudents') }}&lt;/p&gt;&lt;/div&gt;
+      &lt;div class=&quot;card&quot;&gt;&lt;h3&gt;{{ stats.questions }}&lt;/h3&gt;&lt;p&gt;{{ t('totalQuestions') }}&lt;/p&gt;&lt;/div&gt;
+      &lt;div class=&quot;card&quot;&gt;&lt;h3&gt;{{ stats.papers }}&lt;/h3&gt;&lt;p&gt;{{ t('totalPapers') }}&lt;/p&gt;&lt;/div&gt;
+      &lt;div class=&quot;card&quot;&gt;&lt;h3&gt;{{ stats.avgScore }}&lt;/h3&gt;&lt;p&gt;{{ t('avgScore') }}&lt;/p&gt;&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;grid&quot; style=&quot;margin-top:12px&quot;&gt;
+      &lt;router-link class=&quot;card&quot; to=&quot;/admin/users&quot;&gt;{{ t('users') }}&lt;/router-link&gt;
+      &lt;router-link class=&quot;card&quot; to=&quot;/admin/questions&quot;&gt;{{ t('questions') }}&lt;/router-link&gt;
+      &lt;router-link class=&quot;card&quot; to=&quot;/admin/papers&quot;&gt;{{ t('papers') }}&lt;/router-link&gt;
+      &lt;router-link class=&quot;card&quot; to=&quot;/admin/records&quot;&gt;{{ t('adminRecords') }}&lt;/router-link&gt;
+    &lt;/div&gt;
+  &lt;/section&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { onMounted, reactive } from 'vue';
+import { request } from '../api/client.js';
+import { t } from '../i18n/index.js';
+
+const stats = reactive({ students: 0, questions: 0, papers: 0, records: 0, avgScore: 0 });
+onMounted(async () =&gt; Object.assign(stats, await request('/admin/stats')));
+&lt;/script&gt;</code></pre>
+<h3>3.31 fronter/src/views/Home.vue</h3>
+<p>文件路径：fronter/src/views/Home.vue</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>&lt;template&gt;
+  &lt;section class=&quot;hero&quot;&gt;
+    &lt;div&gt;
+      &lt;h1&gt;{{ t('app') }}&lt;/h1&gt;
+      &lt;p class=&quot;muted&quot;&gt;HSK, campus Chinese, trilingual question bank and practice records.&lt;/p&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;grid&quot;&gt;
+      &lt;router-link class=&quot;card&quot; to=&quot;/practice&quot;&gt;
+        &lt;h3&gt;{{ t('practice') }}&lt;/h3&gt;
+        &lt;p class=&quot;muted&quot;&gt;HSK1 / HSK2 / Campus Chinese&lt;/p&gt;
+      &lt;/router-link&gt;
+      &lt;router-link class=&quot;card&quot; to=&quot;/wrong-book&quot;&gt;
+        &lt;h3&gt;{{ t('wrongBook') }}&lt;/h3&gt;
+        &lt;p class=&quot;muted&quot;&gt;Review mistakes and explanations&lt;/p&gt;
+      &lt;/router-link&gt;
+      &lt;router-link class=&quot;card&quot; to=&quot;/records&quot;&gt;
+        &lt;h3&gt;{{ t('records') }}&lt;/h3&gt;
+        &lt;p class=&quot;muted&quot;&gt;Track practice scores&lt;/p&gt;
+      &lt;/router-link&gt;
+      &lt;router-link v-if=&quot;auth.user?.role === 'admin'&quot; class=&quot;card&quot; to=&quot;/admin&quot;&gt;
+        &lt;h3&gt;{{ t('dashboard') }}&lt;/h3&gt;
+        &lt;p class=&quot;muted&quot;&gt;Question bank and student records&lt;/p&gt;
+      &lt;/router-link&gt;
+    &lt;/div&gt;
+  &lt;/section&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { t } from '../i18n/index.js';
+import { authStore as auth } from '../stores/auth.js';
+&lt;/script&gt;</code></pre>
+<h3>3.32 fronter/src/views/Login.vue</h3>
+<p>文件路径：fronter/src/views/Login.vue</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>&lt;template&gt;
+  &lt;section&gt;
+    &lt;h1&gt;{{ t('login') }}&lt;/h1&gt;
+    &lt;form class=&quot;form&quot; @submit.prevent=&quot;submit&quot;&gt;
+      &lt;input v-model=&quot;form.username&quot; :placeholder=&quot;t('username')&quot; required /&gt;
+      &lt;input v-model=&quot;form.password&quot; :placeholder=&quot;t('password')&quot; type=&quot;password&quot; required /&gt;
+      &lt;button class=&quot;btn&quot;&gt;{{ t('login') }}&lt;/button&gt;
+      &lt;router-link to=&quot;/register&quot;&gt;{{ t('register') }}&lt;/router-link&gt;
+      &lt;p class=&quot;muted&quot;&gt;{{ message }}&lt;/p&gt;
+    &lt;/form&gt;
+  &lt;/section&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { authStore } from '../stores/auth.js';
+import { t } from '../i18n/index.js';
+
+const router = useRouter();
+const message = ref('');
+const form = reactive({ username: 'student', password: '***' });
+
+async function submit() {
+  try {
+    await authStore.login(form);
+    router.push('/');
+  } catch (e) {
+    message.value = e.message;
+  }
+}
+&lt;/script&gt;</code></pre>
+<h3>3.33 fronter/src/views/PracticeDetail.vue</h3>
+<p>文件路径：fronter/src/views/PracticeDetail.vue</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>&lt;template&gt;
+  &lt;section v-if=&quot;paper&quot;&gt;
+    &lt;div class=&quot;row&quot;&gt;
+      &lt;h1&gt;{{ paper.title }}&lt;/h1&gt;
+      &lt;span class=&quot;pill&quot;&gt;{{ index + 1 }} / {{ paper.questions.length }}&lt;/span&gt;
+    &lt;/div&gt;
+    &lt;div v-if=&quot;!result&quot; class=&quot;split&quot;&gt;
+      &lt;div class=&quot;card&quot;&gt;
+        &lt;p class=&quot;muted&quot;&gt;{{ current.category_name }} · {{ current.difficulty }}&lt;/p&gt;
+        &lt;h3&gt;{{ current.title }}&lt;/h3&gt;
+        &lt;p&gt;{{ current.content }}&lt;/p&gt;
+        &lt;button
+          v-for=&quot;option in current.options&quot;
+          :key=&quot;option.id&quot;
+          class=&quot;option&quot;
+          :class=&quot;{ active: selectedIds.includes(option.id) }&quot;
+          @click=&quot;select(option.id)&quot;
+        &gt;
+          {{ option.option_key }}. {{ option.content }}
+        &lt;/button&gt;
+        &lt;div class=&quot;row&quot;&gt;
+          &lt;button class=&quot;btn ghost&quot; :disabled=&quot;index === 0&quot; @click=&quot;index -= 1&quot;&gt;‹&lt;/button&gt;
+          &lt;button v-if=&quot;index &lt; paper.questions.length - 1&quot; class=&quot;btn&quot; @click=&quot;index += 1&quot;&gt;{{ t('next') }}&lt;/button&gt;
+          &lt;button v-else class=&quot;btn&quot; @click=&quot;submit&quot;&gt;{{ t('submit') }}&lt;/button&gt;
+        &lt;/div&gt;
+        &lt;p class=&quot;muted&quot;&gt;{{ message }}&lt;/p&gt;
+      &lt;/div&gt;
+      &lt;aside class=&quot;card&quot;&gt;
+        &lt;h4&gt;{{ t('questionCount') }}&lt;/h4&gt;
+        &lt;div class=&quot;row&quot;&gt;
+          &lt;button v-for=&quot;(q, i) in paper.questions&quot; :key=&quot;q.id&quot; class=&quot;btn ghost&quot; @click=&quot;index = i&quot;&gt;
+            {{ i + 1 }}
+          &lt;/button&gt;
+        &lt;/div&gt;
+      &lt;/aside&gt;
+    &lt;/div&gt;
+    &lt;div v-else class=&quot;card&quot;&gt;
+      &lt;h2&gt;{{ t('result') }}&lt;/h2&gt;
+      &lt;div class=&quot;grid&quot;&gt;
+        &lt;div&gt;&lt;strong&gt;{{ result.correct_count }}&lt;/strong&gt;&lt;p&gt;{{ t('correct') }}&lt;/p&gt;&lt;/div&gt;
+        &lt;div&gt;&lt;strong&gt;{{ result.wrong_count }}&lt;/strong&gt;&lt;p&gt;{{ t('wrong') }}&lt;/p&gt;&lt;/div&gt;
+        &lt;div&gt;&lt;strong&gt;{{ result.total_score }}&lt;/strong&gt;&lt;p&gt;{{ t('score') }}&lt;/p&gt;&lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div v-for=&quot;question in paper.questions&quot; :key=&quot;question.id&quot; class=&quot;card&quot;&gt;
+        &lt;h4&gt;{{ question.title }}&lt;/h4&gt;
+        &lt;p class=&quot;muted&quot;&gt;{{ question.analysis }}&lt;/p&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/section&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import { request } from '../api/client.js';
+import { state, t } from '../i18n/index.js';
+
+const route = useRoute();
+const paper = ref(null);
+const index = ref(0);
+const result = ref(null);
+const message = ref('');
+const answers = reactive({});
+const startedAt = Date.now();
+const current = computed(() =&gt; paper.value?.questions[index.value] || {});
+const selectedIds = computed(() =&gt; answers[current.value.id] || []);
+
+async function load() {
+  paper.value = await request(`/learning/papers/${route.params.id}?lang=${state.lang}`);
+  index.value = 0;
+  result.value = null;
+}
+function select(optionId) {
+  answers[current.value.id] = [optionId];
+  message.value = '';
+}
+async function submit() {
+  const payload = paper.value.questions.map((question) =&gt; ({ question_id: question.id, selected_option_ids: answers[question.id] || [] }));
+  if (payload.some((item) =&gt; item.selected_option_ids.length === 0)) {
+    message.value = t('chooseAnswer');
+    return;
+  }
+  result.value = await request(`/learning/papers/${paper.value.id}/submit`, {
+    method: 'POST',
+    body: { answers: payload, duration_seconds: Math.round((Date.now() - startedAt) / 1000), language: state.lang }
+  });
+}
+onMounted(load);
+watch(() =&gt; state.lang, load);
+&lt;/script&gt;</code></pre>
+<h3>3.34 fronter/src/views/PracticeList.vue</h3>
+<p>文件路径：fronter/src/views/PracticeList.vue</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>&lt;template&gt;
+  &lt;section&gt;
+    &lt;h1&gt;{{ t('practice') }}&lt;/h1&gt;
+    &lt;div class=&quot;grid&quot;&gt;
+      &lt;router-link v-for=&quot;paper in papers&quot; :key=&quot;paper.id&quot; class=&quot;card&quot; :to=&quot;`/practice/${paper.id}`&quot;&gt;
+        &lt;h3&gt;{{ paper.title }}&lt;/h3&gt;
+        &lt;p class=&quot;muted&quot;&gt;{{ paper.description }}&lt;/p&gt;
+        &lt;div class=&quot;row&quot;&gt;
+          &lt;span class=&quot;pill&quot;&gt;{{ paper.level_name }}&lt;/span&gt;
+          &lt;span class=&quot;pill&quot;&gt;{{ t('questionCount') }}: {{ paper.question_count }}&lt;/span&gt;
+          &lt;span class=&quot;pill&quot;&gt;{{ t('score') }}: {{ paper.total_score }}&lt;/span&gt;
+        &lt;/div&gt;
+      &lt;/router-link&gt;
+    &lt;/div&gt;
+    &lt;p v-if=&quot;!papers.length&quot; class=&quot;muted&quot;&gt;{{ t('empty') }}&lt;/p&gt;
+  &lt;/section&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { onMounted, ref, watch } from 'vue';
+import { request } from '../api/client.js';
+import { state, t } from '../i18n/index.js';
+
+const papers = ref([]);
+async function load() {
+  papers.value = await request(`/learning/papers?lang=${state.lang}`);
+}
+onMounted(load);
+watch(() =&gt; state.lang, load);
+&lt;/script&gt;</code></pre>
+<h3>3.35 fronter/src/views/Profile.vue</h3>
+<p>文件路径：fronter/src/views/Profile.vue</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>&lt;template&gt;
+  &lt;section&gt;
+    &lt;h1&gt;{{ t('profile') }}&lt;/h1&gt;
+    &lt;form class=&quot;form&quot; @submit.prevent=&quot;save&quot;&gt;
+      &lt;input v-model=&quot;form.name&quot; :placeholder=&quot;t('name')&quot; /&gt;
+      &lt;input v-model=&quot;form.email&quot; :placeholder=&quot;t('email')&quot; /&gt;
+      &lt;input v-model=&quot;form.phone&quot; :placeholder=&quot;t('phone')&quot; /&gt;
+      &lt;input v-model=&quot;form.nationality&quot; :placeholder=&quot;t('nationality')&quot; /&gt;
+      &lt;select v-model=&quot;form.language&quot;&gt;
+        &lt;option value=&quot;zh-CN&quot;&gt;中文&lt;/option&gt;
+        &lt;option value=&quot;en-US&quot;&gt;English&lt;/option&gt;
+        &lt;option value=&quot;ms-MY&quot;&gt;Bahasa Melayu&lt;/option&gt;
+      &lt;/select&gt;
+      &lt;button class=&quot;btn&quot;&gt;{{ t('submit') }}&lt;/button&gt;
+      &lt;p class=&quot;muted&quot;&gt;{{ message }}&lt;/p&gt;
+    &lt;/form&gt;
+  &lt;/section&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { onMounted, reactive, ref } from 'vue';
+import { request } from '../api/client.js';
+import { setLang, t } from '../i18n/index.js';
+
+const message = ref('');
+const form = reactive({ name: '', email: '', phone: '', nationality: '', language: 'zh-CN' });
+
+onMounted(async () =&gt; {
+  Object.assign(form, await request('/auth/profile'));
+});
+
+async function save() {
+  await request('/auth/profile', { method: 'PUT', body: form });
+  setLang(form.language);
+  message.value = 'saved';
+}
+&lt;/script&gt;</code></pre>
+<h3>3.36 fronter/src/views/Records.vue</h3>
+<p>文件路径：fronter/src/views/Records.vue</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>&lt;template&gt;
+  &lt;section&gt;
+    &lt;h1&gt;{{ t('records') }}&lt;/h1&gt;
+    &lt;div class=&quot;card&quot; style=&quot;overflow:auto&quot;&gt;
+      &lt;table&gt;
+        &lt;thead&gt;
+          &lt;tr&gt;
+            &lt;th&gt;{{ t('title') }}&lt;/th&gt;
+            &lt;th&gt;{{ t('questionCount') }}&lt;/th&gt;
+            &lt;th&gt;{{ t('correct') }}&lt;/th&gt;
+            &lt;th&gt;{{ t('wrong') }}&lt;/th&gt;
+            &lt;th&gt;{{ t('score') }}&lt;/th&gt;
+            &lt;th&gt;{{ t('submittedAt') }}&lt;/th&gt;
+          &lt;/tr&gt;
+        &lt;/thead&gt;
+        &lt;tbody&gt;
+          &lt;tr v-for=&quot;row in rows&quot; :key=&quot;row.id&quot;&gt;
+            &lt;td&gt;{{ row.paper_title }}&lt;/td&gt;
+            &lt;td&gt;{{ row.total_questions }}&lt;/td&gt;
+            &lt;td&gt;{{ row.correct_count }}&lt;/td&gt;
+            &lt;td&gt;{{ row.wrong_count }}&lt;/td&gt;
+            &lt;td&gt;{{ row.total_score }}&lt;/td&gt;
+            &lt;td&gt;{{ row.submitted_at }}&lt;/td&gt;
+          &lt;/tr&gt;
+        &lt;/tbody&gt;
+      &lt;/table&gt;
+      &lt;p v-if=&quot;!rows.length&quot; class=&quot;muted&quot;&gt;{{ t('empty') }}&lt;/p&gt;
+    &lt;/div&gt;
+  &lt;/section&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { onMounted, ref, watch } from 'vue';
+import { request } from '../api/client.js';
+import { state, t } from '../i18n/index.js';
+
+const rows = ref([]);
+async function load() {
+  rows.value = await request(`/learning/records?lang=${state.lang}`);
+}
+onMounted(load);
+watch(() =&gt; state.lang, load);
+&lt;/script&gt;</code></pre>
+<h3>3.37 fronter/src/views/Register.vue</h3>
+<p>文件路径：fronter/src/views/Register.vue</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>&lt;template&gt;
+  &lt;section&gt;
+    &lt;h1&gt;{{ t('register') }}&lt;/h1&gt;
+    &lt;form class=&quot;form&quot; @submit.prevent=&quot;submit&quot;&gt;
+      &lt;input v-model=&quot;form.username&quot; :placeholder=&quot;t('username')&quot; required /&gt;
+      &lt;input v-model=&quot;form.password&quot; :placeholder=&quot;t('password')&quot; type=&quot;password&quot; required /&gt;
+      &lt;input v-model=&quot;form.name&quot; :placeholder=&quot;t('name')&quot; /&gt;
+      &lt;input v-model=&quot;form.email&quot; :placeholder=&quot;t('email')&quot; /&gt;
+      &lt;input v-model=&quot;form.phone&quot; :placeholder=&quot;t('phone')&quot; /&gt;
+      &lt;input v-model=&quot;form.student_no&quot; :placeholder=&quot;t('studentNo')&quot; /&gt;
+      &lt;input v-model=&quot;form.nationality&quot; :placeholder=&quot;t('nationality')&quot; /&gt;
+      &lt;button class=&quot;btn&quot;&gt;{{ t('register') }}&lt;/button&gt;
+      &lt;p class=&quot;muted&quot;&gt;{{ message }}&lt;/p&gt;
+    &lt;/form&gt;
+  &lt;/section&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { reactive, ref } from 'vue';
+import { request } from '../api/client.js';
+import { t, state } from '../i18n/index.js';
+
+const message = ref('');
+const form = reactive({ username: '', password: '', name: '', email: '', phone: '', student_no: '', nationality: 'Malaysia', language: state.lang });
+
+async function submit() {
+  try {
+    await request('/auth/register', { method: 'POST', body: form });
+    message.value = 'registered';
+  } catch (e) {
+    message.value = e.message;
+  }
+}
+&lt;/script&gt;</code></pre>
+<h3>3.38 fronter/src/views/WrongBook.vue</h3>
+<p>文件路径：fronter/src/views/WrongBook.vue</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>&lt;template&gt;
+  &lt;section&gt;
+    &lt;h1&gt;{{ t('wrongBook') }}&lt;/h1&gt;
+    &lt;div class=&quot;grid&quot;&gt;
+      &lt;article v-for=&quot;row in rows&quot; :key=&quot;row.id&quot; class=&quot;card&quot;&gt;
+        &lt;div class=&quot;row&quot;&gt;
+          &lt;span class=&quot;pill&quot;&gt;{{ row.category_name }}&lt;/span&gt;
+          &lt;span class=&quot;pill&quot;&gt;{{ t('wrong') }}: {{ row.wrong_count }}&lt;/span&gt;
+        &lt;/div&gt;
+        &lt;h3&gt;{{ row.title }}&lt;/h3&gt;
+        &lt;p class=&quot;muted&quot;&gt;{{ t('analysis') }}: {{ row.analysis }}&lt;/p&gt;
+      &lt;/article&gt;
+    &lt;/div&gt;
+    &lt;p v-if=&quot;!rows.length&quot; class=&quot;muted&quot;&gt;{{ t('empty') }}&lt;/p&gt;
+  &lt;/section&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { onMounted, ref, watch } from 'vue';
+import { request } from '../api/client.js';
+import { state, t } from '../i18n/index.js';
+
+const rows = ref([]);
+async function load() {
+  rows.value = await request(`/learning/wrong-questions?lang=${state.lang}`);
+}
+onMounted(load);
+watch(() =&gt; state.lang, load);
+&lt;/script&gt;</code></pre>
+<h3>3.39 fronter/vite.config.js</h3>
+<p>文件路径：fronter/vite.config.js</p>
+<p>文件职责：该文件属于面向马来西亚留学生的汉语练习平台V1.0的真实工程文件，用于支撑页面、接口、数据、配置、脚本或测试运行。</p>
+<p>源码正文：</p>
+<pre><code>import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
+
+export default defineConfig({
+  plugins: [vue()],
+  server: {
+    port: 5173
+  }
+});</code></pre>
+<h2>四.1 源码正文续页</h2>
+<h3>README.md（续页 1）</h3>
+<p>文件路径：README.md</p>
+<p>源码正文：</p>
+<pre><code># school-chinese-exam-practice
+
+马来西亚留学生汉语练习平台
+
+一个基于 Vue3、Node.js/Express 和 MySQL 的三语汉语练习平台 MVP，支持中文、英文、马来语。
+
+## 功能
+
+- 学生 H5：注册登录、练习列表、答题提交、成绩记录、错题本、个人中心
+- 管理台：学生列表、题库列表、练习/试卷列表、成绩记录、数据看板
+- 题库：等级、分类、题目、选项、解析全部三语
+- 数据库：MySQL，建表和演示题库位于 `admin/sql`
+
+## 启动
+</code></pre>
+<p>cd admin npm install npm run db:init npm run seed:users npm run dev</p>
+<pre><code></code></pre>
+<p>cd fronter npm install npm run dev</p>
+<pre><code>
+默认账号：
+
+- 管理员：`admin / ***`
+- 学生：`student / ***`
+
+默认 API 地址为 `http://***:3000/api`。如需修改，前端可设置 `VITE_API_BASE`。
+
+## 开源协议
+
+本项目使用 GNU General Public License v2.0（GPL-2.0）开源，详见 `LICENSE`。</code></pre>
+<h3>admin/.env.example（续页 1）</h3>
+<p>文件路径：admin/.env.example</p>
+<p>源码正文：</p>
+<pre><code>PORT=3000
+JWT_SECRET=***
+DB_HOST=***
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=***
+DB_NAME=school_chinese_exam_practice</code></pre>
+<h3>admin/package.json（续页 1）</h3>
+<p>文件路径：admin/package.json</p>
+<p>源码正文：</p>
+<pre><code>{
+  &quot;name&quot;: &quot;school-chinese-exam-practice-admin&quot;,
+  &quot;version&quot;: &quot;1.0.0&quot;,
+  &quot;type&quot;: &quot;module&quot;,
+  &quot;scripts&quot;: {
+    &quot;dev&quot;: &quot;nodemon src/server.js&quot;,
+    &quot;start&quot;: &quot;node src/server.js&quot;,
+    &quot;db:init&quot;: &quot;node src/utils/initDb.js&quot;,
+    &quot;seed:users&quot;: &quot;node src/utils/seedUsers.js&quot;
+  },
+  &quot;dependencies&quot;: {
+    &quot;bcryptjs&quot;: &quot;^2.4.3&quot;,
+    &quot;cors&quot;: &quot;^2.8.5&quot;,
+    &quot;dotenv&quot;: &quot;^16.4.7&quot;,
+    &quot;express&quot;: &quot;^4.21.2&quot;,
+    &quot;jsonwebtoken&quot;: &quot;^9.0.2&quot;,
+    &quot;mysql2&quot;: &quot;^3.11.5&quot;
+  },
+  &quot;devDependencies&quot;: {
+    &quot;nodemon&quot;: &quot;^3.1.9&quot;
+  }
+}</code></pre>
+<h3>admin/sql/schema.sql（续页 1）</h3>
+<p>文件路径：admin/sql/schema.sql</p>
+<p>源码正文：</p>
+<pre><code>CREATE DATABASE IF NOT EXISTS school_chinese_exam_practice DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE school_chinese_exam_practice;
+
+CREATE TABLE IF NOT EXISTS users (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  username VARCHAR(50) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  name VARCHAR(100),
+  email VARCHAR(120),
+  phone VARCHAR(30),
+  role ENUM('student','admin') NOT NULL DEFAULT 'student',
+  student_no VARCHAR(50),
+  nationality VARCHAR(80),
+  language VARCHAR(20) DEFAULT 'zh-CN',
+  status ENUM('active','disabled') NOT NULL DEFAULT 'active',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS levels (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  code VARCHAR(40) NOT NULL UNIQUE,
+  sort_order INT NOT NULL DEFAULT 0,
+  status ENUM('active','disabled') NOT NULL DEFAULT 'active',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS level_translations (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  level_id BIGINT NOT NULL,
+  language_code VARCHAR(20) NOT NULL,
+  name VARCHAR(120) NOT NULL,
+  description VARCHAR(500),
+  UNIQUE KEY uk_level_lang (level_id, language_code),
+  CONSTRAINT fk_level_translations_level FOREIGN KEY (level_id) REFERENCES levels(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS question_categories (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  parent_id BIGINT,
+  code VARCHAR(60) NOT NULL UNIQUE,
+  sort_order INT NOT NULL DEFAULT 0,
+  status ENUM('active','disabled') NOT NULL DEFAULT 'active',
+  CONSTRAINT fk_categories_parent FOREIGN KEY (parent_id) REFERENCES question_categories(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS question_category_translations (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  category_id BIGINT NOT NULL,
+  language_code VARCHAR(20) NOT NULL,
+  name VARCHAR(120) NOT NULL,
+  description VARCHAR(500),
+  UNIQUE KEY uk_category_lang (category_id, language_code),
+  CONSTRAINT fk_category_translations_category FOREIGN KEY (category_id) REFERENCES question_categories(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS questions (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  level_id BIGINT NOT NULL,
+  category_id BIGINT NOT NULL,
+  question_type ENUM('single_choice','multiple_choice','true_false','fill_blank') NOT NULL DEFAULT 'single_choice',
+  difficulty ENUM('easy','normal','hard') NOT NULL DEFAULT 'easy',
+  score DECIMAL(5,2) NOT NULL DEFAULT 1.00,
+  audio_url VARCHAR(500),
+  image_url VARCHAR(500),
+  status ENUM('published','draft','disabled') NOT NULL DEFAULT 'published',
+  created_by BIGINT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_questions_level FOREIGN KEY (level_id) REFERENCES levels(id),
+  CONSTRAINT fk_questions_category FOREIGN KEY (category_id) REFERENCES question_categories(id),
+  CONSTRAINT fk_questions_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS question_translations (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  question_id BIGINT NOT NULL,
+  language_code VARCHAR(20) NOT NULL,
+  title VARCHAR(500) NOT NULL,
+  content TEXT,
+  analysis TEXT,
+  UNIQUE KEY uk_question_lang (question_id, language_code),
+  CONSTRAINT fk_question_translations_question FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS question_options (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  question_id BIGINT NOT NULL,
+  option_key VARCHAR(10) NOT NULL,
+  is_correct TINYINT(1) NOT NULL DEFAULT 0,
+  sort_order INT NOT NULL DEFAULT 0,
+  UNIQUE KEY uk_question_option_key (question_id, option_key),
+  CONSTRAINT fk_options_question FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS question_option_translations (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  option_id BIGINT NOT NULL,
+  language_code VARCHAR(20) NOT NULL,
+  content VARCHAR(500) NOT NULL,
+  UNIQUE KEY uk_option_lang (option_id, language_code),
+  CONSTRAINT fk_option_translations_option FOREIGN KEY (option_id) REFERENCES question_options(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS papers (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  paper_type ENUM('practice','exam','daily') NOT NULL DEFAULT 'practice',
+  level_id BIGINT,
+  total_score DECIMAL(8,2) NOT NULL DEFAULT 0,
+  duration_minutes INT NOT NULL DEFAULT 0,
+  status ENUM('published','draft','disabled') NOT NULL DEFAULT 'published',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_papers_level FOREIGN KEY (level_id) REFERENCES levels(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS paper_translations (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  paper_id BIGINT NOT NULL,
+  language_code VARCHAR(20) NOT NULL,
+  title VARCHAR(200) NOT NULL,
+  description VARCHAR(500),
+  UNIQUE KEY uk_paper_lang (paper_id, language_code),
+  CONSTRAINT fk_paper_translations_paper FOREIGN KEY (paper_id) REFERENCES papers(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS paper_questions (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  paper_id BIGINT NOT NULL,
+  question_id BIGINT NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  score DECIMAL(5,2) NOT NULL DEFAULT 1.00,
+  UNIQUE KEY uk_paper_question (paper_id, question_id),
+  CONSTRAINT fk_paper_questions_paper FOREIGN KEY (paper_id) REFERENCES papers(id) ON DELETE CASCADE,
+  CONSTRAINT fk_paper_questions_question FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS study_records (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT NOT NULL,</code></pre>
+<h3>admin/sql/seed.sql（续页 1）</h3>
+<p>文件路径：admin/sql/seed.sql</p>
+<p>源码正文：</p>
+<pre><code>USE school_chinese_exam_practice;
+
+INSERT INTO levels (code, sort_order, status) VALUES
+('HSK1', 1, 'active'),
+('HSK2', 2, 'active'),
+('CAMPUS', 3, 'active')
+ON DUPLICATE KEY UPDATE sort_order=VALUES(sort_order), status=VALUES(status);
+
+INSERT INTO level_translations (level_id, language_code, name, description)
+SELECT l.id, v.language_code, v.name, v.description
+FROM levels l
+JOIN (
+  SELECT 'HSK1' code, 'zh-CN' language_code, 'HSK 1 入门' name, '适合零基础和初级学习者' description UNION ALL
+  SELECT 'HSK1', 'en-US', 'HSK 1 Beginner', 'For new and beginner learners' UNION ALL
+  SELECT 'HSK1', 'ms-MY', 'HSK 1 Permulaan', 'Untuk pelajar baharu dan tahap asas' UNION ALL
+  SELECT 'HSK2', 'zh-CN', 'HSK 2 基础', '掌握常用词汇和基础句型' UNION ALL
+  SELECT 'HSK2', 'en-US', 'HSK 2 Elementary', 'Common vocabulary and basic sentence patterns' UNION ALL
+  SELECT 'HSK2', 'ms-MY', 'HSK 2 Asas', 'Kosa kata biasa dan pola ayat asas' UNION ALL
+  SELECT 'CAMPUS', 'zh-CN', '校园生活汉语', '面向马来西亚留学生的校园场景练习' UNION ALL
+  SELECT 'CAMPUS', 'en-US', 'Campus Chinese', 'Campus scenarios for Malaysian international students' UNION ALL
+  SELECT 'CAMPUS', 'ms-MY', 'Bahasa Cina Kampus', 'Latihan situasi kampus untuk pelajar Malaysia'
+) v ON v.code = l.code
+ON DUPLICATE KEY UPDATE name=VALUES(name), description=VALUES(description);
+
+INSERT INTO question_categories (code, sort_order, status) VALUES
+('pinyin', 1, 'active'),
+('vocabulary', 2, 'active'),
+('grammar', 3, 'active'),
+('reading', 4, 'active')
+ON DUPLICATE KEY UPDATE sort_order=VALUES(sort_order), status=VALUES(status);
+
+INSERT INTO question_category_translations (category_id, language_code, name, description)
+SELECT c.id, v.language_code, v.name, v.description
+FROM question_categories c
+JOIN (
+  SELECT 'pinyin' code, 'zh-CN' language_code, '拼音' name, '声母、韵母和声调练习' description UNION ALL
+  SELECT 'pinyin', 'en-US', 'Pinyin', 'Initials, finals and tones' UNION ALL
+  SELECT 'pinyin', 'ms-MY', 'Pinyin', 'Awalan, akhiran dan nada' UNION ALL
+  SELECT 'vocabulary', 'zh-CN', '词汇', '常用汉语词汇' UNION ALL
+  SELECT 'vocabulary', 'en-US', 'Vocabulary', 'Common Chinese words' UNION ALL
+  SELECT 'vocabulary', 'ms-MY', 'Kosa Kata', 'Perkataan Cina biasa' UNION ALL
+  SELECT 'grammar', 'zh-CN', '语法', '基础句型和语序' UNION ALL
+  SELECT 'grammar', 'en-US', 'Grammar', 'Basic patterns and word order' UNION ALL
+  SELECT 'grammar', 'ms-MY', 'Tatabahasa', 'Pola asas dan susunan kata' UNION ALL
+  SELECT 'reading', 'zh-CN', '阅读', '短文理解练习' UNION ALL
+  SELECT 'reading', 'en-US', 'Reading', 'Short passage comprehension' UNION ALL
+  SELECT 'reading', 'ms-MY', 'Bacaan', 'Pemahaman petikan pendek'
+) v ON v.code = c.code
+ON DUPLICATE KEY UPDATE name=VALUES(name), description=VALUES(description);
+
+INSERT INTO papers (id, paper_type, level_id, total_score, duration_minutes, status)
+SELECT 1, 'practice', id, 5, 15, 'published' FROM levels WHERE code='HSK1'
+ON DUPLICATE KEY UPDATE total_score=VALUES(total_score), duration_minutes=VALUES(duration_minutes), status=VALUES(status);
+
+INSERT INTO paper_translations (paper_id, language_code, title, description) VALUES
+(1, 'zh-CN', 'HSK1 每日练习', '5 道入门汉语练习题'),
+(1, 'en-US', 'HSK1 Daily Practice', 'Five beginner Chinese practice questions'),
+(1, 'ms-MY', 'Latihan Harian HSK1', 'Lima soalan latihan Bahasa Cina tahap permulaan')
+ON DUPLICATE KEY UPDATE title=VALUES(title), description=VALUES(description);
+
+INSERT INTO questions (id, level_id, category_id, question_type, difficulty, score, status)
+SELECT 1, l.id, c.id, 'single_choice', 'easy', 1, 'published' FROM levels l JOIN question_categories c ON c.code='pinyin' WHERE l.code='HSK1'
+ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), category_id=VALUES(category_id), status='published';
+INSERT INTO questions (id, level_id, category_id, question_type, difficulty, score, status)
+SELECT 2, l.id, c.id, 'single_choice', 'easy', 1, 'published' FROM levels l JOIN question_categories c ON c.code='vocabulary' WHERE l.code='HSK1'
+ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), category_id=VALUES(category_id), status='published';
+INSERT INTO questions (id, level_id, category_id, question_type, difficulty, score, status)
+SELECT 3, l.id, c.id, 'single_choice', 'easy', 1, 'published' FROM levels l JOIN question_categories c ON c.code='grammar' WHERE l.code='HSK1'
+ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), category_id=VALUES(category_id), status='published';
+INSERT INTO questions (id, level_id, category_id, question_type, difficulty, score, status)
+SELECT 4, l.id, c.id, 'single_choice', 'normal', 1, 'published' FROM levels l JOIN question_categories c ON c.code='vocabulary' WHERE l.code='HSK1'
+ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), category_id=VALUES(category_id), status='published';
+INSERT INTO questions (id, level_id, category_id, question_type, difficulty, score, status)
+SELECT 5, l.id, c.id, 'single_choice', 'normal', 1, 'published' FROM levels l JOIN question_categories c ON c.code='reading' WHERE l.code='HSK1'
+ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), category_id=VALUES(category_id), status='published';
+
+INSERT INTO question_translations (question_id, language_code, title, content, analysis) VALUES
+(1, 'zh-CN', '“你”的拼音是什么？', '请选择正确答案。', '“你”的拼音是 ni，第三声。'),
+(1, 'en-US', 'What is the pinyin for “你”?', 'Choose the correct answer.', 'The pinyin for 你 is ni with the third tone.'),
+(1, 'ms-MY', 'Apakah pinyin bagi “你”?', 'Pilih jawapan yang betul.', 'Pinyin untuk 你 ialah ni dengan nada ketiga.'),
+(2, 'zh-CN', '“谢谢”是什么意思？', '请选择最合适的英文意思。', '“谢谢”表示感谢。'),
+(2, 'en-US', 'What does “谢谢” mean?', 'Choose the best English meaning.', '谢谢 means thank you.'),
+(2, 'ms-MY', 'Apakah maksud “谢谢”?', 'Pilih maksud Bahasa Inggeris yang paling sesuai.', '谢谢 bermaksud terima kasih.'),
+(3, 'zh-CN', '选择正确的句子。', '哪一句的语序正确？', '汉语常用语序是主语 + 谓语 + 宾语。'),
+(3, 'en-US', 'Choose the correct sentence.', 'Which sentence has the correct word order?', 'Basic Chinese word order is subject + verb + object.'),
+(3, 'ms-MY', 'Pilih ayat yang betul.', 'Ayat manakah mempunyai susunan kata yang betul?', 'Susunan kata asas Bahasa Cina ialah subjek + kata kerja + objek.'),
+(4, 'zh-CN', '“学校”的意思是？', '请选择正确答案。', '学校是学习的地方。'),
+(4, 'en-US', 'What does “学校” mean?', 'Choose the correct answer.', '学校 means school.'),
+(4, 'ms-MY', 'Apakah maksud “学校”?', 'Pilih jawapan yang betul.', '学校 bermaksud sekolah.'),
+(5, 'zh-CN', '阅读：我叫阿明。我是马来西亚学生。我学习汉语。阿明来自哪里？', '请选择正确答案。', '短文说“我是马来西亚学生”。'),
+(5, 'en-US', 'Reading: My name is Amin. I am a Malaysian student. I study Chinese. Where is Amin from?', 'Choose the correct answer.', 'The passage says he is a Malaysian student.'),
+(5, 'ms-MY', 'Bacaan: Nama saya Amin. Saya pelajar Malaysia. Saya belajar Bahasa Cina. Amin berasal dari mana?', 'Pilih jawapan yang betul.', 'Petikan menyatakan dia pelajar Malaysia.')
+ON DUPLICATE KEY UPDATE title=VALUES(title), content=VALUES(content), analysis=VALUES(analysis);
+
+INSERT INTO question_options (id, question_id, option_key, is_correct, sort_order) VALUES
+(1, 1, 'A', 1, 1), (2, 1, 'B', 0, 2), (3, 1, 'C', 0, 3), (4, 1, 'D', 0, 4),
+(5, 2, 'A', 0, 1), (6, 2, 'B', 1, 2), (7, 2, 'C', 0, 3), (8, 2, 'D', 0, 4),
+(9, 3, 'A', 1, 1), (10, 3, 'B', 0, 2), (11, 3, 'C', 0, 3), (12, 3, 'D', 0, 4),
+(13, 4, 'A', 0, 1), (14, 4, 'B', 1, 2), (15, 4, 'C', 0, 3), (16, 4, 'D', 0, 4),
+(17, 5, 'A', 0, 1), (18, 5, 'B', 1, 2), (19, 5, 'C', 0, 3), (20, 5, 'D', 0, 4)
+ON DUPLICATE KEY UPDATE is_correct=VALUES(is_correct), sort_order=VALUES(sort_order);
+
+INSERT INTO question_option_translations (option_id, language_code, content) VALUES
+(1, 'zh-CN', 'nǐ'), (1, 'en-US', 'nǐ'), (1, 'ms-MY', 'nǐ'),
+(2, 'zh-CN', 'wǒ'), (2, 'en-US', 'wǒ'), (2, 'ms-MY', 'wǒ'),
+(3, 'zh-CN', 'tā'), (3, 'en-US', 'tā'), (3, 'ms-MY', 'tā'),
+(4, 'zh-CN', 'hǎo'), (4, 'en-US', 'hǎo'), (4, 'ms-MY', 'hǎo'),
+(5, 'zh-CN', 'Hello'), (5, 'en-US', 'Hello'), (5, 'ms-MY', 'Hello'),
+(6, 'zh-CN', 'Thank you'), (6, 'en-US', 'Thank you'), (6, 'ms-MY', 'Thank you'),
+(7, 'zh-CN', 'Goodbye'), (7, 'en-US', 'Goodbye'), (7, 'ms-MY', 'Goodbye'),
+(8, 'zh-CN', 'Teacher'), (8, 'en-US', 'Teacher'), (8, 'ms-MY', 'Teacher'),
+(9, 'zh-CN', '我学习汉语。'), (9, 'en-US', '我学习汉语。'), (9, 'ms-MY', '我学习汉语。'),
+(10, 'zh-CN', '学习我汉语。'), (10, 'en-US', '学习我汉语。'), (10, 'ms-MY', '学习我汉语。'),
+(11, 'zh-CN', '汉语我学习。'), (11, 'en-US', '汉语我学习。'), (11, 'ms-MY', '汉语我学习。'),
+(12, 'zh-CN', '我汉语学习。'), (12, 'en-US', '我汉语学习。'), (12, 'ms-MY', '我汉语学习。'),
+(13, 'zh-CN', 'Hospital'), (13, 'en-US', 'Hospital'), (13, 'ms-MY', 'Hospital'),
+(14, 'zh-CN', 'School'), (14, 'en-US', 'School'), (14, 'ms-MY', 'School'),
+(15, 'zh-CN', 'Library'), (15, 'en-US', 'Library'), (15, 'ms-MY', 'Library'),
+(16, 'zh-CN', 'Restaurant'), (16, 'en-US', 'Restaurant'), (16, 'ms-MY', 'Restaurant'),
+(17, 'zh-CN', '中国'), (17, 'en-US', 'China'), (17, 'ms-MY', 'China'),
+(18, 'zh-CN', '马来西亚'), (18, 'en-US', 'Malaysia'), (18, 'ms-MY', 'Malaysia'),
+(19, 'zh-CN', '日本'), (19, 'en-US', 'Japan'), (19, 'ms-MY', 'Jepun'),
+(20, 'zh-CN', '英国'), (20, 'en-US', 'United Kingdom'), (20, 'ms-MY', 'United Kingdom')
+ON DUPLICATE KEY UPDATE content=VALUES(content);
+
+INSERT INTO paper_questions (paper_id, question_id, sort_order, score) VALUES
+(1, 1, 1, 1), (1, 2, 2, 1), (1, 3, 3, 1), (1, 4, 4, 1), (1, 5, 5, 1)
+ON DUPLICATE KEY UPDATE sort_order=VALUES(sort_order), score=VALUES(score);
+
+INSERT INTO papers (id, paper_type, level_id, total_score, duration_minutes, status)
+SELECT 2, 'practice', id, 5, 18, 'published' FROM levels WHERE code='HSK2'
+ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), total_score=VALUES(total_score), duration_minutes=VALUES(duration_minutes), status=VALUES(status);
+INSERT INTO papers (id, paper_type, level_id, total_score, duration_minutes, status)
+SELECT 3, 'daily', id, 5, 12, 'published' FROM levels WHERE code='CAMPUS'
+ON DUPLICATE KEY UPDATE level_id=VALUES(level_id), total_score=VALUES(total_score), duration_minutes=VALUES(duration_minutes), status=VALUES(status);
+
+INSERT INTO paper_translations (paper_id, language_code, title, description) VALUES
+(2, 'zh-CN', 'HSK2 基础语法练习', '围绕常用词汇、语序和日常问答的基础练习'),
+(2, 'en-US', 'HSK2 Grammar Practice', 'Elementary practice for common vocabulary, word order and daily questions'),
+(2, 'ms-MY', 'Latihan Tatabahasa HSK2', 'Latihan asas untuk kosa kata biasa, susunan kata dan soalan harian'),</code></pre>
+<h3>admin/src/app.js（续页 1）</h3>
+<p>文件路径：admin/src/app.js</p>
+<p>源码正文：</p>
+<pre><code>import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import authRoutes from './routes/auth.js';
+import learningRoutes from './routes/learning.js';
+import adminRoutes from './routes/admin.js';
+import { requestLogger } from './middleware/requestLogger.js';
+import { logger } from './utils/logger.js';
+
+dotenv.config();
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(requestLogger);
+
+app.get('/api/health', (_req, res) =&gt; res.json({ code: 200, message: 'success', data: { status: 'ok' } }));
+app.use('/api/auth', authRoutes);
+app.use('/api/learning', learningRoutes);
+app.use('/api/admin', adminRoutes);
+
+app.use((req, res) =&gt; res.status(404).json({ code: 404, message: `Not found: ${req.path}` }));
+app.use((err, req, res, _next) =&gt; {
+  const status = err.status || 500;
+  logger.error('HTTP request failed', {
+    method: req.method,
+    path: req.originalUrl,
+    status,
+    message: err.message,
+    stack: process.env.NODE_ENV === 'production' ? undefined : err.stack
+  });
+  res.status(status).json({ code: status, message: err.message || 'Internal server error' });
+});
+
+export default app;</code></pre>
+<h3>admin/src/config/db.js（续页 1）</h3>
+<p>文件路径：admin/src/config/db.js</p>
+<p>源码正文：</p>
+<pre><code>import mysql from 'mysql2/promise';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+export const pool = mysql.createPool({
+  host: process.env.DB_HOST || '***',
+  port: Number(process.env.DB_PORT || 3306),
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '***',
+  database: process.env.DB_NAME || 'school_chinese_exam_practice',
+  waitForConnections: true,
+  connectionLimit: 10,
+  namedPlaceholders: true
+});
+
+export async function tx(work) {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const result = await work(conn);
+    await conn.commit();
+    return result;
+  } catch (error) {
+    await conn.rollback();
+    throw error;
+  } finally {
+    conn.release();
+  }
+}</code></pre>
+<h3>admin/src/middleware/auth.js（续页 1）</h3>
+<p>文件路径：admin/src/middleware/auth.js</p>
+<p>源码正文：</p>
+<pre><code>import jwt from 'jsonwebtoken';
+import { HttpError } from '../utils/errors.js';
+
+export function auth(required = true) {
+  return (req, _res, next) =&gt; {
+    const header = req.headers.authorization || '';
+    const token = header.startsWith('Bearer ') ? header.slice(7) : '';
+    if (!token) {
+      if (!required) return next();
+      return next(new HttpError(401, 'Unauthorized'));
+    }
+    try {
+      req.user = jwt.verify(token, process.env.JWT_SECRET || '***');
+      return next();
+    } catch {
+      return next(new HttpError(401, 'Invalid token'));
+    }
+  };
+}</code></pre>
+<h3>admin/src/middleware/requestLogger.js（续页 1）</h3>
+<p>文件路径：admin/src/middleware/requestLogger.js</p>
+<p>源码正文：</p>
+<pre><code>import { logger } from '../utils/logger.js';
+
+export function requestLogger(req, res, next) {
+  const startedAt = Date.now();
+  res.on('finish', () =&gt; {
+    const durationMs = Date.now() - startedAt;
+    logger.info('HTTP request completed', {
+      method: req.method,
+      path: req.originalUrl,
+      status: res.statusCode,
+      durationMs,
+      userId: req.user?.id || null
+    });
+  });
+  next();
+}</code></pre>
+<h3>admin/src/middleware/role.js（续页 1）</h3>
+<p>文件路径：admin/src/middleware/role.js</p>
+<p>源码正文：</p>
+<pre><code>import { HttpError } from '../utils/errors.js';
+
+export function allow(...roles) {
+  return (req, _res, next) =&gt; {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return next(new HttpError(403, 'Forbidden'));
+    }
+    return next();
+  };
+}</code></pre>
+<h3>admin/src/routes/admin.js（续页 1）</h3>
+<p>文件路径：admin/src/routes/admin.js</p>
+<p>源码正文：</p>
+<pre><code>import { Router } from 'express';
+import { pool } from '../config/db.js';
+import { auth } from '../middleware/auth.js';
+import { allow } from '../middleware/role.js';
+import { asyncHandler, ok } from '../utils/response.js';
+
+const router = Router();
+router.use(auth(), allow('admin'));
+
+router.get('/stats', asyncHandler(async (_req, res) =&gt; {
+  const [[users]] = await pool.execute(`SELECT COUNT(*) count FROM users WHERE role='student'`);
+  const [[questions]] = await pool.execute(`SELECT COUNT(*) count FROM questions`);
+  const [[papers]] = await pool.execute(`SELECT COUNT(*) count FROM papers`);
+  const [[records]] = await pool.execute(`SELECT COUNT(*) count, COALESCE(AVG(total_score),0) avg_score FROM study_records`);
+  ok(res, {
+    students: users.count,
+    questions: questions.count,
+    papers: papers.count,
+    records: records.count,
+    avgScore: Number(records.avg_score).toFixed(1)
+  });
+}));
+
+router.get('/users', asyncHandler(async (_req, res) =&gt; {
+  const [rows] = await pool.execute(
+    `SELECT id, username, name, email, phone, role, student_no, nationality, language, status, created_at
+     FROM users ORDER BY id DESC`
+  );
+  ok(res, rows);
+}));
+
+router.get('/questions', asyncHandler(async (req, res) =&gt; {
+  const language = req.query.lang || 'zh-CN';
+  const [rows] = await pool.execute(
+    `SELECT q.id, qt.title, q.question_type, q.difficulty, q.score, q.status, lt.name level_name, ct.name category_name
+     FROM questions q
+     JOIN question_translations qt ON qt.question_id = q.id AND qt.language_code = ?
+     JOIN level_translations lt ON lt.level_id = q.level_id AND lt.language_code = ?
+     JOIN question_category_translations ct ON ct.category_id = q.category_id AND ct.language_code = ?
+     ORDER BY q.id DESC`,
+    [language, language, language]
+  );
+  ok(res, rows);
+}));
+
+router.get('/papers', asyncHandler(async (req, res) =&gt; {
+  const language = req.query.lang || 'zh-CN';
+  const [rows] = await pool.execute(
+    `SELECT p.id, pt.title, p.paper_type, p.total_score, p.duration_minutes, p.status, COUNT(pq.id) question_count
+     FROM papers p
+     JOIN paper_translations pt ON pt.paper_id = p.id AND pt.language_code = ?
+     LEFT JOIN paper_questions pq ON pq.paper_id = p.id
+     GROUP BY p.id, pt.title, p.paper_type, p.total_score, p.duration_minutes, p.status
+     ORDER BY p.id DESC`,
+    [language]
+  );
+  ok(res, rows);
+}));
+
+router.get('/records', asyncHandler(async (req, res) =&gt; {
+  const language = req.query.lang || 'zh-CN';
+  const [rows] = await pool.execute(
+    `SELECT r.id, u.username, u.name, pt.title paper_title, r.total_questions, r.correct_count, r.wrong_count, r.total_score, r.submitted_at
+     FROM study_records r
+     JOIN users u ON u.id = r.user_id
+     LEFT JOIN paper_translations pt ON pt.paper_id = r.paper_id AND pt.language_code = ?
+     ORDER BY r.submitted_at DESC`,
+    [language]
+  );
+  ok(res, rows);
+}));
+
+export default router;</code></pre>
+<h3>admin/src/routes/auth.js（续页 1）</h3>
+<p>文件路径：admin/src/routes/auth.js</p>
+<p>源码正文：</p>
+<pre><code>import { Router } from 'express';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { pool } from '../config/db.js';
+import { auth } from '../middleware/auth.js';
+import { asyncHandler, ok } from '../utils/response.js';
+import { HttpError } from '../utils/errors.js';
+
+const router = Router();
+const publicUserFields = 'id, username, name, email, phone, role, student_no, nationality, language, status, created_at';
+
+router.post('/register', asyncHandler(async (req, res) =&gt; {
+  const { username, password, name, email, phone, student_no, nationality, language = 'zh-CN' } = req.body;
+  if (!username || !password) throw new HttpError(400, 'Username and password are required');
+  const hash = await bcrypt.hash(password, 10);
+  await pool.execute(
+    `INSERT INTO users (username, password, name, email, phone, role, student_no, nationality, language, status)
+     VALUES (?, ?, ?, ?, ?, 'student', ?, ?, ?, 'active')`,
+    [username, hash, name || username, email || null, phone || null, student_no || null, nationality || 'Malaysia', language]
+  );
+  ok(res, null, 'registered');
+}));
+
+router.post('/login', asyncHandler(async (req, res) =&gt; {
+  const { username, password } = req.body;
+  const [rows] = await pool.execute(`SELECT * FROM users WHERE username = ? AND status = 'active'`, [username]);
+  const user = rows[0];
+  if (!user || !(await bcrypt.compare(password || '', user.password))) {
+    throw new HttpError(401, 'Invalid username or password');
+  }
+  const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, process.env.JWT_SECRET || '***', { expiresIn: '7d' });
+  delete user.password;
+  ok(res, { token, user });
+}));
+
+router.get('/profile', auth(), asyncHandler(async (req, res) =&gt; {
+  const [rows] = await pool.execute(`SELECT ${publicUserFields} FROM users WHERE id = ?`, [req.user.id]);
+  ok(res, rows[0]);
+}));
+
+router.put('/profile', auth(), asyncHandler(async (req, res) =&gt; {
+  const { name, email, phone, nationality, language } = req.body;
+  await pool.execute(
+    'UPDATE users SET name=?, email=?, phone=?, nationality=?, language=? WHERE id=?',
+    [name, email, phone, nationality, language, req.user.id]
+  );
+  ok(res);
+}));
+
+export default router;</code></pre>
+<h3>admin/src/routes/learning.js（续页 1）</h3>
+<p>文件路径：admin/src/routes/learning.js</p>
+<p>源码正文：</p>
+<pre><code>import { Router } from 'express';
+import { pool, tx } from '../config/db.js';
+import { auth } from '../middleware/auth.js';
+import { asyncHandler, ok } from '../utils/response.js';
+import { HttpError } from '../utils/errors.js';
+
+const router = Router();
+
+function lang(req) {
+  return req.query.lang || req.body.language || 'zh-CN';
+}
+
+async function getQuestionsByPaper(paperId, language) {
+  const [rows] = await pool.execute(
+    `SELECT q.id, q.question_type, q.difficulty, pq.score, qt.title, qt.content, qt.analysis,
+            l.code level_code, lt.name level_name, c.code category_code, ct.name category_name
+     FROM paper_questions pq
+     JOIN questions q ON q.id = pq.question_id
+     JOIN question_translations qt ON qt.question_id = q.id AND qt.language_code = ?
+     JOIN levels l ON l.id = q.level_id
+     JOIN level_translations lt ON lt.level_id = l.id AND lt.language_code = ?
+     JOIN question_categories c ON c.id = q.category_id
+     JOIN question_category_translations ct ON ct.category_id = c.id AND ct.language_code = ?
+     WHERE pq.paper_id = ? AND q.status = 'published'
+     ORDER BY pq.sort_order ASC`,
+    [language, language, language, paperId]
+  );
+  if (!rows.length) return [];
+  const ids = rows.map((row) =&gt; row.id);
+  const [options] = await pool.query(
+    `SELECT o.id, o.question_id, o.option_key, ot.content
+     FROM question_options o
+     JOIN question_option_translations ot ON ot.option_id = o.id AND ot.language_code = ?
+     WHERE o.question_id IN (?)
+     ORDER BY o.question_id, o.sort_order`,
+    [language, ids]
+  );
+  return rows.map((question) =&gt; ({
+    ...question,
+    options: options.filter((option) =&gt; option.question_id === question.id).map(({ question_id, ...option }) =&gt; option)
+  }));
+}
+
+router.get('/levels', asyncHandler(async (req, res) =&gt; {
+  const language = lang(req);
+  const [rows] = await pool.execute(
+    `SELECT l.id, l.code, lt.name, lt.description
+     FROM levels l
+     JOIN level_translations lt ON lt.level_id = l.id AND lt.language_code = ?
+     WHERE l.status = 'active'
+     ORDER BY l.sort_order`,
+    [language]
+  );
+  ok(res, rows);
+}));
+
+router.get('/categories', asyncHandler(async (req, res) =&gt; {
+  const language = lang(req);
+  const [rows] = await pool.execute(
+    `SELECT c.id, c.code, ct.name, ct.description
+     FROM question_categories c
+     JOIN question_category_translations ct ON ct.category_id = c.id AND ct.language_code = ?
+     WHERE c.status = 'active'
+     ORDER BY c.sort_order`,
+    [language]
+  );
+  ok(res, rows);
+}));
+
+router.get('/papers', asyncHandler(async (req, res) =&gt; {
+  const language = lang(req);
+  const [rows] = await pool.execute(
+    `SELECT p.id, p.paper_type, p.total_score, p.duration_minutes, pt.title, pt.description, lt.name level_name,
+            COUNT(pq.id) question_count
+     FROM papers p
+     JOIN paper_translations pt ON pt.paper_id = p.id AND pt.language_code = ?
+     LEFT JOIN level_translations lt ON lt.level_id = p.level_id AND lt.language_code = ?
+     LEFT JOIN paper_questions pq ON pq.paper_id = p.id
+     WHERE p.status = 'published'
+     GROUP BY p.id, p.paper_type, p.total_score, p.duration_minutes, pt.title, pt.description, lt.name
+     ORDER BY p.id DESC`,
+    [language, language]
+  );
+  ok(res, rows);
+}));
+
+router.get('/papers/:id', auth(), asyncHandler(async (req, res) =&gt; {
+  const language = lang(req);
+  const paperId = Number(req.params.id);
+  const [[paper]] = await pool.execute(
+    `SELECT p.id, p.paper_type, p.total_score, p.duration_minutes, pt.title, pt.description
+     FROM papers p
+     JOIN paper_translations pt ON pt.paper_id = p.id AND pt.language_code = ?
+     WHERE p.id = ? AND p.status = 'published'`,
+    [language, paperId]
+  );
+  if (!paper) throw new HttpError(404, 'Paper not found');
+  paper.questions = await getQuestionsByPaper(paperId, language);
+  ok(res, paper);
+}));
+
+router.post('/papers/:id/submit', auth(), asyncHandler(async (req, res) =&gt; {
+  const paperId = Number(req.params.id);
+  const answers = Array.isArray(req.body.answers) ? req.body.answers : [];
+  const durationSeconds = Number(req.body.duration_seconds || 0);
+  const result = await tx(async (conn) =&gt; {
+    const [questions] = await conn.execute(
+      `SELECT pq.question_id, pq.score, GROUP_CONCAT(o.id ORDER BY o.id) correct_option_ids
+       FROM paper_questions pq
+       JOIN question_options o ON o.question_id = pq.question_id AND o.is_correct = 1
+       WHERE pq.paper_id = ?
+       GROUP BY pq.question_id, pq.score`,
+      [paperId]
+    );
+    if (!questions.length) throw new HttpError(404, 'Paper not found');
+    const byQuestion = new Map(questions.map((q) =&gt; [Number(q.question_id), q]));
+    let correctCount = 0;
+    let totalScore = 0;
+    const answerResults = [];
+
+    for (const item of answers) {
+      const questionId = Number(item.question_id);
+      const question = byQuestion.get(questionId);
+      if (!question) continue;
+      const selectedIds = (item.selected_option_ids || []).map(Number).sort((a, b) =&gt; a - b);
+      const correctIds = String(question.correct_option_ids).split(',').map(Number).sort((a, b) =&gt; a - b);
+      const isCorrect = JSON.stringify(selectedIds) === JSON.stringify(correctIds);
+      const score = isCorrect ? Number(question.score) : 0;
+      if (isCorrect) correctCount += 1;
+      totalScore += score;
+      answerResults.push({ question_id: questionId, selected_option_ids: selectedIds, correct_option_ids: correctIds, is_correct: isCorrect, score });
+    }
+
+    const wrongCount = questions.length - correctCount;
+    const [record] = await conn.execute(
+      `INSERT INTO study_records (user_id, paper_id, total_questions, correct_count, wrong_count, total_score, duration_seconds, started_at, submitted_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, DATE_SUB(NOW(), INTERVAL ? SECOND), NOW())`,
+      [req.user.id, paperId, questions.length, correctCount, wrongCount, totalScore, durationSeconds, durationSeconds]
+    );</code></pre>
+<h3>admin/src/server.js（续页 1）</h3>
+<p>文件路径：admin/src/server.js</p>
+<p>源码正文：</p>
+<pre><code>import app from './app.js';
+import { logger } from './utils/logger.js';
+
+const port = Number(process.env.PORT || 3000);
+app.listen(port, () =&gt; {
+  logger.info(`Chinese practice API running at http://***:${port}`);
+});</code></pre>
+<h3>admin/src/utils/errors.js（续页 1）</h3>
+<p>文件路径：admin/src/utils/errors.js</p>
+<p>源码正文：</p>
+<pre><code>export class HttpError extends Error {
+  constructor(status, message) {
+    super(message);
+    this.status = status;
+  }
+}</code></pre>
+<h3>admin/src/utils/initDb.js（续页 1）</h3>
+<p>文件路径：admin/src/utils/initDb.js</p>
+<p>源码正文：</p>
+<pre><code>import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import mysql from 'mysql2/promise';
+import dotenv from 'dotenv';
+import { logger } from './logger.js';
+
+dotenv.config();
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const root = path.resolve(__dirname, '../..');
+
+const connection = await mysql.createConnection({
+  host: process.env.DB_HOST || '***',
+  port: Number(process.env.DB_PORT || 3306),
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '***',
+  multipleStatements: true
+});
+
+for (const file of ['schema.sql', 'seed.sql']) {
+  const sql = await fs.readFile(path.join(root, 'sql', file), 'utf8');
+  await connection.query(sql);
+  logger.info(`Executed ${file}`);
+}
+
+await connection.end();
+logger.info('Database initialized.');</code></pre>
+<h3>admin/src/utils/logger.js（续页 1）</h3>
+<p>文件路径：admin/src/utils/logger.js</p>
+<p>源码正文：</p>
+<pre><code>import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const root = path.resolve(__dirname, '../..');
+const logDir = process.env.LOG_DIR || path.join(root, 'logs');
+const logFile = path.join(logDir, 'app.log');
+
+function ensureLogDir() {
+  fs.mkdirSync(logDir, { recursive: true });
+}
+
+function mask(value) {
+  if (value == null) return value;
+  const text = typeof value === 'string' ? value : JSON.stringify(value);
+  return text
+    .replace(/(authorization[&quot;']?\s*[:=]\s*[&quot;']?Bearer\s+)[^&quot;',\s]+/gi, '$1***')
+    .replace(/(password[&quot;']?\s*[:=]\s*[&quot;']?)[^&quot;',\s]+/gi, '$1***')
+    .replace(/(token[&quot;']?\s*[:=]\s*[&quot;']?)[^&quot;',\s]+/gi, '$1***');
+}
+
+function write(level, message, meta) {
+  const timestamp = new Date().toISOString();
+  const extra = meta === undefined ? '' : ` ${mask(meta)}`;
+  const line = `[${timestamp}] [${level}] ${message}${extra}`;
+  ensureLogDir();
+  fs.appendFileSync(logFile, `${line}\n`, 'utf8');
+
+  if (level === 'ERROR') {
+    console.error(line);
+  } else {
+    console.log(line);
+  }
+}
+
+export const logger = {
+  info(message, meta) {
+    write('INFO', message, meta);
+  },
+  warn(message, meta) {
+    write('WARN', message, meta);
+  },
+  error(message, meta) {
+    write('ERROR', message, meta);
+  }
+};
+
+export { logFile };</code></pre>
+<h3>admin/src/utils/response.js（续页 1）</h3>
+<p>文件路径：admin/src/utils/response.js</p>
+<p>源码正文：</p>
+<pre><code>export function ok(res, data = null, message = 'success') {
+  return res.json({ code: 200, message, data });
+}
+
+export function asyncHandler(fn) {
+  return (req, res, next) =&gt; Promise.resolve(fn(req, res, next)).catch(next);
+}</code></pre>
+<h3>admin/src/utils/seedUsers.js（续页 1）</h3>
+<p>文件路径：admin/src/utils/seedUsers.js</p>
+<p>源码正文：</p>
+<pre><code>import bcrypt from 'bcryptjs';
+import { pool } from '../config/db.js';
+import { logger } from './logger.js';
+
+const users = [
+  ['admin', '***', '系统管理员', 'admin', '***@***', 'Malaysia'],
+  ['student', '***', 'Amin', 'student', '***@***', 'Malaysia'],
+  ['nurul', '***', 'Nurul Aisyah', 'student', '***@***', 'Malaysia'],
+  ['weijie', '***', 'Tan Wei Jie', 'student', '***@***', 'Malaysia'],
+  ['siti', '***', 'Siti Mariam', 'student', '***@***', 'Malaysia'],
+  ['raj', '***', 'Raj Kumar', 'student', '***@***', 'Malaysia']
+];
+
+for (const [username, password, name, role, email, nationality] of users) {
+  const hash = await bcrypt.hash(password, 10);
+  await pool.execute(
+    `INSERT INTO users (username, password, name, email, role, nationality, language, status)
+     VALUES (?, ?, ?, ?, ?, ?, 'zh-CN', 'active')
+     ON DUPLICATE KEY UPDATE password=VALUES(password), name=VALUES(name), role=VALUES(role), email=VALUES(email), nationality=VALUES(nationality), status='active'`,
+    [username, hash, name, email, role, nationality]
+  );
+}
+
+const [studentRows] = await pool.execute(
+  `SELECT id, username FROM users WHERE username IN ('student', 'nurul', 'weijie', 'siti', 'raj')`
+);
+const userId = Object.fromEntries(studentRows.map((user) =&gt; [user.username, user.id]));
+
+const records = [
+  [101, userId.student, 1, 5, 3, 2, 3, 245, '2026-05-10 09:20:00'],
+  [102, userId.student, 2, 5, 4, 1, 4, 312, '2026-05-12 14:05:00'],
+  [103, userId.nurul, 1, 5, 5, 0, 5, 198, '2026-05-11 10:30:00'],
+  [104, userId.weijie, 3, 5, 4, 1, 4, 260, '2026-05-12 16:40:00'],
+  [105, userId.siti, 2, 5, 2, 3, 2, 420, '2026-05-13 11:15:00'],
+  [106, userId.raj, 3, 5, 3, 2, 3, 338, '2026-05-13 19:25:00']
+].filter((record) =&gt; record[1]);
+
+for (const record of records) {
+  await pool.execute(
+    `INSERT INTO study_records (id, user_id, paper_id, total_questions, correct_count, wrong_count, total_score, duration_seconds, started_at, submitted_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, DATE_SUB(?, INTERVAL ? SECOND), ?)
+     ON DUPLICATE KEY UPDATE user_id=VALUES(user_id), paper_id=VALUES(paper_id), total_questions=VALUES(total_questions),
+       correct_count=VALUES(correct_count), wrong_count=VALUES(wrong_count), total_score=VALUES(total_score),
+       duration_seconds=VALUES(duration_seconds), started_at=VALUES(started_at), submitted_at=VALUES(submitted_at)`,
+    [...record, record[7], record[8]]
+  );
+}
+
+const wrongQuestions = [
+  [userId.student, 2, 2, 0, '2026-05-12 14:05:00'],
+  [userId.student, 6, 1, 0, '2026-05-12 14:05:00'],
+  [userId.siti, 7, 3, 0, '2026-05-13 11:15:00'],
+  [userId.raj, 10, 1, 0, '2026-05-13 19:25:00']
+].filter((item) =&gt; item[0]);
+
+for (const item of wrongQuestions) {
+  await pool.execute(
+    `INSERT INTO wrong_questions (user_id, question_id, wrong_count, resolved, last_wrong_at)
+     VALUES (?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE wrong_count=VALUES(wrong_count), resolved=VALUES(resolved), last_wrong_at=VALUES(last_wrong_at)`,
+    item
+  );
+}
+
+logger.info('Seed users ready for admin and student accounts');
+await pool.end();</code></pre>
+<h3>fronter/index.html（续页 1）</h3>
+<p>文件路径：fronter/index.html</p>
+<p>源码正文：</p>
+<pre><code>&lt;!doctype html&gt;
+&lt;html lang=&quot;zh-CN&quot;&gt;
+  &lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot; /&gt;
+    &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;link rel=&quot;icon&quot; href=&quot;data:,&quot; /&gt;
+    &lt;title&gt;Chinese Practice Platform&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;div id=&quot;app&quot;&gt;&lt;/div&gt;
+    &lt;script type=&quot;module&quot; src=&quot;/src/main.js&quot;&gt;&lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</code></pre>
+<h3>fronter/package.json（续页 1）</h3>
+<p>文件路径：fronter/package.json</p>
+<p>源码正文：</p>
+<pre><code>{
+  &quot;name&quot;: &quot;school-chinese-exam-practice-fronter&quot;,
+  &quot;version&quot;: &quot;1.0.0&quot;,
+  &quot;type&quot;: &quot;module&quot;,
+  &quot;scripts&quot;: {
+    &quot;dev&quot;: &quot;vite --host 0.0.0.0&quot;,
+    &quot;build&quot;: &quot;vite build&quot;,
+    &quot;preview&quot;: &quot;vite preview --host 0.0.0.0&quot;
+  },
+  &quot;dependencies&quot;: {
+    &quot;@vitejs/plugin-vue&quot;: &quot;^5.2.1&quot;,
+    &quot;vite&quot;: &quot;^6.0.3&quot;,
+    &quot;vue&quot;: &quot;^3.5.13&quot;,
+    &quot;vue-router&quot;: &quot;^4.5.0&quot;
+  },
+  &quot;devDependencies&quot;: {}
+}</code></pre>
+<h3>fronter/src/App.vue（续页 1）</h3>
+<p>文件路径：fronter/src/App.vue</p>
+<p>源码正文：</p>
+<pre><code>&lt;template&gt;
+  &lt;div class=&quot;app-shell&quot;&gt;
+    &lt;header class=&quot;topbar&quot;&gt;
+      &lt;router-link class=&quot;brand&quot; to=&quot;/&quot;&gt;{{ t('app') }}&lt;/router-link&gt;
+      &lt;nav class=&quot;toolbar&quot;&gt;
+        &lt;router-link to=&quot;/&quot;&gt;{{ t('home') }}&lt;/router-link&gt;
+        &lt;router-link v-if=&quot;auth.user&quot; to=&quot;/practice&quot;&gt;{{ t('practice') }}&lt;/router-link&gt;
+        &lt;router-link v-if=&quot;auth.user&quot; to=&quot;/records&quot;&gt;{{ t('records') }}&lt;/router-link&gt;
+        &lt;router-link v-if=&quot;auth.user&quot; to=&quot;/wrong-book&quot;&gt;{{ t('wrongBook') }}&lt;/router-link&gt;
+        &lt;router-link v-if=&quot;auth.user&quot; to=&quot;/profile&quot;&gt;{{ t('profile') }}&lt;/router-link&gt;
+        &lt;router-link v-if=&quot;auth.user?.role === 'admin'&quot; to=&quot;/admin&quot;&gt;{{ t('dashboard') }}&lt;/router-link&gt;
+        &lt;router-link v-if=&quot;!auth.user&quot; to=&quot;/login&quot;&gt;{{ t('login') }}&lt;/router-link&gt;
+        &lt;button v-if=&quot;auth.user&quot; @click=&quot;logout&quot;&gt;{{ t('logout') }}&lt;/button&gt;
+        &lt;select :value=&quot;state.lang&quot; @change=&quot;setLang($event.target.value)&quot;&gt;
+          &lt;option value=&quot;zh-CN&quot;&gt;中文&lt;/option&gt;
+          &lt;option value=&quot;en-US&quot;&gt;English&lt;/option&gt;
+          &lt;option value=&quot;ms-MY&quot;&gt;Bahasa Melayu&lt;/option&gt;
+        &lt;/select&gt;
+      &lt;/nav&gt;
+    &lt;/header&gt;
+    &lt;main class=&quot;content&quot;&gt;
+      &lt;router-view /&gt;
+    &lt;/main&gt;
+  &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { useRouter } from 'vue-router';
+import { authStore as auth } from './stores/auth.js';
+import { state, t, setLang } from './i18n/index.js';
+
+const router = useRouter();
+function logout() {
+  auth.logout();
+  router.push('/login');
+}
+&lt;/script&gt;</code></pre>
+<h3>fronter/src/api/client.js（续页 1）</h3>
+<p>文件路径：fronter/src/api/client.js</p>
+<p>源码正文：</p>
+<pre><code>const API_BASE = import.meta.env.VITE_API_BASE || 'http://***:3000/api';
+
+export function token() {
+  return localStorage.getItem('token') || '';
+}
+
+export async function request(path, options = {}) {
+  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+  if (token()) headers.Authorization = `Bearer ${token()}`;
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers,
+    body: options.body ? JSON.stringify(options.body) : undefined
+  });
+  const payload = await response.json().catch(() =&gt; ({ message: 'Network error' }));
+  if (!response.ok || payload.code &gt;= 400) throw new Error(payload.message || 'Request failed');
+  return payload.data;
+}</code></pre>
+<h3>fronter/src/assets/style.css（续页 1）</h3>
+<p>文件路径：fronter/src/assets/style.css</p>
+<p>源码正文：</p>
+<pre><code>* { box-sizing: border-box; }
+body { margin: 0; font-family: Arial, &quot;Microsoft YaHei&quot;, sans-serif; background: #f4f6f8; color: #172033; }
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font: inherit; }
+.app-shell { max-width: 1080px; min-height: 100vh; margin: 0 auto; background: #fff; }
+.topbar { position: sticky; top: 0; z-index: 5; display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 12px 14px; background: #14304d; color: #fff; }
+.brand { font-weight: 700; line-height: 1.3; }
+.toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.toolbar a, .toolbar button, .toolbar select { border: 0; border-radius: 6px; padding: 8px 10px; background: rgba(255,255,255,.12); color: #fff; cursor: pointer; }
+.toolbar select option { color: #172033; }
+.content { padding: 16px; }
+.hero { display: grid; gap: 14px; padding: 20px 0; }
+.grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.card { border: 1px solid #e4e8ef; border-radius: 8px; padding: 14px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+.card h3, .card h4 { margin-top: 0; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.split { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr) 280px; }
+.form { display: grid; gap: 12px; max-width: 480px; }
+.form input, .form select, .form textarea { width: 100%; border: 1px solid #ccd4df; border-radius: 6px; padding: 10px; }
+.btn { border: 0; border-radius: 6px; padding: 10px 12px; background: #0d6efd; color: #fff; cursor: pointer; }
+.btn.secondary { background: #5c667a; }
+.btn.ghost { background: #eef3f8; color: #14304d; }
+.muted { color: #687386; }
+.pill { display: inline-block; border-radius: 999px; padding: 3px 8px; font-size: 12px; background: #e9edf3; color: #40506a; }
+.option { display: block; width: 100%; margin: 8px 0; border: 1px solid #d8dee8; border-radius: 8px; padding: 12px; background: #fff; text-align: left; color: #172033; }
+.option.active { border-color: #0d6efd; background: #eef5ff; }
+.option.correct { border-color: #249653; background: #e7f7ee; }
+.option.wrong { border-color: #c0392b; background: #fdecec; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { border-bottom: 1px solid #e7ebf0; padding: 10px; text-align: left; vertical-align: top; }
+@media (max-width: 760px) {
+  .topbar { align-items: flex-start; flex-direction: column; }
+  .toolbar a, .toolbar button, .toolbar select { padding: 7px 8px; font-size: 13px; }
+  .split { grid-template-columns: 1fr; }
+  th, td { padding: 8px 6px; font-size: 12px; }
+}</code></pre>
+<h3>fronter/src/i18n/index.js（续页 1）</h3>
+<p>文件路径：fronter/src/i18n/index.js</p>
+<p>源码正文：</p>
+<pre><code>import { reactive } from 'vue';
+
+export const state = reactive({
+  lang: localStorage.getItem('lang') || 'zh-CN'
+});
+
+const messages = {
+  'zh-CN': {
+    app: '马来西亚留学生汉语练习平台',
+    login: '登录',
+    register: '注册',
+    logout: '退出',
+    home: '首页',
+    practice: '练习',
+    records: '成绩',
+    wrongBook: '错题本',
+    profile: '个人中心',
+    dashboard: '管理台',
+    users: '学生管理',
+    questions: '题库',
+    papers: '练习/试卷',
+    adminRecords: '成绩记录',
+    username: '用户名',
+    password: '密码',
+    name: '姓名',
+    email: '邮箱',
+    phone: '电话',
+    studentNo: '学号',
+    nationality: '国籍',
+    language: '语言',
+    start: '开始练习',
+    submit: '提交',
+    next: '下一题',
+    result: '练习结果',
+    correct: '正确',
+    wrong: '错误',
+    score: '得分',
+    questionCount: '题数',
+    duration: '时长',
+    level: '等级',
+    category: '分类',
+    difficulty: '难度',
+    status: '状态',
+    role: '角色',
+    title: '标题',
+    createdAt: '创建时间',
+    submittedAt: '提交时间',
+    empty: '暂无数据',
+    chooseAnswer: '请选择答案',
+    analysis: '解析',
+    totalStudents: '学生数',
+    totalQuestions: '题目数',
+    totalPapers: '练习数',
+    totalRecords: '答题记录',
+    avgScore: '平均分'
+  },
+  'en-US': {
+    app: 'Chinese Practice Platform for Malaysian Students',
+    login: 'Login',
+    register: 'Register',
+    logout: 'Logout',
+    home: 'Home',
+    practice: 'Practice',
+    records: 'Scores',
+    wrongBook: 'Wrong Book',
+    profile: 'Profile',
+    dashboard: 'Admin',
+    users: 'Students',
+    questions: 'Question Bank',
+    papers: 'Practices',
+    adminRecords: 'Score Records',
+    username: 'Username',
+    password: 'Password',
+    name: 'Name',
+    email: 'Email',
+    phone: 'Phone',
+    studentNo: 'Student No.',
+    nationality: 'Nationality',
+    language: 'Language',
+    start: 'Start',
+    submit: 'Submit',
+    next: 'Next',
+    result: 'Result',
+    correct: 'Correct',
+    wrong: 'Wrong',
+    score: 'Score',
+    questionCount: 'Questions',
+    duration: 'Duration',
+    level: 'Level',
+    category: 'Category',
+    difficulty: 'Difficulty',
+    status: 'Status',
+    role: 'Role',
+    title: 'Title',
+    createdAt: 'Created',
+    submittedAt: 'Submitted',
+    empty: 'No data',
+    chooseAnswer: 'Please choose an answer',
+    analysis: 'Analysis',
+    totalStudents: 'Students',
+    totalQuestions: 'Questions',
+    totalPapers: 'Practices',
+    totalRecords: 'Records',
+    avgScore: 'Avg Score'
+  },
+  'ms-MY': {
+    app: 'Platform Latihan Bahasa Cina untuk Pelajar Malaysia',
+    login: 'Log Masuk',
+    register: 'Daftar',
+    logout: 'Log Keluar',
+    home: 'Laman Utama',
+    practice: 'Latihan',
+    records: 'Markah',
+    wrongBook: 'Buku Salah',
+    profile: 'Profil',
+    dashboard: 'Admin',
+    users: 'Pelajar',
+    questions: 'Bank Soalan',
+    papers: 'Latihan',
+    adminRecords: 'Rekod Markah',
+    username: 'Nama Pengguna',
+    password: 'Kata Laluan',
+    name: 'Nama',
+    email: 'E-mel',
+    phone: 'Telefon',
+    studentNo: 'No. Pelajar',
+    nationality: 'Kewarganegaraan',
+    language: 'Bahasa',
+    start: 'Mula',
+    submit: 'Hantar',
+    next: 'Seterusnya',
+    result: 'Keputusan',
+    correct: 'Betul',
+    wrong: 'Salah',
+    score: 'Markah',
+    questionCount: 'Soalan',
+    duration: 'Tempoh',
+    level: 'Tahap',
+    category: 'Kategori',
+    difficulty: 'Kesukaran',</code></pre>
+<h3>fronter/src/main.js（续页 1）</h3>
+<p>文件路径：fronter/src/main.js</p>
+<p>源码正文：</p>
+<pre><code>import { createApp } from 'vue';
+import App from './App.vue';
+import router from './router/index.js';
+import './assets/style.css';
+
+createApp(App).use(router).mount('#app');</code></pre>
+<h3>fronter/src/router/index.js（续页 1）</h3>
+<p>文件路径：fronter/src/router/index.js</p>
+<p>源码正文：</p>
+<pre><code>import { createRouter, createWebHistory } from 'vue-router';
+import { authStore } from '../stores/auth.js';
+import Login from '../views/Login.vue';
+import Register from '../views/Register.vue';
+import Home from '../views/Home.vue';
+import PracticeList from '../views/PracticeList.vue';
+import PracticeDetail from '../views/PracticeDetail.vue';
+import Records from '../views/Records.vue';
+import WrongBook from '../views/WrongBook.vue';
+import Profile from '../views/Profile.vue';
+import Dashboard from '../views/Dashboard.vue';
+import AdminTable from '../views/AdminTable.vue';
+
+const routes = [
+  { path: '/', component: Home },
+  { path: '/login', component: Login },
+  { path: '/register', component: Register },
+  { path: '/practice', component: PracticeList, meta: { auth: true } },
+  { path: '/practice/:id', component: PracticeDetail, meta: { auth: true } },
+  { path: '/records', component: Records, meta: { auth: true } },
+  { path: '/wrong-book', component: WrongBook, meta: { auth: true } },
+  { path: '/profile', component: Profile, meta: { auth: true } },
+  { path: '/admin', component: Dashboard, meta: { auth: true, admin: true } },
+  { path: '/admin/users', component: AdminTable, props: { type: 'users' }, meta: { auth: true, admin: true } },
+  { path: '/admin/questions', component: AdminTable, props: { type: 'questions' }, meta: { auth: true, admin: true } },
+  { path: '/admin/papers', component: AdminTable, props: { type: 'papers' }, meta: { auth: true, admin: true } },
+  { path: '/admin/records', component: AdminTable, props: { type: 'records' }, meta: { auth: true, admin: true } }
+];
+
+const router = createRouter({ history: createWebHistory(), routes });
+
+router.beforeEach((to) =&gt; {
+  if (to.meta.auth &amp;&amp; !authStore.isAuthed) return '/login';
+  if (to.meta.admin &amp;&amp; authStore.user?.role !== 'admin') return '/';
+  return true;
+});
+
+export default router;</code></pre>
+<h3>fronter/src/stores/auth.js（续页 1）</h3>
+<p>文件路径：fronter/src/stores/auth.js</p>
+<p>源码正文：</p>
+<pre><code>import { reactive } from 'vue';
+import { request } from '../api/client.js';
+
+export const authStore = reactive({
+  user: JSON.parse(localStorage.getItem('user') || 'null'),
+  get isAuthed() {
+    return Boolean(localStorage.getItem('token'));
+  },
+  async login(form) {
+    const data = await request('/auth/login', { method: 'POST', body: form });
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    this.user = data.user;
+  },
+  logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    this.user = null;
+  }
+});</code></pre>
+<h3>fronter/src/views/AdminTable.vue（续页 1）</h3>
+<p>文件路径：fronter/src/views/AdminTable.vue</p>
+<p>源码正文：</p>
+<pre><code>&lt;template&gt;
+  &lt;section&gt;
+    &lt;h1&gt;{{ title }}&lt;/h1&gt;
+    &lt;div class=&quot;card&quot; style=&quot;overflow:auto&quot;&gt;
+      &lt;table&gt;
+        &lt;thead&gt;
+          &lt;tr&gt;
+            &lt;th v-for=&quot;header in headers&quot; :key=&quot;header&quot;&gt;{{ label(header) }}&lt;/th&gt;
+          &lt;/tr&gt;
+        &lt;/thead&gt;
+        &lt;tbody&gt;
+          &lt;tr v-for=&quot;row in rows&quot; :key=&quot;row.id&quot;&gt;
+            &lt;td v-for=&quot;header in headers&quot; :key=&quot;header&quot;&gt;{{ format(row[header]) }}&lt;/td&gt;
+          &lt;/tr&gt;
+        &lt;/tbody&gt;
+      &lt;/table&gt;
+      &lt;p v-if=&quot;!rows.length&quot; class=&quot;muted&quot;&gt;{{ t('empty') }}&lt;/p&gt;
+    &lt;/div&gt;
+  &lt;/section&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { computed, onMounted, ref, watch } from 'vue';
+import { request } from '../api/client.js';
+import { state, t } from '../i18n/index.js';
+
+const props = defineProps({ type: { type: String, required: true } });
+const rows = ref([]);
+const title = computed(() =&gt; t(props.type === 'records' ? 'adminRecords' : props.type));
+const headerMap = {
+  users: ['id', 'username', 'name', 'role', 'student_no', 'nationality', 'language', 'status'],
+  questions: ['id', 'title', 'level_name', 'category_name', 'question_type', 'difficulty', 'score', 'status'],
+  papers: ['id', 'title', 'paper_type', 'question_count', 'total_score', 'duration_minutes', 'status'],
+  records: ['id', 'username', 'name', 'paper_title', 'total_questions', 'correct_count', 'wrong_count', 'total_score', 'submitted_at']
+};
+const labelMap = {
+  id: 'ID',
+  username: t('username'),
+  name: t('name'),
+  role: t('role'),
+  student_no: t('studentNo'),
+  nationality: t('nationality'),
+  language: t('language'),
+  status: t('status'),
+  title: t('title'),
+  level_name: t('level'),
+  category_name: t('category'),
+  question_type: 'Type',
+  difficulty: t('difficulty'),
+  score: t('score'),
+  paper_type: 'Type',
+  question_count: t('questionCount'),
+  total_score: t('score'),
+  duration_minutes: t('duration'),
+  paper_title: t('title'),
+  total_questions: t('questionCount'),
+  correct_count: t('correct'),
+  wrong_count: t('wrong'),
+  submitted_at: t('submittedAt')
+};
+const headers = computed(() =&gt; headerMap[props.type] || ['id']);
+
+function label(key) {
+  return labelMap[key] || key;
+}
+function format(value) {
+  if (value == null) return '';
+  if (typeof value === 'string' &amp;&amp; value.length &gt; 80) return `${value.slice(0, 80)}...`;
+  return value;
+}
+async function load() {
+  rows.value = await request(`/admin/${props.type}?lang=${state.lang}`);
+}
+onMounted(load);
+watch(() =&gt; [props.type, state.lang], load);
+&lt;/script&gt;</code></pre>
+<h3>fronter/src/views/Dashboard.vue（续页 1）</h3>
+<p>文件路径：fronter/src/views/Dashboard.vue</p>
+<p>源码正文：</p>
+<pre><code>&lt;template&gt;
+  &lt;section&gt;
+    &lt;h1&gt;{{ t('dashboard') }}&lt;/h1&gt;
+    &lt;div class=&quot;grid&quot;&gt;
+      &lt;div class=&quot;card&quot;&gt;&lt;h3&gt;{{ stats.students }}&lt;/h3&gt;&lt;p&gt;{{ t('totalStudents') }}&lt;/p&gt;&lt;/div&gt;
+      &lt;div class=&quot;card&quot;&gt;&lt;h3&gt;{{ stats.questions }}&lt;/h3&gt;&lt;p&gt;{{ t('totalQuestions') }}&lt;/p&gt;&lt;/div&gt;
+      &lt;div class=&quot;card&quot;&gt;&lt;h3&gt;{{ stats.papers }}&lt;/h3&gt;&lt;p&gt;{{ t('totalPapers') }}&lt;/p&gt;&lt;/div&gt;
+      &lt;div class=&quot;card&quot;&gt;&lt;h3&gt;{{ stats.avgScore }}&lt;/h3&gt;&lt;p&gt;{{ t('avgScore') }}&lt;/p&gt;&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;grid&quot; style=&quot;margin-top:12px&quot;&gt;
+      &lt;router-link class=&quot;card&quot; to=&quot;/admin/users&quot;&gt;{{ t('users') }}&lt;/router-link&gt;
+      &lt;router-link class=&quot;card&quot; to=&quot;/admin/questions&quot;&gt;{{ t('questions') }}&lt;/router-link&gt;
+      &lt;router-link class=&quot;card&quot; to=&quot;/admin/papers&quot;&gt;{{ t('papers') }}&lt;/router-link&gt;
+      &lt;router-link class=&quot;card&quot; to=&quot;/admin/records&quot;&gt;{{ t('adminRecords') }}&lt;/router-link&gt;
+    &lt;/div&gt;
+  &lt;/section&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { onMounted, reactive } from 'vue';
+import { request } from '../api/client.js';
+import { t } from '../i18n/index.js';
+
+const stats = reactive({ students: 0, questions: 0, papers: 0, records: 0, avgScore: 0 });
+onMounted(async () =&gt; Object.assign(stats, await request('/admin/stats')));
+&lt;/script&gt;</code></pre>
+<h3>fronter/src/views/Home.vue（续页 1）</h3>
+<p>文件路径：fronter/src/views/Home.vue</p>
+<p>源码正文：</p>
+<pre><code>&lt;template&gt;
+  &lt;section class=&quot;hero&quot;&gt;
+    &lt;div&gt;
+      &lt;h1&gt;{{ t('app') }}&lt;/h1&gt;
+      &lt;p class=&quot;muted&quot;&gt;HSK, campus Chinese, trilingual question bank and practice records.&lt;/p&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;grid&quot;&gt;
+      &lt;router-link class=&quot;card&quot; to=&quot;/practice&quot;&gt;
+        &lt;h3&gt;{{ t('practice') }}&lt;/h3&gt;
+        &lt;p class=&quot;muted&quot;&gt;HSK1 / HSK2 / Campus Chinese&lt;/p&gt;
+      &lt;/router-link&gt;
+      &lt;router-link class=&quot;card&quot; to=&quot;/wrong-book&quot;&gt;
+        &lt;h3&gt;{{ t('wrongBook') }}&lt;/h3&gt;
+        &lt;p class=&quot;muted&quot;&gt;Review mistakes and explanations&lt;/p&gt;
+      &lt;/router-link&gt;
+      &lt;router-link class=&quot;card&quot; to=&quot;/records&quot;&gt;
+        &lt;h3&gt;{{ t('records') }}&lt;/h3&gt;
+        &lt;p class=&quot;muted&quot;&gt;Track practice scores&lt;/p&gt;
+      &lt;/router-link&gt;
+      &lt;router-link v-if=&quot;auth.user?.role === 'admin'&quot; class=&quot;card&quot; to=&quot;/admin&quot;&gt;
+        &lt;h3&gt;{{ t('dashboard') }}&lt;/h3&gt;
+        &lt;p class=&quot;muted&quot;&gt;Question bank and student records&lt;/p&gt;
+      &lt;/router-link&gt;
+    &lt;/div&gt;
+  &lt;/section&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { t } from '../i18n/index.js';
+import { authStore as auth } from '../stores/auth.js';
+&lt;/script&gt;</code></pre>
+<h3>fronter/src/views/Login.vue（续页 1）</h3>
+<p>文件路径：fronter/src/views/Login.vue</p>
+<p>源码正文：</p>
+<pre><code>&lt;template&gt;
+  &lt;section&gt;
+    &lt;h1&gt;{{ t('login') }}&lt;/h1&gt;
+    &lt;form class=&quot;form&quot; @submit.prevent=&quot;submit&quot;&gt;
+      &lt;input v-model=&quot;form.username&quot; :placeholder=&quot;t('username')&quot; required /&gt;
+      &lt;input v-model=&quot;form.password&quot; :placeholder=&quot;t('password')&quot; type=&quot;password&quot; required /&gt;
+      &lt;button class=&quot;btn&quot;&gt;{{ t('login') }}&lt;/button&gt;
+      &lt;router-link to=&quot;/register&quot;&gt;{{ t('register') }}&lt;/router-link&gt;
+      &lt;p class=&quot;muted&quot;&gt;{{ message }}&lt;/p&gt;
+    &lt;/form&gt;
+  &lt;/section&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { authStore } from '../stores/auth.js';
+import { t } from '../i18n/index.js';
+
+const router = useRouter();
+const message = ref('');
+const form = reactive({ username: 'student', password: '***' });
+
+async function submit() {
+  try {
+    await authStore.login(form);
+    router.push('/');
+  } catch (e) {
+    message.value = e.message;
+  }
+}
+&lt;/script&gt;</code></pre>
+<h3>fronter/src/views/PracticeDetail.vue（续页 1）</h3>
+<p>文件路径：fronter/src/views/PracticeDetail.vue</p>
+<p>源码正文：</p>
+<pre><code>&lt;template&gt;
+  &lt;section v-if=&quot;paper&quot;&gt;
+    &lt;div class=&quot;row&quot;&gt;
+      &lt;h1&gt;{{ paper.title }}&lt;/h1&gt;
+      &lt;span class=&quot;pill&quot;&gt;{{ index + 1 }} / {{ paper.questions.length }}&lt;/span&gt;
+    &lt;/div&gt;
+    &lt;div v-if=&quot;!result&quot; class=&quot;split&quot;&gt;
+      &lt;div class=&quot;card&quot;&gt;
+        &lt;p class=&quot;muted&quot;&gt;{{ current.category_name }} · {{ current.difficulty }}&lt;/p&gt;
+        &lt;h3&gt;{{ current.title }}&lt;/h3&gt;
+        &lt;p&gt;{{ current.content }}&lt;/p&gt;
+        &lt;button
+          v-for=&quot;option in current.options&quot;
+          :key=&quot;option.id&quot;
+          class=&quot;option&quot;
+          :class=&quot;{ active: selectedIds.includes(option.id) }&quot;
+          @click=&quot;select(option.id)&quot;
+        &gt;
+          {{ option.option_key }}. {{ option.content }}
+        &lt;/button&gt;
+        &lt;div class=&quot;row&quot;&gt;
+          &lt;button class=&quot;btn ghost&quot; :disabled=&quot;index === 0&quot; @click=&quot;index -= 1&quot;&gt;‹&lt;/button&gt;
+          &lt;button v-if=&quot;index &lt; paper.questions.length - 1&quot; class=&quot;btn&quot; @click=&quot;index += 1&quot;&gt;{{ t('next') }}&lt;/button&gt;
+          &lt;button v-else class=&quot;btn&quot; @click=&quot;submit&quot;&gt;{{ t('submit') }}&lt;/button&gt;
+        &lt;/div&gt;
+        &lt;p class=&quot;muted&quot;&gt;{{ message }}&lt;/p&gt;
+      &lt;/div&gt;
+      &lt;aside class=&quot;card&quot;&gt;
+        &lt;h4&gt;{{ t('questionCount') }}&lt;/h4&gt;
+        &lt;div class=&quot;row&quot;&gt;
+          &lt;button v-for=&quot;(q, i) in paper.questions&quot; :key=&quot;q.id&quot; class=&quot;btn ghost&quot; @click=&quot;index = i&quot;&gt;
+            {{ i + 1 }}
+          &lt;/button&gt;
+        &lt;/div&gt;
+      &lt;/aside&gt;
+    &lt;/div&gt;
+    &lt;div v-else class=&quot;card&quot;&gt;
+      &lt;h2&gt;{{ t('result') }}&lt;/h2&gt;
+      &lt;div class=&quot;grid&quot;&gt;
+        &lt;div&gt;&lt;strong&gt;{{ result.correct_count }}&lt;/strong&gt;&lt;p&gt;{{ t('correct') }}&lt;/p&gt;&lt;/div&gt;
+        &lt;div&gt;&lt;strong&gt;{{ result.wrong_count }}&lt;/strong&gt;&lt;p&gt;{{ t('wrong') }}&lt;/p&gt;&lt;/div&gt;
+        &lt;div&gt;&lt;strong&gt;{{ result.total_score }}&lt;/strong&gt;&lt;p&gt;{{ t('score') }}&lt;/p&gt;&lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div v-for=&quot;question in paper.questions&quot; :key=&quot;question.id&quot; class=&quot;card&quot;&gt;
+        &lt;h4&gt;{{ question.title }}&lt;/h4&gt;
+        &lt;p class=&quot;muted&quot;&gt;{{ question.analysis }}&lt;/p&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/section&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import { request } from '../api/client.js';
+import { state, t } from '../i18n/index.js';
+
+const route = useRoute();
+const paper = ref(null);
+const index = ref(0);
+const result = ref(null);
+const message = ref('');
+const answers = reactive({});
+const startedAt = Date.now();
+const current = computed(() =&gt; paper.value?.questions[index.value] || {});
+const selectedIds = computed(() =&gt; answers[current.value.id] || []);
+
+async function load() {
+  paper.value = await request(`/learning/papers/${route.params.id}?lang=${state.lang}`);
+  index.value = 0;
+  result.value = null;
+}
+function select(optionId) {
+  answers[current.value.id] = [optionId];
+  message.value = '';
+}
+async function submit() {
+  const payload = paper.value.questions.map((question) =&gt; ({ question_id: question.id, selected_option_ids: answers[question.id] || [] }));
+  if (payload.some((item) =&gt; item.selected_option_ids.length === 0)) {
+    message.value = t('chooseAnswer');
+    return;
+  }
+  result.value = await request(`/learning/papers/${paper.value.id}/submit`, {
+    method: 'POST',
+    body: { answers: payload, duration_seconds: Math.round((Date.now() - startedAt) / 1000), language: state.lang }
+  });
+}
+onMounted(load);
+watch(() =&gt; state.lang, load);
+&lt;/script&gt;</code></pre>
+<h3>fronter/src/views/PracticeList.vue（续页 1）</h3>
+<p>文件路径：fronter/src/views/PracticeList.vue</p>
+<p>源码正文：</p>
+<pre><code>&lt;template&gt;
+  &lt;section&gt;
+    &lt;h1&gt;{{ t('practice') }}&lt;/h1&gt;
+    &lt;div class=&quot;grid&quot;&gt;
+      &lt;router-link v-for=&quot;paper in papers&quot; :key=&quot;paper.id&quot; class=&quot;card&quot; :to=&quot;`/practice/${paper.id}`&quot;&gt;
+        &lt;h3&gt;{{ paper.title }}&lt;/h3&gt;
+        &lt;p class=&quot;muted&quot;&gt;{{ paper.description }}&lt;/p&gt;
+        &lt;div class=&quot;row&quot;&gt;
+          &lt;span class=&quot;pill&quot;&gt;{{ paper.level_name }}&lt;/span&gt;
+          &lt;span class=&quot;pill&quot;&gt;{{ t('questionCount') }}: {{ paper.question_count }}&lt;/span&gt;
+          &lt;span class=&quot;pill&quot;&gt;{{ t('score') }}: {{ paper.total_score }}&lt;/span&gt;
+        &lt;/div&gt;
+      &lt;/router-link&gt;
+    &lt;/div&gt;
+    &lt;p v-if=&quot;!papers.length&quot; class=&quot;muted&quot;&gt;{{ t('empty') }}&lt;/p&gt;
+  &lt;/section&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { onMounted, ref, watch } from 'vue';
+import { request } from '../api/client.js';
+import { state, t } from '../i18n/index.js';
+
+const papers = ref([]);
+async function load() {
+  papers.value = await request(`/learning/papers?lang=${state.lang}`);
+}
+onMounted(load);
+watch(() =&gt; state.lang, load);
+&lt;/script&gt;</code></pre>
+<h3>fronter/src/views/Profile.vue（续页 1）</h3>
+<p>文件路径：fronter/src/views/Profile.vue</p>
+<p>源码正文：</p>
+<pre><code>&lt;template&gt;
+  &lt;section&gt;
+    &lt;h1&gt;{{ t('profile') }}&lt;/h1&gt;
+    &lt;form class=&quot;form&quot; @submit.prevent=&quot;save&quot;&gt;
+      &lt;input v-model=&quot;form.name&quot; :placeholder=&quot;t('name')&quot; /&gt;
+      &lt;input v-model=&quot;form.email&quot; :placeholder=&quot;t('email')&quot; /&gt;
+      &lt;input v-model=&quot;form.phone&quot; :placeholder=&quot;t('phone')&quot; /&gt;
+      &lt;input v-model=&quot;form.nationality&quot; :placeholder=&quot;t('nationality')&quot; /&gt;
+      &lt;select v-model=&quot;form.language&quot;&gt;
+        &lt;option value=&quot;zh-CN&quot;&gt;中文&lt;/option&gt;
+        &lt;option value=&quot;en-US&quot;&gt;English&lt;/option&gt;
+        &lt;option value=&quot;ms-MY&quot;&gt;Bahasa Melayu&lt;/option&gt;
+      &lt;/select&gt;
+      &lt;button class=&quot;btn&quot;&gt;{{ t('submit') }}&lt;/button&gt;
+      &lt;p class=&quot;muted&quot;&gt;{{ message }}&lt;/p&gt;
+    &lt;/form&gt;
+  &lt;/section&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { onMounted, reactive, ref } from 'vue';
+import { request } from '../api/client.js';
+import { setLang, t } from '../i18n/index.js';
+
+const message = ref('');
+const form = reactive({ name: '', email: '', phone: '', nationality: '', language: 'zh-CN' });
+
+onMounted(async () =&gt; {
+  Object.assign(form, await request('/auth/profile'));
+});
+
+async function save() {
+  await request('/auth/profile', { method: 'PUT', body: form });
+  setLang(form.language);
+  message.value = 'saved';
+}
+&lt;/script&gt;</code></pre>
+<h3>fronter/src/views/Records.vue（续页 1）</h3>
+<p>文件路径：fronter/src/views/Records.vue</p>
+<p>源码正文：</p>
+<pre><code>&lt;template&gt;
+  &lt;section&gt;
+    &lt;h1&gt;{{ t('records') }}&lt;/h1&gt;
+    &lt;div class=&quot;card&quot; style=&quot;overflow:auto&quot;&gt;
+      &lt;table&gt;
+        &lt;thead&gt;
+          &lt;tr&gt;
+            &lt;th&gt;{{ t('title') }}&lt;/th&gt;
+            &lt;th&gt;{{ t('questionCount') }}&lt;/th&gt;
+            &lt;th&gt;{{ t('correct') }}&lt;/th&gt;
+            &lt;th&gt;{{ t('wrong') }}&lt;/th&gt;
+            &lt;th&gt;{{ t('score') }}&lt;/th&gt;
+            &lt;th&gt;{{ t('submittedAt') }}&lt;/th&gt;
+          &lt;/tr&gt;
+        &lt;/thead&gt;
+        &lt;tbody&gt;
+          &lt;tr v-for=&quot;row in rows&quot; :key=&quot;row.id&quot;&gt;
+            &lt;td&gt;{{ row.paper_title }}&lt;/td&gt;
+            &lt;td&gt;{{ row.total_questions }}&lt;/td&gt;
+            &lt;td&gt;{{ row.correct_count }}&lt;/td&gt;
+            &lt;td&gt;{{ row.wrong_count }}&lt;/td&gt;
+            &lt;td&gt;{{ row.total_score }}&lt;/td&gt;
+            &lt;td&gt;{{ row.submitted_at }}&lt;/td&gt;
+          &lt;/tr&gt;
+        &lt;/tbody&gt;
+      &lt;/table&gt;
+      &lt;p v-if=&quot;!rows.length&quot; class=&quot;muted&quot;&gt;{{ t('empty') }}&lt;/p&gt;
+    &lt;/div&gt;
+  &lt;/section&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { onMounted, ref, watch } from 'vue';
+import { request } from '../api/client.js';
+import { state, t } from '../i18n/index.js';
+
+const rows = ref([]);
+async function load() {
+  rows.value = await request(`/learning/records?lang=${state.lang}`);
+}
+onMounted(load);
+watch(() =&gt; state.lang, load);
+&lt;/script&gt;</code></pre>
+<h3>fronter/src/views/Register.vue（续页 1）</h3>
+<p>文件路径：fronter/src/views/Register.vue</p>
+<p>源码正文：</p>
+<pre><code>&lt;template&gt;
+  &lt;section&gt;
+    &lt;h1&gt;{{ t('register') }}&lt;/h1&gt;
+    &lt;form class=&quot;form&quot; @submit.prevent=&quot;submit&quot;&gt;
+      &lt;input v-model=&quot;form.username&quot; :placeholder=&quot;t('username')&quot; required /&gt;
+      &lt;input v-model=&quot;form.password&quot; :placeholder=&quot;t('password')&quot; type=&quot;password&quot; required /&gt;
+      &lt;input v-model=&quot;form.name&quot; :placeholder=&quot;t('name')&quot; /&gt;
+      &lt;input v-model=&quot;form.email&quot; :placeholder=&quot;t('email')&quot; /&gt;
+      &lt;input v-model=&quot;form.phone&quot; :placeholder=&quot;t('phone')&quot; /&gt;
+      &lt;input v-model=&quot;form.student_no&quot; :placeholder=&quot;t('studentNo')&quot; /&gt;
+      &lt;input v-model=&quot;form.nationality&quot; :placeholder=&quot;t('nationality')&quot; /&gt;
+      &lt;button class=&quot;btn&quot;&gt;{{ t('register') }}&lt;/button&gt;
+      &lt;p class=&quot;muted&quot;&gt;{{ message }}&lt;/p&gt;
+    &lt;/form&gt;
+  &lt;/section&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { reactive, ref } from 'vue';
+import { request } from '../api/client.js';
+import { t, state } from '../i18n/index.js';
+
+const message = ref('');
+const form = reactive({ username: '', password: '', name: '', email: '', phone: '', student_no: '', nationality: 'Malaysia', language: state.lang });
+
+async function submit() {
+  try {
+    await request('/auth/register', { method: 'POST', body: form });
+    message.value = 'registered';
+  } catch (e) {
+    message.value = e.message;
+  }
+}
+&lt;/script&gt;</code></pre>
+<h3>fronter/src/views/WrongBook.vue（续页 1）</h3>
+<p>文件路径：fronter/src/views/WrongBook.vue</p>
+<p>源码正文：</p>
+<pre><code>&lt;template&gt;
+  &lt;section&gt;
+    &lt;h1&gt;{{ t('wrongBook') }}&lt;/h1&gt;
+    &lt;div class=&quot;grid&quot;&gt;
+      &lt;article v-for=&quot;row in rows&quot; :key=&quot;row.id&quot; class=&quot;card&quot;&gt;
+        &lt;div class=&quot;row&quot;&gt;
+          &lt;span class=&quot;pill&quot;&gt;{{ row.category_name }}&lt;/span&gt;
+          &lt;span class=&quot;pill&quot;&gt;{{ t('wrong') }}: {{ row.wrong_count }}&lt;/span&gt;
+        &lt;/div&gt;
+        &lt;h3&gt;{{ row.title }}&lt;/h3&gt;
+        &lt;p class=&quot;muted&quot;&gt;{{ t('analysis') }}: {{ row.analysis }}&lt;/p&gt;
+      &lt;/article&gt;
+    &lt;/div&gt;
+    &lt;p v-if=&quot;!rows.length&quot; class=&quot;muted&quot;&gt;{{ t('empty') }}&lt;/p&gt;
+  &lt;/section&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { onMounted, ref, watch } from 'vue';
+import { request } from '../api/client.js';
+import { state, t } from '../i18n/index.js';
+
+const rows = ref([]);
+async function load() {
+  rows.value = await request(`/learning/wrong-questions?lang=${state.lang}`);
+}
+onMounted(load);
+watch(() =&gt; state.lang, load);
+&lt;/script&gt;</code></pre>
+<h3>fronter/vite.config.js（续页 1）</h3>
+<p>文件路径：fronter/vite.config.js</p>
+<p>源码正文：</p>
+<pre><code>import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
+
+export default defineConfig({
+  plugins: [vue()],
+  server: {
+    port: 5173
+  }
+});</code></pre></body></html>

@@ -1,0 +1,31 @@
+@startuml
+title 面向马来西亚留学生的汉语练习平台错题本模块用例图
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam ArrowColor #3C5488
+skinparam ActorBorderColor #3C5488
+skinparam ActorFontColor #111827
+skinparam UsecaseBorderColor #0072B2
+skinparam UsecaseBackgroundColor #F8FBFF
+skinparam ComponentBorderColor #0072B2
+skinparam ComponentBackgroundColor #F8FBFF
+skinparam DatabaseBorderColor #009E73
+skinparam DatabaseBackgroundColor #F4FFF9
+skinparam SequenceLifeLineBorderColor #3C5488
+skinparam ParticipantBorderColor #0072B2
+skinparam ParticipantBackgroundColor #F8FBFF
+skinparam ActivityBorderColor #0072B2
+skinparam ActivityBackgroundColor #F8FBFF
+
+left to right direction
+actor "学生用户" as Student
+rectangle "错题本模块" {
+  usecase "个人错题列表" as UC4_0
+  usecase "错误次数和解析查看" as UC4_1
+  usecase "访问learning/wrong-questions" as UC4_api
+}
+Student --> UC4_0
+Student --> UC4_1
+Student --> UC4_api
+@enduml

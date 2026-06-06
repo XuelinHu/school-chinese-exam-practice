@@ -1,0 +1,36 @@
+@startuml
+title 面向马来西亚留学生的汉语练习平台练习资源模块组件协作图
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam ArrowColor #3C5488
+skinparam ActorBorderColor #3C5488
+skinparam ActorFontColor #111827
+skinparam UsecaseBorderColor #0072B2
+skinparam UsecaseBackgroundColor #F8FBFF
+skinparam ComponentBorderColor #0072B2
+skinparam ComponentBackgroundColor #F8FBFF
+skinparam DatabaseBorderColor #009E73
+skinparam DatabaseBackgroundColor #F4FFF9
+skinparam SequenceLifeLineBorderColor #3C5488
+skinparam ParticipantBorderColor #0072B2
+skinparam ParticipantBackgroundColor #F8FBFF
+skinparam ActivityBorderColor #0072B2
+skinparam ActivityBackgroundColor #F8FBFF
+
+component "学生页面入口" as UI
+component "练习资源模块前端逻辑" as View
+component "API Client" as Client
+component "认证权限中间件" as Auth
+component "练习资源模块业务路由" as Route
+component "业务校验与结果组装" as Service
+database "levels、question_categories、papers、questions" as DB
+UI --> View : 触发练习资源模块
+View --> Client : 组织等级、分类、试卷列表和试卷详情查询请求
+Client --> Auth : 调用/api/learning/*
+Auth --> Route : 校验通过
+Route --> Service : 分发业务处理
+Service --> DB : 读写核心数据
+DB --> Service : 返回记录
+Service --> View : 返回展示结果
+@enduml

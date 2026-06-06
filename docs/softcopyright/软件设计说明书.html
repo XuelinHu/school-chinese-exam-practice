@@ -1,98 +1,250 @@
-<!doctype html>
-<html lang="zh-CN">
-<head>
-  <meta charset="utf-8">
-  <style>
-    @page { size: A4; margin: 22mm 16mm 18mm; }
-    body { font-family: "Noto Sans CJK SC", "Microsoft YaHei", Arial, sans-serif; color: #111; line-height: 1.55; font-size: 12px; }
-    .header { position: fixed; top: -14mm; left: 0; right: 0; height: 10mm; text-align: center; font-size: 10px; color: #333; border-bottom: 1px solid #bbb; padding-bottom: 2mm; }
-    .footer { position: fixed; bottom: -12mm; left: 0; right: 0; height: 8mm; text-align: center; font-size: 10px; color: #333; }
-    h1 { text-align: center; font-size: 22px; margin: 0 0 14px; page-break-after: avoid; }
-    h2 { font-size: 16px; margin: 18px 0 8px; border-bottom: 1px solid #999; padding-bottom: 3px; page-break-after: avoid; }
-    h3 { font-size: 14px; margin: 14px 0 6px; page-break-after: avoid; }
-    h4 { font-size: 13px; margin: 10px 0 4px; page-break-after: avoid; }
-    p { margin: 5px 0; text-align: justify; }
-    pre { white-space: pre-wrap; word-break: break-word; font-family: "Noto Sans Mono CJK SC", Consolas, monospace; font-size: 9px; line-height: 1.28; background: #fafafa; border: 1px solid #ddd; padding: 6px; margin: 6px 0 10px; }
-    code { font-family: "Noto Sans Mono CJK SC", Consolas, monospace; }
-    table { width: 100%; border-collapse: collapse; margin: 8px 0 12px; font-size: 10.5px; border-top: 1.4px solid #111; border-bottom: 1.4px solid #111; }
-    th { border-bottom: 1px solid #111; font-weight: 600; }
-    th, td { padding: 4px 6px; vertical-align: top; text-align: left; }
-    figure { margin: 10px 0 14px; text-align: center; page-break-inside: avoid; }
-    img { max-width: 96%; max-height: 210mm; object-fit: contain; }
-  </style>
-</head>
-<body>
-  <div class="header">马来西亚留学生汉语练习平台 V1.0</div>
-  <div class="footer"></div>
-  <h1>马来西亚留学生汉语练习平台软件设计说明书</h1>
-<p>软件名称：马来西亚留学生汉语练习平台</p>
-<p>版本号：V1.0</p>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>面向马来西亚留学生的汉语练习平台V1.0说明书</title><style>
+@page { size:A4; margin:0; }
+body{font-family:"Noto Sans CJK SC","Microsoft YaHei",Arial,sans-serif;color:#111827;font-size:12.2px;line-height:1.62;margin:0;padding:14mm 14mm 9mm;box-sizing:border-box;}
+.pdf-header{position:fixed;top:0;left:0;right:0;text-align:center;font-size:9px;line-height:12px;color:#555;}
+h1{text-align:center;font-size:23px;margin:0 0 16px;} h2{font-size:17px;margin:18px 0 8px;border-bottom:1px solid #111;padding-bottom:4px;page-break-after:avoid;} h3{font-size:14px;margin:13px 0 6px;page-break-after:avoid;} p{margin:5px 0;text-align:justify;}
+table{width:100%;border-collapse:collapse;margin:8px 0 12px;font-size:10.2px;border-top:1.4px solid #111;border-bottom:1.4px solid #111;} th{border-bottom:1px solid #111;} th,td{padding:4px 6px;text-align:left;vertical-align:top;}
+figure{margin:9px 0 14px;text-align:center;page-break-inside:avoid;} figure img{max-width:100%;object-fit:contain;} figure.diagram{page-break-before:always;} figure.diagram img{max-height:178mm;} figure.screen,figure.h5shot{page-break-before:always;} figure.screen img{width:100%;max-height:168mm;border:1px solid #d0d7de;} figure.h5shot img{max-height:182mm;width:auto;border:1px solid #d0d7de;} figcaption{font-size:10.5px;margin-top:5px;text-align:center;}
+pre{white-space:pre-wrap;word-break:break-word;font-size:9.5px;line-height:1.35;border:1px solid #ddd;padding:6px;}
+</style></head><body><div class="pdf-header">面向马来西亚留学生的汉语练习平台V1.0说明书</div><h1>面向马来西亚留学生的汉语练习平台V1.0软件设计说明书</h1>
+<h2>目录</h2>
+<p>1. 引言</p>
+<p>2. 需求概要分析</p>
+<p>3. 系统概述</p>
+<p>4. 总体设计</p>
+<p>5. 详细设计</p>
+<p>6. 数据设计</p>
+<p>7. 接口设计</p>
+<p>8. 运行与部署设计</p>
+<p>9. 安全与权限设计</p>
+<p>10. 测试与验证</p>
+<p>11. 结论</p>
 <h2>1 引言</h2>
 <h3>1.1 编写目的</h3>
-<p>本文档说明马来西亚留学生汉语练习平台的需求范围、系统结构、功能模块、数据设计、接口设计、部署运行方式、安全权限和测试验证情况。文档内容依据当前可运行代码、数据库脚本、接口行为、真实运行截图和代码推导图示整理，用于软件著作权登记材料中的软件设计说明。</p>
+<p>本文档用于说明面向马来西亚留学生的汉语练习平台V1.0的需求背景、系统结构、功能模块、详细流程、数据对象、关键接口、运行部署、安全权限和测试验证情况，作为软件著作权登记材料中的软件设计说明书。</p>
 <h3>1.2 软件范围</h3>
-<p>系统面向马来西亚留学生汉语练习场景，提供学生端 H5 学习入口和管理员后台管理入口。学生端覆盖注册登录、三语界面、练习列表、在线答题、成绩记录、错题本和个人中心；管理端覆盖数据看板、学生列表、题库列表、试卷列表和成绩记录列表。后台提供认证、学习练习和管理查询 API，数据库提供题库、试卷、用户、答题、错题和翻译数据存储。</p>
-<h2>2 需求分析</h2>
-<h3>2.1 功能需求</h3>
-<p>1. 用户认证需求：系统应支持学生注册、学生登录、管理员登录、JWT 登录态保存和个人资料维护，对应前台 Login、Register、Profile 页面和后台 /api/auth 系列接口。 2. 学生练习需求：系统应支持学生查看已发布练习列表、进入练习详情、逐题选择答案、提交答案并查看练习结果，对应 PracticeList、PracticeDetail 页面和 /api/learning/papers 接口。 3. 学习记录需求：系统应保存学生每次提交的题目数量、正确数、错误数、总分、答题时长和提交时间，对应 study_records、user_answers 数据表和 Records 页面。 4. 错题复习需求：系统应在学生答错题目时更新错题本，答对历史错题时标记解决状态，对应 wrong_questions 数据表和 WrongBook 页面。 5. 国际化需求：系统应支持中文、英文、马来语三种界面和题库内容展示，前端静态文案由 i18n 资源维护，题库内容由多语言翻译表提供。 6. 管理端需求：管理员应能查看平台数据统计、学生列表、题库列表、试卷列表和成绩记录，对应 Dashboard、AdminTable 页面和 /api/admin 系列接口。 7. 日志运维需求：后台应记录请求状态、路径、耗时、用户标识和异常信息，支持运行审计和问题排查，对应 logger.js 与 requestLogger.js。</p>
-<h3>2.2 非功能需求</h3>
-<p>系统应具备清晰的前后端分离结构，前台可以独立构建为静态资源，后台可独立运行在 Node.js 环境中。数据库采用 utf8mb4 字符集以支持中文、英文、马来语和拼音字符。认证令牌、密码、数据库口令和接口地址在文档与日志中应进行脱敏。核心答题提交流程应使用事务保证多表写入一致性。</p>
+<p>面向马来西亚留学生的汉语练习平台V1.0包含前端页面、后端接口、数据库结构、运行脚本和配套配置。系统围绕留学生学习或管理业务提供登录认证、业务数据查询、核心流程处理、统计分析、权限控制和运行部署能力。</p>
+<h2>2 需求概要分析</h2>
+<h3>2.1 需求背景</h3>
+<p>中国与马来西亚人文交流源远流长，是东盟教育合作的重点伙伴国家。近年来，依托中国—东盟教育交流周、千校携手计划、双向留学互通等合作机制，中马高校校际合作、学生交换、联合培养项目持续增多，马来西亚来华留学生规模逐年攀升，涵盖本科、硕士、交换生等多个培养层次，是东南亚来华留学的核心生源群体之一。随着双边经贸、文化、教育合作不断深化，汉语能力已成为马来西亚留学生学业深造、校企实习、跨境就业的核心必备能力。</p>
+<p>现阶段，马来西亚留学生汉语学习存在明显的适配性短板。市面通用汉语学习平台多为通用型教学模式，缺乏针对马来西亚留学生母语习惯、汉语学习难点、考试考点的定制化练习内容，且贴合来华留学日常学习、校园生活、学术交流的专项练习资源匮乏。多数留学生存在口语应用薄弱、应试能力不足、场景化汉语运用不熟练等问题，传统线下课堂练习、纸质习题模式形式单一、反馈滞后，无法满足碎片化、常态化、个性化的汉语提升需求。</p>
+<p>为精准适配马来西亚留学生的汉语学习特点，聚焦日常交流、学业考试、学术应用等核心场景，搭建专项化、智能化、轻量化的线上练习平台，弥补现有学习资源的短板，帮助留学生高效提升汉语综合能力，适配中马教育双向交流的发展趋势，助力更多马来西亚留学生顺利完成学业、深化中马人文互通，特此开发本汉语练习平台。</p>
+<h3>2.2 建设目标</h3>
+<p>本软件建设目标是形成可运行、可维护、可扩展的面向马来西亚留学生的汉语练习平台，通过 Web/H5 页面与后端接口整合业务数据，减少人工处理和零散表格管理带来的低效问题，提升留学生使用体验、教师管理效率和业务数据可追溯性。</p>
+<h3>2.3 用户角色和核心业务需求</h3>
+<table><thead><tr><th>模块</th><th>服务角色</th><th>核心职责</th><th>接口或页面</th><th>核心数据</th></tr></thead><tbody><tr><td>认证与资料模块</td><td>学生、管理员</td><td>注册、登录、个人资料查询和更新</td><td>/api/auth/*</td><td>users</td></tr><tr><td>练习资源模块</td><td>学生</td><td>等级、分类、试卷列表和试卷详情查询</td><td>/api/learning/*</td><td>levels、question_categories、papers、questions</td></tr><tr><td>在线答题模块</td><td>学生</td><td>试卷答题、提交判分、答案记录和错题写入</td><td>/api/learning/papers/:id/submit</td><td>study_records、user_answers、wrong_questions</td></tr><tr><td>错题本模块</td><td>学生</td><td>个人错题列表、错误次数和解析查看</td><td>/api/learning/wrong-questions</td><td>wrong_questions</td></tr><tr><td>学习记录模块</td><td>学生、管理员</td><td>个人成绩记录和管理端全量成绩记录</td><td>/api/learning/records、/api/admin/records</td><td>study_records</td></tr><tr><td>后台统计模块</td><td>管理员</td><td>学生数、题目数、试卷数、记录数和平均分统计</td><td>/api/admin/stats</td><td>users、questions、papers、study_records</td></tr></tbody></table>
+<h3>2.4 运行、安全和测试概要要求</h3>
+<p>系统应支持本地 Linux 服务器运行，使用 Node.js、浏览器和 MySQL 等支撑环境；应对账号、密码、数据库连接、令牌和接口地址进行脱敏；应通过真实运行页面、接口调用、数据库数据和 PDF 页数校验证明材料完整性。</p>
 <h2>3 系统概述</h2>
-<h3>3.1 角色和用例</h3>
-<figure><img src="../assets/diagrams/01_use_case.svg" alt="用例图"></figure>
-<p>图 3-1 用例图。该图展示学生和管理员两个角色与系统功能的对应关系。学生侧功能围绕学习闭环展开，包括注册登录、练习列表、在线答题、成绩回看、错题复习、个人资料维护和语言切换；管理员侧功能围绕教学管理展开，包括数据看板、学生列表、题库列表、试卷列表和成绩记录。该图用于明确软著材料中的用户边界、业务入口和功能归属，避免将学生功能与管理功能混同。</p>
-<h3>3.2 模块结构</h3>
-<table><tr><th>模块</th><th>角色</th><th>页面或接口</th><th>数据对象</th></tr><tr><td>认证与资料模块</td><td>学生、管理员</td><td>/login、/register、/profile、/api/auth</td><td>users</td></tr><tr><td>学习练习模块</td><td>学生</td><td>/practice、/practice/:id、/api/learning/papers</td><td>papers、questions、question_options</td></tr><tr><td>成绩记录模块</td><td>学生、管理员</td><td>/records、/admin/records</td><td>study_records、user_answers</td></tr><tr><td>错题本模块</td><td>学生</td><td>/wrong-book、/api/learning/wrong-questions</td><td>wrong_questions</td></tr><tr><td>题库管理查看模块</td><td>管理员</td><td>/admin/questions</td><td>questions、question_translations</td></tr><tr><td>系统统计模块</td><td>管理员</td><td>/admin、/api/admin/stats</td><td>users、questions、papers、study_records</td></tr><tr><td>国际化模块</td><td>学生、管理员</td><td>顶部语言切换、lang 参数</td><td>level_translations、paper_translations、question_translations</td></tr></table>
+<h3>3.1 系统边界</h3>
+<p>面向马来西亚留学生的汉语练习平台V1.0的系统边界包括浏览器/H5 页面、前端路由与组件、API 请求封装、Node.js/Express 后端、认证与角色权限控制、业务路由模块和 MySQL 数据库。普通用户主要通过 H5 页面完成学习、资料、成绩或业务查询，管理角色通过桌面管理页面完成列表维护、统计分析和风险处理。</p>
+<h3>3.2 页面与截图清单</h3>
+<table><thead><tr><th>序号</th><th>截图文件</th><th>页面名称</th><th>校准方式</th></tr></thead><tbody><tr><td>1</td><td>01_h5_login_zh.png</td><td>H5 中文登录页</td><td>H5 竖屏校准截图</td></tr><tr><td>2</td><td>02_h5_register_zh.png</td><td>H5 中文注册页</td><td>H5 竖屏校准截图</td></tr><tr><td>3</td><td>03_h5_home_zh.png</td><td>H5 学生首页</td><td>H5 竖屏校准截图</td></tr><tr><td>4</td><td>04_h5_practice_list_zh.png</td><td>H5 练习列表页</td><td>H5 竖屏校准截图</td></tr><tr><td>5</td><td>05_h5_practice_detail_zh.png</td><td>H5 答题详情页</td><td>H5 竖屏校准截图</td></tr><tr><td>6</td><td>06_h5_records_zh.png</td><td>H5 成绩记录页</td><td>H5 竖屏校准截图</td></tr><tr><td>7</td><td>07_h5_wrong_book_zh.png</td><td>H5 错题本页</td><td>H5 竖屏校准截图</td></tr><tr><td>8</td><td>08_h5_profile_ms.png</td><td>H5 马来语个人中心页</td><td>H5 竖屏校准截图</td></tr><tr><td>9</td><td>09_admin_dashboard_zh.png</td><td>管理端中文看板页</td><td>桌面横屏截图</td></tr><tr><td>10</td><td>10_admin_users_zh.png</td><td>管理端学生列表页</td><td>桌面横屏截图</td></tr><tr><td>11</td><td>11_admin_questions_en.png</td><td>管理端英文题库页</td><td>桌面横屏截图</td></tr><tr><td>12</td><td>12_admin_papers_ms.png</td><td>管理端马来语试卷页</td><td>桌面横屏截图</td></tr><tr><td>13</td><td>13_admin_records_zh.png</td><td>管理端成绩记录页</td><td>桌面横屏截图</td></tr></tbody></table>
+<h3>3.3 功能模块概览</h3>
+<table><thead><tr><th>模块</th><th>服务角色</th><th>核心职责</th><th>接口或页面</th><th>核心数据</th></tr></thead><tbody><tr><td>认证与资料模块</td><td>学生、管理员</td><td>注册、登录、个人资料查询和更新</td><td>/api/auth/*</td><td>users</td></tr><tr><td>练习资源模块</td><td>学生</td><td>等级、分类、试卷列表和试卷详情查询</td><td>/api/learning/*</td><td>levels、question_categories、papers、questions</td></tr><tr><td>在线答题模块</td><td>学生</td><td>试卷答题、提交判分、答案记录和错题写入</td><td>/api/learning/papers/:id/submit</td><td>study_records、user_answers、wrong_questions</td></tr><tr><td>错题本模块</td><td>学生</td><td>个人错题列表、错误次数和解析查看</td><td>/api/learning/wrong-questions</td><td>wrong_questions</td></tr><tr><td>学习记录模块</td><td>学生、管理员</td><td>个人成绩记录和管理端全量成绩记录</td><td>/api/learning/records、/api/admin/records</td><td>study_records</td></tr><tr><td>后台统计模块</td><td>管理员</td><td>学生数、题目数、试卷数、记录数和平均分统计</td><td>/api/admin/stats</td><td>users、questions、papers、study_records</td></tr></tbody></table>
 <h2>4 总体设计</h2>
-<h3>4.1 系统架构</h3>
-<figure><img src="../assets/diagrams/02_architecture.svg" alt="系统架构图"></figure>
-<p>图 4-1 系统架构图。该图说明系统由 fronter 前台、admin 后台和 MySQL 数据库组成。前台负责路由、界面渲染、国际化、登录状态和 API 请求封装；后台负责认证、学习练习、管理查询、日志记录、数据库连接池和事务控制；数据库保存用户、题库、试卷、答题、错题和翻译数据。该图体现了前后端分离、接口解耦和数据集中存储的总体结构。</p>
-<h3>4.2 部署结构</h3>
-<figure><img src="../assets/diagrams/03_deployment.svg" alt="部署图"></figure>
-<p>图 4-2 部署图。该图描述浏览器、Web 前端运行环境、应用服务器和 MySQL 数据库之间的部署关系。用户浏览器加载前端静态资源后，通过脱敏后的 /api 地址访问后台接口；后台运行在 Node.js 环境中，通过 MySQL 连接池访问数据库，并将请求和异常写入日志文件。该图用于说明软件运行支撑环境、服务边界和部署节点职责。</p>
+<h3>4.1 分层架构</h3>
+<p>系统采用浏览器前端、Node.js/Express 服务端和 MySQL 数据库的分层结构。前端负责页面展示、路由跳转、语言切换和 API 请求封装，服务端负责身份认证、权限校验、业务路由、数据聚合和异常处理，数据库负责保存用户、业务主数据、关系数据和记录数据。</p>
+<h3>4.2 模块协作原则</h3>
+<p>各模块按照“页面入口 - 请求封装 - 认证权限 - 业务路由 - 数据对象 - 结果展示”的链路协作。前端只保留页面状态和必要的会话信息，后端统一承担权限判断、参数校验、数据读写和错误返回，数据库表或业务对象之间通过用户身份、业务主数据、记录数据和日志数据建立关联。</p>
+<h3>4.3 图示组织原则</h3>
+<p>本说明书将主要 UML 图编排在第 5 章详细设计正文中。用例图用于表达角色与功能入口，时序图用于表达接口调用链路，活动图用于表达业务处理路径，组件图和部署图用于表达系统运行结构，数据对象图用于表达核心数据关系。</p>
 <h2>5 详细设计</h2>
-<h3>5.1 答题业务流程</h3>
-<figure><img src="../assets/diagrams/04_practice_flow.svg" alt="答题流程图"></figure>
-<p>图 5-1 答题流程图。该图说明学生从登录、查看练习列表、选择试卷、逐题作答到提交结果的完整流程。流程中特别体现了未全部作答时的前台提示、提交后的后台判分、学习记录写入、用户答案写入和错题本更新逻辑。该图对应 PracticeDetail 页面和 /api/learning/papers/{id}/submit 接口，是系统学习闭环的关键流程。</p>
-<h3>5.2 提交答案时序</h3>
-<figure><img src="../assets/diagrams/05_submit_sequence.svg" alt="提交答案时序图"></figure>
-<p>图 5-2 提交答案时序图。该图展示学生页面、API Client、learning 路由、事务封装和 MySQL 之间的调用顺序。后台在事务中查询正确答案、计算得分、写入 study_records、写入 user_answers 并更新 wrong_questions，最后将结果返回给前台展示。该图用于解释多表写入如何保持一致，以及答题结果如何驱动成绩和错题数据更新。</p>
+<h3>5.1 详细设计 UML 覆盖关系</h3>
+<table><thead><tr><th>序号</th><th>详细设计小节</th><th>UML 图文件</th><th>图示说明 TXT</th><th>图示类型</th></tr></thead><tbody><tr><td>1</td><td>系统组件与调用关系设计</td><td>01_system_component.svg</td><td>01_system_component.txt</td><td>component</td></tr><tr><td>2</td><td>运行部署结构设计</td><td>02_deployment.svg</td><td>02_deployment.txt</td><td>deployment</td></tr><tr><td>3</td><td>认证权限状态设计</td><td>03_permission_state.svg</td><td>03_permission_state.txt</td><td>state</td></tr><tr><td>4</td><td>核心数据对象设计</td><td>04_data_object.svg</td><td>04_data_object.txt</td><td>class</td></tr><tr><td>5</td><td>认证与资料模块用例设计</td><td>05_module_1_use_case.svg</td><td>05_module_1_use_case.txt</td><td>usecase</td></tr><tr><td>6</td><td>认证与资料模块接口调用时序设计</td><td>06_module_1_sequence.svg</td><td>06_module_1_sequence.txt</td><td>sequence</td></tr><tr><td>7</td><td>认证与资料模块业务活动设计</td><td>07_module_1_activity.svg</td><td>07_module_1_activity.txt</td><td>activity</td></tr><tr><td>8</td><td>认证与资料模块状态转换设计</td><td>23_module_1_state.svg</td><td>23_module_1_state.txt</td><td>state</td></tr><tr><td>9</td><td>认证与资料模块组件协作设计</td><td>29_module_1_component.svg</td><td>29_module_1_component.txt</td><td>component</td></tr><tr><td>10</td><td>认证与资料模块数据关系设计</td><td>30_module_1_data.svg</td><td>30_module_1_data.txt</td><td>class</td></tr><tr><td>11</td><td>练习资源模块用例设计</td><td>08_module_2_use_case.svg</td><td>08_module_2_use_case.txt</td><td>usecase</td></tr><tr><td>12</td><td>练习资源模块接口调用时序设计</td><td>09_module_2_sequence.svg</td><td>09_module_2_sequence.txt</td><td>sequence</td></tr><tr><td>13</td><td>练习资源模块业务活动设计</td><td>10_module_2_activity.svg</td><td>10_module_2_activity.txt</td><td>activity</td></tr><tr><td>14</td><td>练习资源模块状态转换设计</td><td>24_module_2_state.svg</td><td>24_module_2_state.txt</td><td>state</td></tr><tr><td>15</td><td>练习资源模块组件协作设计</td><td>31_module_2_component.svg</td><td>31_module_2_component.txt</td><td>component</td></tr><tr><td>16</td><td>练习资源模块数据关系设计</td><td>32_module_2_data.svg</td><td>32_module_2_data.txt</td><td>class</td></tr><tr><td>17</td><td>在线答题模块用例设计</td><td>11_module_3_use_case.svg</td><td>11_module_3_use_case.txt</td><td>usecase</td></tr><tr><td>18</td><td>在线答题模块接口调用时序设计</td><td>12_module_3_sequence.svg</td><td>12_module_3_sequence.txt</td><td>sequence</td></tr><tr><td>19</td><td>在线答题模块业务活动设计</td><td>13_module_3_activity.svg</td><td>13_module_3_activity.txt</td><td>activity</td></tr><tr><td>20</td><td>在线答题模块状态转换设计</td><td>25_module_3_state.svg</td><td>25_module_3_state.txt</td><td>state</td></tr><tr><td>21</td><td>在线答题模块组件协作设计</td><td>33_module_3_component.svg</td><td>33_module_3_component.txt</td><td>component</td></tr><tr><td>22</td><td>在线答题模块数据关系设计</td><td>34_module_3_data.svg</td><td>34_module_3_data.txt</td><td>class</td></tr><tr><td>23</td><td>错题本模块用例设计</td><td>14_module_4_use_case.svg</td><td>14_module_4_use_case.txt</td><td>usecase</td></tr><tr><td>24</td><td>错题本模块接口调用时序设计</td><td>15_module_4_sequence.svg</td><td>15_module_4_sequence.txt</td><td>sequence</td></tr><tr><td>25</td><td>错题本模块业务活动设计</td><td>16_module_4_activity.svg</td><td>16_module_4_activity.txt</td><td>activity</td></tr><tr><td>26</td><td>错题本模块状态转换设计</td><td>26_module_4_state.svg</td><td>26_module_4_state.txt</td><td>state</td></tr><tr><td>27</td><td>错题本模块组件协作设计</td><td>35_module_4_component.svg</td><td>35_module_4_component.txt</td><td>component</td></tr><tr><td>28</td><td>错题本模块数据关系设计</td><td>36_module_4_data.svg</td><td>36_module_4_data.txt</td><td>class</td></tr><tr><td>29</td><td>学习记录模块用例设计</td><td>17_module_5_use_case.svg</td><td>17_module_5_use_case.txt</td><td>usecase</td></tr><tr><td>30</td><td>学习记录模块接口调用时序设计</td><td>18_module_5_sequence.svg</td><td>18_module_5_sequence.txt</td><td>sequence</td></tr><tr><td>31</td><td>学习记录模块业务活动设计</td><td>19_module_5_activity.svg</td><td>19_module_5_activity.txt</td><td>activity</td></tr><tr><td>32</td><td>学习记录模块状态转换设计</td><td>27_module_5_state.svg</td><td>27_module_5_state.txt</td><td>state</td></tr><tr><td>33</td><td>学习记录模块组件协作设计</td><td>37_module_5_component.svg</td><td>37_module_5_component.txt</td><td>component</td></tr><tr><td>34</td><td>学习记录模块数据关系设计</td><td>38_module_5_data.svg</td><td>38_module_5_data.txt</td><td>class</td></tr><tr><td>35</td><td>后台统计模块用例设计</td><td>20_module_6_use_case.svg</td><td>20_module_6_use_case.txt</td><td>usecase</td></tr><tr><td>36</td><td>后台统计模块接口调用时序设计</td><td>21_module_6_sequence.svg</td><td>21_module_6_sequence.txt</td><td>sequence</td></tr><tr><td>37</td><td>后台统计模块业务活动设计</td><td>22_module_6_activity.svg</td><td>22_module_6_activity.txt</td><td>activity</td></tr><tr><td>38</td><td>后台统计模块状态转换设计</td><td>28_module_6_state.svg</td><td>28_module_6_state.txt</td><td>state</td></tr><tr><td>39</td><td>后台统计模块组件协作设计</td><td>39_module_6_component.svg</td><td>39_module_6_component.txt</td><td>component</td></tr><tr><td>40</td><td>后台统计模块数据关系设计</td><td>40_module_6_data.svg</td><td>40_module_6_data.txt</td><td>class</td></tr></tbody></table>
+<p>详细设计章节按照系统结构、运行部署、权限状态、数据对象和业务模块逐项展开，每个小节均配置对应 UML 图。主要用例图、时序图、活动图、部署图和数据对象图均放在本章正文中，不集中放到文末替代详细设计。</p>
+<h3>5.2 系统组件与调用关系设计</h3>
+<figure class="diagram"><img src="../assets/diagrams/01_system_component.svg" alt="图 5-1 系统组件 UML 图"><figcaption>图 5-1 系统组件 UML 图</figcaption></figure>
+<p>系统组件 UML 图用于说明面向马来西亚留学生的汉语练习平台的前端页面、请求封装、后端服务、认证权限、业务路由和数据库之间的分层关系。该图由 PlantUML 生成，图中每个节点都对应项目中可核验的页面、服务、接口或数据层职责，用于支撑详细设计中的系统级组件设计。</p>
+<p>系统组件关系体现前后端分层与数据访问边界。页面层只负责用户交互和显示，API 请求封装层负责统一调用和令牌携带，服务端根据认证状态进入业务路由，业务路由再围绕数据库对象完成查询、写入和统计。</p>
+<h3>5.3 运行部署结构设计</h3>
+<figure class="diagram"><img src="../assets/diagrams/02_deployment.svg" alt="图 5-2 部署 UML 图"><figcaption>图 5-2 部署 UML 图</figcaption></figure>
+<p>部署 UML 图用于说明面向马来西亚留学生的汉语练习平台在 Linux 本机应用环境中的部署关系，覆盖用户终端、静态资源服务、Node.js 应用服务、环境变量和 MySQL 数据库。该图由 PlantUML 生成，用于在详细设计正文中说明运行节点、端口关系和服务调用方向。</p>
+<p>部署结构体现本机 Linux 环境中的静态资源服务、Node.js 应用服务、环境变量和数据库服务。对外部署时应将前端入口、后端接口和数据库端口区分管理，数据库端口不直接对公网开放。</p>
+<h3>5.4 认证权限状态设计</h3>
+<figure class="diagram"><img src="../assets/diagrams/03_permission_state.svg" alt="图 5-3 权限状态 UML 图"><figcaption>图 5-3 权限状态 UML 图</figcaption></figure>
+<p>权限状态 UML 图用于说明面向马来西亚留学生的汉语练习平台从未登录、登录校验、角色会话到受保护业务访问的状态变化。该图由 PlantUML 生成，适合支撑身份认证、角色权限、退出登录和访问控制的详细设计说明。</p>
+<p>权限状态设计覆盖未登录、登录校验、角色会话、受保护业务和退出登录等状态。系统通过角色信息区分学生、教师和管理员，确保普通用户仅访问本人相关数据，管理角色访问后台统计与管理功能。</p>
+<h3>5.5 核心数据对象设计</h3>
+<figure class="diagram"><img src="../assets/diagrams/04_data_object.svg" alt="图 5-4 数据对象 UML 类图"><figcaption>图 5-4 数据对象 UML 类图</figcaption></figure>
+<p>数据对象 UML 类图用于说明面向马来西亚留学生的汉语练习平台核心业务数据对象之间的关联关系。该图由 PlantUML 生成，数据对象名称来自项目模块中已核验的数据库表或业务对象，用于支撑详细设计和数据设计章节。</p>
+<p>数据对象设计体现用户、角色、业务主数据、记录数据、统计数据和日志数据之间的关系。不同项目表名有所差异，但均围绕用户身份、业务对象和操作记录形成可追溯的数据链路。</p>
+<h3>5.6 认证与资料模块详细设计</h3>
+<p>认证与资料模块面向学生、管理员，主要提供注册、登录、个人资料查询和更新。该模块的输入包括登录会话、页面查询条件、业务表单参数和分页条件，输出包括列表数据、详情数据、统计结果、提交结果或异常提示。模块对应接口或页面为 /api/auth/*，核心数据对象为 users。</p>
+<figure class="diagram"><img src="../assets/diagrams/05_module_1_use_case.svg" alt="图 5-5 认证与资料模块用例 UML 图"><figcaption>图 5-5 认证与资料模块用例 UML 图</figcaption></figure>
+<p>认证与资料模块用例 UML 图用于说明面向马来西亚留学生的汉语练习平台中学生、管理员围绕注册、登录、个人资料查询和更新形成的主要功能入口和业务动作。该图由 PlantUML 生成，图中用例来自已核验模块职责和接口路径 /api/auth/*，用于放入详细设计正文。</p>
+<figure class="diagram"><img src="../assets/diagrams/06_module_1_sequence.svg" alt="图 5-6 认证与资料模块时序 UML 图"><figcaption>图 5-6 认证与资料模块时序 UML 图</figcaption></figure>
+<p>认证与资料模块时序 UML 图用于说明用户、前端页面、请求封装、认证权限中间件、业务路由和数据对象之间的调用顺序。该图由 PlantUML 生成，展示 /api/auth/* 的请求处理链路和 users 的数据读写关系。</p>
+<figure class="diagram"><img src="../assets/diagrams/07_module_1_activity.svg" alt="图 5-7 认证与资料模块活动 UML 图"><figcaption>图 5-7 认证与资料模块活动 UML 图</figcaption></figure>
+<p>认证与资料模块活动 UML 图用于说明面向马来西亚留学生的汉语练习平台中认证与资料模块从页面入口、权限判断、接口调用、业务处理、数据读写到结果展示的完整活动流程。该图由 PlantUML 生成，适合支撑详细设计中输入输出、处理流程和异常处理说明。</p>
+<figure class="diagram"><img src="../assets/diagrams/23_module_1_state.svg" alt="图 5-8 认证与资料模块状态 UML 图"><figcaption>图 5-8 认证与资料模块状态 UML 图</figcaption></figure>
+<p>认证与资料模块状态 UML 图用于说明面向马来西亚留学生的汉语练习平台中认证与资料模块从页面待访问、会话检查、数据加载、参数校验、业务处理、结果展示到异常提示的状态变化。该图由 PlantUML 生成，用于补充详细设计中的异常处理和状态控制说明。</p>
+<figure class="diagram"><img src="../assets/diagrams/29_module_1_component.svg" alt="图 5-9 认证与资料模块组件协作 UML 图"><figcaption>图 5-9 认证与资料模块组件协作 UML 图</figcaption></figure>
+<p>认证与资料模块组件协作 UML 图用于说明面向马来西亚留学生的汉语练习平台中认证与资料模块的页面入口、前端逻辑、API Client、认证权限中间件、业务路由、业务校验和数据对象之间的协作方式。该图由 PlantUML 生成，用于补充详细设计中的组件职责和调用边界。</p>
+<figure class="diagram"><img src="../assets/diagrams/30_module_1_data.svg" alt="图 5-10 认证与资料模块数据关系 UML 图"><figcaption>图 5-10 认证与资料模块数据关系 UML 图</figcaption></figure>
+<p>认证与资料模块数据关系 UML 图用于说明面向马来西亚留学生的汉语练习平台中认证与资料模块请求参数、响应结果和核心数据对象之间的关系。该图由 PlantUML 生成，数据对象来自 users，用于补充详细设计中的数据流转和结果组装说明。</p>
+<p>认证与资料模块的处理流程首先由用户在页面中触发操作，前端读取会话状态并组织请求参数；后端通过认证与角色权限中间件判断访问资格，再进入模块路由完成参数校验和业务处理。若数据查询或写入成功，页面展示业务结果；若出现未登录、越权、参数缺失或数据不存在，页面展示明确的异常状态。</p>
+<p>异常处理方面，认证与资料模块需要覆盖接口不可达、数据库连接异常、用户权限不足、表单字段缺失和返回数据为空等情况。前端应提供空状态、加载状态、错误提示或回退路径，后端应保持统一响应格式和可追溯日志。</p>
+<h3>5.7 练习资源模块详细设计</h3>
+<p>练习资源模块面向学生，主要提供等级、分类、试卷列表和试卷详情查询。该模块的输入包括登录会话、页面查询条件、业务表单参数和分页条件，输出包括列表数据、详情数据、统计结果、提交结果或异常提示。模块对应接口或页面为 /api/learning/*，核心数据对象为 levels、question_categories、papers、questions。</p>
+<figure class="diagram"><img src="../assets/diagrams/08_module_2_use_case.svg" alt="图 5-11 练习资源模块用例 UML 图"><figcaption>图 5-11 练习资源模块用例 UML 图</figcaption></figure>
+<p>练习资源模块用例 UML 图用于说明面向马来西亚留学生的汉语练习平台中学生围绕等级、分类、试卷列表和试卷详情查询形成的主要功能入口和业务动作。该图由 PlantUML 生成，图中用例来自已核验模块职责和接口路径 /api/learning/*，用于放入详细设计正文。</p>
+<figure class="diagram"><img src="../assets/diagrams/09_module_2_sequence.svg" alt="图 5-12 练习资源模块时序 UML 图"><figcaption>图 5-12 练习资源模块时序 UML 图</figcaption></figure>
+<p>练习资源模块时序 UML 图用于说明用户、前端页面、请求封装、认证权限中间件、业务路由和数据对象之间的调用顺序。该图由 PlantUML 生成，展示 /api/learning/* 的请求处理链路和 levels、question_categories、papers、questions 的数据读写关系。</p>
+<figure class="diagram"><img src="../assets/diagrams/10_module_2_activity.svg" alt="图 5-13 练习资源模块活动 UML 图"><figcaption>图 5-13 练习资源模块活动 UML 图</figcaption></figure>
+<p>练习资源模块活动 UML 图用于说明面向马来西亚留学生的汉语练习平台中练习资源模块从页面入口、权限判断、接口调用、业务处理、数据读写到结果展示的完整活动流程。该图由 PlantUML 生成，适合支撑详细设计中输入输出、处理流程和异常处理说明。</p>
+<figure class="diagram"><img src="../assets/diagrams/24_module_2_state.svg" alt="图 5-14 练习资源模块状态 UML 图"><figcaption>图 5-14 练习资源模块状态 UML 图</figcaption></figure>
+<p>练习资源模块状态 UML 图用于说明面向马来西亚留学生的汉语练习平台中练习资源模块从页面待访问、会话检查、数据加载、参数校验、业务处理、结果展示到异常提示的状态变化。该图由 PlantUML 生成，用于补充详细设计中的异常处理和状态控制说明。</p>
+<figure class="diagram"><img src="../assets/diagrams/31_module_2_component.svg" alt="图 5-15 练习资源模块组件协作 UML 图"><figcaption>图 5-15 练习资源模块组件协作 UML 图</figcaption></figure>
+<p>练习资源模块组件协作 UML 图用于说明面向马来西亚留学生的汉语练习平台中练习资源模块的页面入口、前端逻辑、API Client、认证权限中间件、业务路由、业务校验和数据对象之间的协作方式。该图由 PlantUML 生成，用于补充详细设计中的组件职责和调用边界。</p>
+<figure class="diagram"><img src="../assets/diagrams/32_module_2_data.svg" alt="图 5-16 练习资源模块数据关系 UML 图"><figcaption>图 5-16 练习资源模块数据关系 UML 图</figcaption></figure>
+<p>练习资源模块数据关系 UML 图用于说明面向马来西亚留学生的汉语练习平台中练习资源模块请求参数、响应结果和核心数据对象之间的关系。该图由 PlantUML 生成，数据对象来自 levels、question_categories、papers、questions，用于补充详细设计中的数据流转和结果组装说明。</p>
+<p>练习资源模块的处理流程首先由用户在页面中触发操作，前端读取会话状态并组织请求参数；后端通过认证与角色权限中间件判断访问资格，再进入模块路由完成参数校验和业务处理。若数据查询或写入成功，页面展示业务结果；若出现未登录、越权、参数缺失或数据不存在，页面展示明确的异常状态。</p>
+<p>异常处理方面，练习资源模块需要覆盖接口不可达、数据库连接异常、用户权限不足、表单字段缺失和返回数据为空等情况。前端应提供空状态、加载状态、错误提示或回退路径，后端应保持统一响应格式和可追溯日志。</p>
+<h3>5.8 在线答题模块详细设计</h3>
+<p>在线答题模块面向学生，主要提供试卷答题、提交判分、答案记录和错题写入。该模块的输入包括登录会话、页面查询条件、业务表单参数和分页条件，输出包括列表数据、详情数据、统计结果、提交结果或异常提示。模块对应接口或页面为 /api/learning/papers/:id/submit，核心数据对象为 study_records、user_answers、wrong_questions。</p>
+<figure class="diagram"><img src="../assets/diagrams/11_module_3_use_case.svg" alt="图 5-17 在线答题模块用例 UML 图"><figcaption>图 5-17 在线答题模块用例 UML 图</figcaption></figure>
+<p>在线答题模块用例 UML 图用于说明面向马来西亚留学生的汉语练习平台中学生围绕试卷答题、提交判分、答案记录和错题写入形成的主要功能入口和业务动作。该图由 PlantUML 生成，图中用例来自已核验模块职责和接口路径 /api/learning/papers/:id/submit，用于放入详细设计正文。</p>
+<figure class="diagram"><img src="../assets/diagrams/12_module_3_sequence.svg" alt="图 5-18 在线答题模块时序 UML 图"><figcaption>图 5-18 在线答题模块时序 UML 图</figcaption></figure>
+<p>在线答题模块时序 UML 图用于说明用户、前端页面、请求封装、认证权限中间件、业务路由和数据对象之间的调用顺序。该图由 PlantUML 生成，展示 /api/learning/papers/:id/submit 的请求处理链路和 study_records、user_answers、wrong_questions 的数据读写关系。</p>
+<figure class="diagram"><img src="../assets/diagrams/13_module_3_activity.svg" alt="图 5-19 在线答题模块活动 UML 图"><figcaption>图 5-19 在线答题模块活动 UML 图</figcaption></figure>
+<p>在线答题模块活动 UML 图用于说明面向马来西亚留学生的汉语练习平台中在线答题模块从页面入口、权限判断、接口调用、业务处理、数据读写到结果展示的完整活动流程。该图由 PlantUML 生成，适合支撑详细设计中输入输出、处理流程和异常处理说明。</p>
+<figure class="diagram"><img src="../assets/diagrams/25_module_3_state.svg" alt="图 5-20 在线答题模块状态 UML 图"><figcaption>图 5-20 在线答题模块状态 UML 图</figcaption></figure>
+<p>在线答题模块状态 UML 图用于说明面向马来西亚留学生的汉语练习平台中在线答题模块从页面待访问、会话检查、数据加载、参数校验、业务处理、结果展示到异常提示的状态变化。该图由 PlantUML 生成，用于补充详细设计中的异常处理和状态控制说明。</p>
+<figure class="diagram"><img src="../assets/diagrams/33_module_3_component.svg" alt="图 5-21 在线答题模块组件协作 UML 图"><figcaption>图 5-21 在线答题模块组件协作 UML 图</figcaption></figure>
+<p>在线答题模块组件协作 UML 图用于说明面向马来西亚留学生的汉语练习平台中在线答题模块的页面入口、前端逻辑、API Client、认证权限中间件、业务路由、业务校验和数据对象之间的协作方式。该图由 PlantUML 生成，用于补充详细设计中的组件职责和调用边界。</p>
+<figure class="diagram"><img src="../assets/diagrams/34_module_3_data.svg" alt="图 5-22 在线答题模块数据关系 UML 图"><figcaption>图 5-22 在线答题模块数据关系 UML 图</figcaption></figure>
+<p>在线答题模块数据关系 UML 图用于说明面向马来西亚留学生的汉语练习平台中在线答题模块请求参数、响应结果和核心数据对象之间的关系。该图由 PlantUML 生成，数据对象来自 study_records、user_answers、wrong_questions，用于补充详细设计中的数据流转和结果组装说明。</p>
+<p>在线答题模块的处理流程首先由用户在页面中触发操作，前端读取会话状态并组织请求参数；后端通过认证与角色权限中间件判断访问资格，再进入模块路由完成参数校验和业务处理。若数据查询或写入成功，页面展示业务结果；若出现未登录、越权、参数缺失或数据不存在，页面展示明确的异常状态。</p>
+<p>异常处理方面，在线答题模块需要覆盖接口不可达、数据库连接异常、用户权限不足、表单字段缺失和返回数据为空等情况。前端应提供空状态、加载状态、错误提示或回退路径，后端应保持统一响应格式和可追溯日志。</p>
+<h3>5.9 错题本模块详细设计</h3>
+<p>错题本模块面向学生，主要提供个人错题列表、错误次数和解析查看。该模块的输入包括登录会话、页面查询条件、业务表单参数和分页条件，输出包括列表数据、详情数据、统计结果、提交结果或异常提示。模块对应接口或页面为 /api/learning/wrong-questions，核心数据对象为 wrong_questions。</p>
+<figure class="diagram"><img src="../assets/diagrams/14_module_4_use_case.svg" alt="图 5-23 错题本模块用例 UML 图"><figcaption>图 5-23 错题本模块用例 UML 图</figcaption></figure>
+<p>错题本模块用例 UML 图用于说明面向马来西亚留学生的汉语练习平台中学生围绕个人错题列表、错误次数和解析查看形成的主要功能入口和业务动作。该图由 PlantUML 生成，图中用例来自已核验模块职责和接口路径 /api/learning/wrong-questions，用于放入详细设计正文。</p>
+<figure class="diagram"><img src="../assets/diagrams/15_module_4_sequence.svg" alt="图 5-24 错题本模块时序 UML 图"><figcaption>图 5-24 错题本模块时序 UML 图</figcaption></figure>
+<p>错题本模块时序 UML 图用于说明用户、前端页面、请求封装、认证权限中间件、业务路由和数据对象之间的调用顺序。该图由 PlantUML 生成，展示 /api/learning/wrong-questions 的请求处理链路和 wrong_questions 的数据读写关系。</p>
+<figure class="diagram"><img src="../assets/diagrams/16_module_4_activity.svg" alt="图 5-25 错题本模块活动 UML 图"><figcaption>图 5-25 错题本模块活动 UML 图</figcaption></figure>
+<p>错题本模块活动 UML 图用于说明面向马来西亚留学生的汉语练习平台中错题本模块从页面入口、权限判断、接口调用、业务处理、数据读写到结果展示的完整活动流程。该图由 PlantUML 生成，适合支撑详细设计中输入输出、处理流程和异常处理说明。</p>
+<figure class="diagram"><img src="../assets/diagrams/26_module_4_state.svg" alt="图 5-26 错题本模块状态 UML 图"><figcaption>图 5-26 错题本模块状态 UML 图</figcaption></figure>
+<p>错题本模块状态 UML 图用于说明面向马来西亚留学生的汉语练习平台中错题本模块从页面待访问、会话检查、数据加载、参数校验、业务处理、结果展示到异常提示的状态变化。该图由 PlantUML 生成，用于补充详细设计中的异常处理和状态控制说明。</p>
+<figure class="diagram"><img src="../assets/diagrams/35_module_4_component.svg" alt="图 5-27 错题本模块组件协作 UML 图"><figcaption>图 5-27 错题本模块组件协作 UML 图</figcaption></figure>
+<p>错题本模块组件协作 UML 图用于说明面向马来西亚留学生的汉语练习平台中错题本模块的页面入口、前端逻辑、API Client、认证权限中间件、业务路由、业务校验和数据对象之间的协作方式。该图由 PlantUML 生成，用于补充详细设计中的组件职责和调用边界。</p>
+<figure class="diagram"><img src="../assets/diagrams/36_module_4_data.svg" alt="图 5-28 错题本模块数据关系 UML 图"><figcaption>图 5-28 错题本模块数据关系 UML 图</figcaption></figure>
+<p>错题本模块数据关系 UML 图用于说明面向马来西亚留学生的汉语练习平台中错题本模块请求参数、响应结果和核心数据对象之间的关系。该图由 PlantUML 生成，数据对象来自 wrong_questions，用于补充详细设计中的数据流转和结果组装说明。</p>
+<p>错题本模块的处理流程首先由用户在页面中触发操作，前端读取会话状态并组织请求参数；后端通过认证与角色权限中间件判断访问资格，再进入模块路由完成参数校验和业务处理。若数据查询或写入成功，页面展示业务结果；若出现未登录、越权、参数缺失或数据不存在，页面展示明确的异常状态。</p>
+<p>异常处理方面，错题本模块需要覆盖接口不可达、数据库连接异常、用户权限不足、表单字段缺失和返回数据为空等情况。前端应提供空状态、加载状态、错误提示或回退路径，后端应保持统一响应格式和可追溯日志。</p>
+<h3>5.10 学习记录模块详细设计</h3>
+<p>学习记录模块面向学生、管理员，主要提供个人成绩记录和管理端全量成绩记录。该模块的输入包括登录会话、页面查询条件、业务表单参数和分页条件，输出包括列表数据、详情数据、统计结果、提交结果或异常提示。模块对应接口或页面为 /api/learning/records、/api/admin/records，核心数据对象为 study_records。</p>
+<figure class="diagram"><img src="../assets/diagrams/17_module_5_use_case.svg" alt="图 5-29 学习记录模块用例 UML 图"><figcaption>图 5-29 学习记录模块用例 UML 图</figcaption></figure>
+<p>学习记录模块用例 UML 图用于说明面向马来西亚留学生的汉语练习平台中学生、管理员围绕个人成绩记录和管理端全量成绩记录形成的主要功能入口和业务动作。该图由 PlantUML 生成，图中用例来自已核验模块职责和接口路径 /api/learning/records、/api/admin/records，用于放入详细设计正文。</p>
+<figure class="diagram"><img src="../assets/diagrams/18_module_5_sequence.svg" alt="图 5-30 学习记录模块时序 UML 图"><figcaption>图 5-30 学习记录模块时序 UML 图</figcaption></figure>
+<p>学习记录模块时序 UML 图用于说明用户、前端页面、请求封装、认证权限中间件、业务路由和数据对象之间的调用顺序。该图由 PlantUML 生成，展示 /api/learning/records、/api/admin/records 的请求处理链路和 study_records 的数据读写关系。</p>
+<figure class="diagram"><img src="../assets/diagrams/19_module_5_activity.svg" alt="图 5-31 学习记录模块活动 UML 图"><figcaption>图 5-31 学习记录模块活动 UML 图</figcaption></figure>
+<p>学习记录模块活动 UML 图用于说明面向马来西亚留学生的汉语练习平台中学习记录模块从页面入口、权限判断、接口调用、业务处理、数据读写到结果展示的完整活动流程。该图由 PlantUML 生成，适合支撑详细设计中输入输出、处理流程和异常处理说明。</p>
+<figure class="diagram"><img src="../assets/diagrams/27_module_5_state.svg" alt="图 5-32 学习记录模块状态 UML 图"><figcaption>图 5-32 学习记录模块状态 UML 图</figcaption></figure>
+<p>学习记录模块状态 UML 图用于说明面向马来西亚留学生的汉语练习平台中学习记录模块从页面待访问、会话检查、数据加载、参数校验、业务处理、结果展示到异常提示的状态变化。该图由 PlantUML 生成，用于补充详细设计中的异常处理和状态控制说明。</p>
+<figure class="diagram"><img src="../assets/diagrams/37_module_5_component.svg" alt="图 5-33 学习记录模块组件协作 UML 图"><figcaption>图 5-33 学习记录模块组件协作 UML 图</figcaption></figure>
+<p>学习记录模块组件协作 UML 图用于说明面向马来西亚留学生的汉语练习平台中学习记录模块的页面入口、前端逻辑、API Client、认证权限中间件、业务路由、业务校验和数据对象之间的协作方式。该图由 PlantUML 生成，用于补充详细设计中的组件职责和调用边界。</p>
+<figure class="diagram"><img src="../assets/diagrams/38_module_5_data.svg" alt="图 5-34 学习记录模块数据关系 UML 图"><figcaption>图 5-34 学习记录模块数据关系 UML 图</figcaption></figure>
+<p>学习记录模块数据关系 UML 图用于说明面向马来西亚留学生的汉语练习平台中学习记录模块请求参数、响应结果和核心数据对象之间的关系。该图由 PlantUML 生成，数据对象来自 study_records，用于补充详细设计中的数据流转和结果组装说明。</p>
+<p>学习记录模块的处理流程首先由用户在页面中触发操作，前端读取会话状态并组织请求参数；后端通过认证与角色权限中间件判断访问资格，再进入模块路由完成参数校验和业务处理。若数据查询或写入成功，页面展示业务结果；若出现未登录、越权、参数缺失或数据不存在，页面展示明确的异常状态。</p>
+<p>异常处理方面，学习记录模块需要覆盖接口不可达、数据库连接异常、用户权限不足、表单字段缺失和返回数据为空等情况。前端应提供空状态、加载状态、错误提示或回退路径，后端应保持统一响应格式和可追溯日志。</p>
+<h3>5.11 后台统计模块详细设计</h3>
+<p>后台统计模块面向管理员，主要提供学生数、题目数、试卷数、记录数和平均分统计。该模块的输入包括登录会话、页面查询条件、业务表单参数和分页条件，输出包括列表数据、详情数据、统计结果、提交结果或异常提示。模块对应接口或页面为 /api/admin/stats，核心数据对象为 users、questions、papers、study_records。</p>
+<figure class="diagram"><img src="../assets/diagrams/20_module_6_use_case.svg" alt="图 5-35 后台统计模块用例 UML 图"><figcaption>图 5-35 后台统计模块用例 UML 图</figcaption></figure>
+<p>后台统计模块用例 UML 图用于说明面向马来西亚留学生的汉语练习平台中管理员围绕学生数、题目数、试卷数、记录数和平均分统计形成的主要功能入口和业务动作。该图由 PlantUML 生成，图中用例来自已核验模块职责和接口路径 /api/admin/stats，用于放入详细设计正文。</p>
+<figure class="diagram"><img src="../assets/diagrams/21_module_6_sequence.svg" alt="图 5-36 后台统计模块时序 UML 图"><figcaption>图 5-36 后台统计模块时序 UML 图</figcaption></figure>
+<p>后台统计模块时序 UML 图用于说明用户、前端页面、请求封装、认证权限中间件、业务路由和数据对象之间的调用顺序。该图由 PlantUML 生成，展示 /api/admin/stats 的请求处理链路和 users、questions、papers、study_records 的数据读写关系。</p>
+<figure class="diagram"><img src="../assets/diagrams/22_module_6_activity.svg" alt="图 5-37 后台统计模块活动 UML 图"><figcaption>图 5-37 后台统计模块活动 UML 图</figcaption></figure>
+<p>后台统计模块活动 UML 图用于说明面向马来西亚留学生的汉语练习平台中后台统计模块从页面入口、权限判断、接口调用、业务处理、数据读写到结果展示的完整活动流程。该图由 PlantUML 生成，适合支撑详细设计中输入输出、处理流程和异常处理说明。</p>
+<figure class="diagram"><img src="../assets/diagrams/28_module_6_state.svg" alt="图 5-38 后台统计模块状态 UML 图"><figcaption>图 5-38 后台统计模块状态 UML 图</figcaption></figure>
+<p>后台统计模块状态 UML 图用于说明面向马来西亚留学生的汉语练习平台中后台统计模块从页面待访问、会话检查、数据加载、参数校验、业务处理、结果展示到异常提示的状态变化。该图由 PlantUML 生成，用于补充详细设计中的异常处理和状态控制说明。</p>
+<figure class="diagram"><img src="../assets/diagrams/39_module_6_component.svg" alt="图 5-39 后台统计模块组件协作 UML 图"><figcaption>图 5-39 后台统计模块组件协作 UML 图</figcaption></figure>
+<p>后台统计模块组件协作 UML 图用于说明面向马来西亚留学生的汉语练习平台中后台统计模块的页面入口、前端逻辑、API Client、认证权限中间件、业务路由、业务校验和数据对象之间的协作方式。该图由 PlantUML 生成，用于补充详细设计中的组件职责和调用边界。</p>
+<figure class="diagram"><img src="../assets/diagrams/40_module_6_data.svg" alt="图 5-40 后台统计模块数据关系 UML 图"><figcaption>图 5-40 后台统计模块数据关系 UML 图</figcaption></figure>
+<p>后台统计模块数据关系 UML 图用于说明面向马来西亚留学生的汉语练习平台中后台统计模块请求参数、响应结果和核心数据对象之间的关系。该图由 PlantUML 生成，数据对象来自 users、questions、papers、study_records，用于补充详细设计中的数据流转和结果组装说明。</p>
+<p>后台统计模块的处理流程首先由用户在页面中触发操作，前端读取会话状态并组织请求参数；后端通过认证与角色权限中间件判断访问资格，再进入模块路由完成参数校验和业务处理。若数据查询或写入成功，页面展示业务结果；若出现未登录、越权、参数缺失或数据不存在，页面展示明确的异常状态。</p>
+<p>异常处理方面，后台统计模块需要覆盖接口不可达、数据库连接异常、用户权限不足、表单字段缺失和返回数据为空等情况。前端应提供空状态、加载状态、错误提示或回退路径，后端应保持统一响应格式和可追溯日志。</p>
 <h2>6 数据设计</h2>
-<h3>6.1 ER 关系</h3>
-<figure><img src="../assets/diagrams/06_er.svg" alt="ER 图"></figure>
-<p>图 6-1 ER 图。该图展示用户、等级、分类、题目、选项、试卷、试卷题目、学习记录、用户答案和错题本之间的核心关联。题目从属于等级和分类，试卷通过 paper_questions 组织题目，学生提交后生成 study_records 和 user_answers，答错题目进入 wrong_questions。该图用于说明系统数据模型如何支撑题库、练习、成绩和错题复习功能。</p>
-<h3>6.2 核心数据表</h3>
-<table><tr><th>表名</th><th>主要字段</th><th>用途说明</th></tr><tr><td>users</td><td>id、username、password、role、language、status</td><td>保存学生和管理员账号、角色、语言偏好和状态</td></tr><tr><td>levels</td><td>id、code、sort_order、status</td><td>保存 HSK 或校园汉语等级</td></tr><tr><td>level_translations</td><td>level_id、language_code、name、description</td><td>保存等级多语言名称和说明</td></tr><tr><td>question_categories</td><td>id、parent_id、code、status</td><td>保存拼音、词汇、语法、阅读等题目分类</td></tr><tr><td>question_category_translations</td><td>category_id、language_code、name</td><td>保存题目分类多语言信息</td></tr><tr><td>questions</td><td>id、level_id、category_id、question_type、difficulty、score、status</td><td>保存题目主数据</td></tr><tr><td>question_translations</td><td>question_id、language_code、title、content、analysis</td><td>保存题干、内容和解析的多语言文本</td></tr><tr><td>question_options</td><td>question_id、option_key、is_correct、sort_order</td><td>保存选项主数据和正确答案标记</td></tr><tr><td>question_option_translations</td><td>option_id、language_code、content</td><td>保存选项多语言内容</td></tr><tr><td>papers</td><td>id、paper_type、level_id、total_score、duration_minutes、status</td><td>保存练习或试卷主数据</td></tr><tr><td>paper_questions</td><td>paper_id、question_id、sort_order、score</td><td>保存试卷与题目的关联关系</td></tr><tr><td>study_records</td><td>user_id、paper_id、correct_count、wrong_count、total_score</td><td>保存学生提交记录和成绩</td></tr><tr><td>user_answers</td><td>user_id、question_id、study_record_id、selected_option_ids、is_correct</td><td>保存学生每题作答明细</td></tr><tr><td>wrong_questions</td><td>user_id、question_id、wrong_count、resolved</td><td>保存学生错题和复习状态</td></tr></table>
+<h3>6.1 数据对象关系</h3>
+<figure class="diagram"><img src="../assets/diagrams/04_data_object.svg" alt="图 6-1 数据对象关系 UML 图"><figcaption>图 6-1 数据对象关系 UML 图</figcaption></figure>
+<p>数据对象关系图展示系统核心表之间的关联。不同项目的数据表名称存在差异，但均围绕用户、角色、业务主数据、记录数据、统计数据和日志数据展开，能够支撑页面展示和接口处理。</p>
+<h3>6.2 主要数据对象说明</h3>
+<table><thead><tr><th>模块</th><th>核心数据对象</th><th>用途</th></tr></thead><tbody><tr><td>认证与资料模块</td><td>users</td><td>支撑注册、登录、个人资料查询和更新等业务功能。</td></tr><tr><td>练习资源模块</td><td>levels、question_categories、papers、questions</td><td>支撑等级、分类、试卷列表和试卷详情查询等业务功能。</td></tr><tr><td>在线答题模块</td><td>study_records、user_answers、wrong_questions</td><td>支撑试卷答题、提交判分、答案记录和错题写入等业务功能。</td></tr><tr><td>错题本模块</td><td>wrong_questions</td><td>支撑个人错题列表、错误次数和解析查看等业务功能。</td></tr><tr><td>学习记录模块</td><td>study_records</td><td>支撑个人成绩记录和管理端全量成绩记录等业务功能。</td></tr><tr><td>后台统计模块</td><td>users、questions、papers、study_records</td><td>支撑学生数、题目数、试卷数、记录数和平均分统计等业务功能。</td></tr></tbody></table>
+<h3>6.3 数据一致性设计</h3>
+<p>系统通过用户身份和业务对象编号保持数据一致性。新增、修改、提交和查询操作都围绕核心数据对象展开，后端在写入前进行参数校验，在返回前统一组织响应字段。对于学习记录、成绩记录、日志记录和风险记录等可追溯数据，系统应保留创建时间、更新时间、用户编号或业务关联编号，便于后续统计和审计。</p>
 <h2>7 接口设计</h2>
-<table><tr><th>接口</th><th>方法</th><th>角色</th><th>功能</th></tr><tr><td>/api/health</td><td>GET</td><td>公开</td><td>健康检查</td></tr><tr><td>/api/auth/register</td><td>POST</td><td>公开</td><td>学生注册</td></tr><tr><td>/api/auth/login</td><td>POST</td><td>公开</td><td>用户登录并返回 JWT</td></tr><tr><td>/api/auth/profile</td><td>GET/PUT</td><td>登录用户</td><td>查询和更新个人资料</td></tr><tr><td>/api/learning/papers</td><td>GET</td><td>公开</td><td>查询已发布练习列表</td></tr><tr><td>/api/learning/papers/:id</td><td>GET</td><td>学生</td><td>查询试卷详情和题目选项</td></tr><tr><td>/api/learning/papers/:id/submit</td><td>POST</td><td>学生</td><td>提交答案并生成成绩和错题记录</td></tr><tr><td>/api/learning/records</td><td>GET</td><td>学生</td><td>查询个人成绩记录</td></tr><tr><td>/api/learning/wrong-questions</td><td>GET</td><td>学生</td><td>查询个人错题本</td></tr><tr><td>/api/admin/stats</td><td>GET</td><td>管理员</td><td>查询管理台统计指标</td></tr><tr><td>/api/admin/users</td><td>GET</td><td>管理员</td><td>查询学生和用户列表</td></tr><tr><td>/api/admin/questions</td><td>GET</td><td>管理员</td><td>查询题库列表</td></tr><tr><td>/api/admin/papers</td><td>GET</td><td>管理员</td><td>查询试卷列表</td></tr><tr><td>/api/admin/records</td><td>GET</td><td>管理员</td><td>查询全量成绩记录</td></tr></table>
-<h2>8 页面与运行截图</h2>
-<figure><img src="../assets/screenshots/01_practice_zh.png" alt="运行截图 1"></figure>
-<p>图 8-1 中文练习列表页面截图，访问路径为 /practice。页面展示学生登录后的练习入口，包括顶部导航、语言切换控件、练习标题、练习说明、等级名称、题目数量和试卷总分等内容。该截图用于证明系统能够从后台 MySQL 题库读取已发布试卷，并在前台以中文界面呈现练习资源，体现学生端核心学习入口和国际化界面能力。</p>
-<figure><img src="../assets/screenshots/02_home_zh.png" alt="运行截图 2"></figure>
-<p>图 8-2 中文首页截图，访问路径为 /。页面展示系统名称、练习入口、错题本入口和成绩入口，顶部导航根据当前学生登录状态展示练习、成绩、错题本、个人中心及退出按钮。该截图用于说明平台首页作为学生端主导航页，能够将练习、错题复习和学习成绩三个主要学习场景集中呈现，形成清晰的学习闭环入口。</p>
-<figure><img src="../assets/screenshots/03_wrong_book_zh.png" alt="运行截图 3"></figure>
-<p>图 8-3 中文错题本页面截图，访问路径为 /wrong-book。页面展示错题本标题和当前错题数据状态，顶部导航仍保留学生常用功能入口。该截图用于说明系统具备错题归集和复习入口，后台在答题提交时会依据答题结果更新 wrong_questions 数据表，页面负责向学生展示待复习题目、错误次数和解析信息。</p>
-<figure><img src="../assets/screenshots/04_records_zh.png" alt="运行截图 4"></figure>
-<p>图 8-4 中文成绩记录页面截图，访问路径为 /records。页面以表格方式展示练习标题、题目数量、正确数、错误数、得分和提交时间。该截图用于证明系统能够记录学生答题行为，并从 study_records 表读取个人历史成绩，支持学习过程追踪、成绩回看和练习效果评估。</p>
-<figure><img src="../assets/screenshots/05_profile_zh.png" alt="运行截图 5"></figure>
-<p>图 8-5 中文个人中心页面截图，访问路径为 /profile。页面展示姓名、邮箱、电话、国籍、语言等个人资料表单，并提供提交保存入口。该截图用于说明系统支持学生资料维护和语言偏好设置，前端表单与 /api/auth/profile 接口关联，后台按当前登录用户更新 users 表中的个人字段。</p>
-<figure><img src="../assets/screenshots/06_home_en.png" alt="运行截图 6"></figure>
-<p>图 8-6 英文首页截图，访问路径为 /，通过顶部语言下拉框切换到 English 后采集。页面标题、导航和入口卡片均切换为英文文案。该截图用于说明系统具备前端国际化能力，静态导航文案来自前端 i18n 资源，学习数据则可通过接口 lang 参数读取数据库中的多语言翻译字段。</p>
-<figure><img src="../assets/screenshots/07_practice_en.png" alt="运行截图 7"></figure>
-<p>图 8-7 英文练习列表页面截图，访问路径为 /practice，语言为 English。页面中的练习标题、说明、等级和字段标签以英文展示。该截图用于展示练习数据的多语言输出能力，说明前端语言状态会影响接口查询参数，后台按 language_code 从试卷、等级、题目分类等翻译表中读取对应语言内容。</p>
-<figure><img src="../assets/screenshots/08_admin_dashboard_zh.png" alt="运行截图 8"></figure>
-<p>图 8-8 中文管理台数据看板截图，访问路径为 /admin。页面展示学生数、题目数、练习数、平均分等统计指标，并提供学生管理、题库、练习试卷和成绩记录入口。该截图用于证明管理员角色登录后可以访问后台管理功能，系统通过 JWT 与角色守卫限制管理页面和管理接口。</p>
-<figure><img src="../assets/screenshots/09_admin_questions_zh.png" alt="运行截图 9"></figure>
-<p>图 8-9 中文题库管理列表截图，访问路径为 /admin/questions。页面以表格展示题目 ID、标题、等级、分类、题型、难度、分值和状态。该截图用于说明管理端可以查看题库资源和三语题目数据，为后续题库维护、练习编排和教学管理提供数据基础。</p>
-<h2>9 运行与部署设计</h2>
-<p>后台目录为 admin，可通过 npm run db:init 初始化数据库和演示题库，通过 npm run seed:users 写入演示用户，通过 npm run dev 或 npm start 启动 Express 服务。前台目录为 fronter，可通过 npm run dev 启动开发服务，通过 npm run build 构建生产静态资源。前台默认 API 地址已在文档中脱敏，实际部署可通过 VITE_API_BASE 配置。数据库连接信息通过环境变量覆盖，文档和日志不保留真实敏感值。</p>
-<h2>10 安全与权限设计</h2>
-<p>系统使用 bcryptjs 对密码进行哈希存储，登录成功后使用 JWT 生成 7 天有效令牌。前端路由守卫根据本地登录态限制学生页面和管理员页面访问，后台 auth 中间件验证令牌，role 中间件限制管理员接口。日志模块会对 authorization、password、token 等字段做脱敏，避免运行日志直接暴露敏感认证信息。</p>
-<h2>11 脚本与运维</h2>
-<p>系统提供 schema.sql、seed.sql、initDb.js 和 seedUsers.js。schema.sql 创建数据库和 17 张业务表，seed.sql 写入等级、分类、试卷、题目、选项及三语翻译数据，initDb.js 顺序执行建表和演示题库脚本，seedUsers.js 写入管理员和学生演示账号。后台日志默认写入 admin/logs/app.log，可通过 LOG_DIR 改写日志目录。</p>
-<h2>12 测试与验证</h2>
-<p>本次核验已执行数据库初始化、种子账号写入、前端生产构建、数据库结构查询、接口 smoke test 和浏览器真实页面截图。数据库核验结果为 17 张表全部存在、23 个外键存在、试卷题目无孤儿关联、题目翻译覆盖中文、英文和马来语。接口 smoke test 覆盖健康检查、学生登录、练习列表、试卷详情、答题提交、成绩记录、管理员登录、管理统计和用户列表。前端构建通过 Vite 完成，浏览器截图验证学生端和管理端页面可真实访问。</p>
-<h2>13 结论</h2>
-<p>马来西亚留学生汉语练习平台已具备学生端汉语练习、三语展示、在线答题、成绩记录、错题复习、个人资料维护和管理员数据查看等核心功能。系统结构清晰，数据库表关系完整，接口能够支撑主要业务流程，日志模块已接入后台请求和错误处理链路，可作为软件著作权登记的软件设计说明材料。</p>
-</body>
-</html>
+<p>本文档中只列出关键业务接口。</p>
+<table><thead><tr><th>用途</th><th>调用方</th><th>接口</th><th>参数</th><th>返回</th><th>脱敏示例</th></tr></thead><tbody><tr><td>学生注册</td><td>注册页面</td><td>POST /api/auth/register</td><td>username、password、name、student_no、nationality</td><td>user</td><td>{ &quot;username&quot;: &quot;***&quot;, &quot;password&quot;: &quot;***&quot; }</td></tr><tr><td>用户登录</td><td>登录页面</td><td>POST /api/auth/login</td><td>username、password</td><td>token、user</td><td>{ &quot;username&quot;: &quot;student&quot;, &quot;password&quot;: &quot;***&quot; }</td></tr><tr><td>练习列表</td><td>练习列表页</td><td>GET /api/learning/papers</td><td>lang</td><td>papers[]</td><td>/api/learning/papers?lang=zh-CN</td></tr><tr><td>试卷详情</td><td>答题详情页</td><td>GET /api/learning/papers/:id</td><td>id、lang</td><td>paper、questions</td><td>/api/learning/papers/1?lang=zh-CN</td></tr><tr><td>提交答题</td><td>答题页面</td><td>POST /api/learning/papers/:id/submit</td><td>answers</td><td>score、correct_count、wrong_count</td><td>{ &quot;answers&quot;: [{ &quot;questionId&quot;: 1, &quot;optionIds&quot;: [1] }] }</td></tr><tr><td>管理统计</td><td>管理看板</td><td>GET /api/admin/stats</td><td>Authorization</td><td>students、questions、papers、records、avgScore</td><td>Authorization: Bearer ***</td></tr></tbody></table>
+<h3>7.1 学生注册接口说明</h3>
+<p>用途：学生注册用于支撑注册页面中的核心业务动作。调用方：注册页面。参数：username、password、name、student_no、nationality。返回：user。脱敏示例：{ &quot;username&quot;: &quot;***&quot;, &quot;password&quot;: &quot;***&quot; }。该接口调用时需要根据页面状态准备必要参数，后端执行身份校验、参数校验和业务处理，最后返回统一 JSON 结构给前端页面。</p>
+<h3>7.2 用户登录接口说明</h3>
+<p>用途：用户登录用于支撑登录页面中的核心业务动作。调用方：登录页面。参数：username、password。返回：token、user。脱敏示例：{ &quot;username&quot;: &quot;student&quot;, &quot;password&quot;: &quot;***&quot; }。该接口调用时需要根据页面状态准备必要参数，后端执行身份校验、参数校验和业务处理，最后返回统一 JSON 结构给前端页面。</p>
+<h3>7.3 练习列表接口说明</h3>
+<p>用途：练习列表用于支撑练习列表页中的核心业务动作。调用方：练习列表页。参数：lang。返回：papers[]。脱敏示例：/api/learning/papers?lang=zh-CN。该接口调用时需要根据页面状态准备必要参数，后端执行身份校验、参数校验和业务处理，最后返回统一 JSON 结构给前端页面。</p>
+<h3>7.4 试卷详情接口说明</h3>
+<p>用途：试卷详情用于支撑答题详情页中的核心业务动作。调用方：答题详情页。参数：id、lang。返回：paper、questions。脱敏示例：/api/learning/papers/1?lang=zh-CN。该接口调用时需要根据页面状态准备必要参数，后端执行身份校验、参数校验和业务处理，最后返回统一 JSON 结构给前端页面。</p>
+<h3>7.5 提交答题接口说明</h3>
+<p>用途：提交答题用于支撑答题页面中的核心业务动作。调用方：答题页面。参数：answers。返回：score、correct_count、wrong_count。脱敏示例：{ &quot;answers&quot;: [{ &quot;questionId&quot;: 1, &quot;optionIds&quot;: [1] }] }。该接口调用时需要根据页面状态准备必要参数，后端执行身份校验、参数校验和业务处理，最后返回统一 JSON 结构给前端页面。</p>
+<h3>7.6 管理统计接口说明</h3>
+<p>用途：管理统计用于支撑管理看板中的核心业务动作。调用方：管理看板。参数：Authorization。返回：students、questions、papers、records、avgScore。脱敏示例：Authorization: Bearer ***。该接口调用时需要根据页面状态准备必要参数，后端执行身份校验、参数校验和业务处理，最后返回统一 JSON 结构给前端页面。</p>
+<h2>8 运行与部署设计</h2>
+<h3>8.1 环境准备</h3>
+<p>准备 Linux 本机服务器、Node.js、npm、MySQL、Chromium 浏览器和 PDF 导出工具。数据库地址、口令、令牌密钥和接口地址使用环境变量配置，文档中统一脱敏。</p>
+<h3>8.2 硬件条件</h3>
+<p>建议运行环境为 2 核及以上 CPU、4GB 及以上内存、20GB 及以上磁盘空间；开发和批量截图导出环境建议 4 核及以上 CPU、16GB 内存和可用图形/无头浏览器运行环境。</p>
+<h3>8.3 部署步骤 1</h3>
+<p>安装项目依赖，确认 `package.json` 中的运行脚本可执行；前后端分离项目需分别安装前端和后端依赖。</p>
+<h3>8.4 部署步骤 2</h3>
+<p>初始化数据库，执行建表、基础数据和种子数据脚本，确保用户、角色、业务数据和测试数据存在。</p>
+<h3>8.5 部署步骤 3</h3>
+<p>启动后端服务并构建或启动前端服务，通过本机浏览器访问页面，执行登录、列表、提交、查询和截图检查。</p>
+<h3>8.6 关键脚本、端口、防火墙和启动检查</h3>
+<table><thead><tr><th>项目</th><th>内容</th></tr></thead><tbody><tr><td>关键脚本</td><td>npm run build、npm run start、db:init、db:seed、seed:test-data 等项目脚本</td></tr><tr><td>端口</td><td>后端本机端口 3012，前端或页面端口 4102</td></tr><tr><td>防火墙</td><td>本机截图阶段使用本机回环地址；外部访问时仅开放必要前端或后端端口</td></tr><tr><td>启动检查</td><td>检查端口监听、健康接口、登录接口、首页 HTTP 200、截图文件和 PDF 页数</td></tr></tbody></table>
+<h2>9 安全与权限设计</h2>
+<p>1. 身份认证与访问入口控制：系统通过登录接口校验账号密码，成功后签发令牌或保存会话，未登录用户不能访问受保护页面和接口。</p>
+<p>2. 角色权限与业务数据访问控制：系统根据学生、教师或管理员角色限制页面入口和接口范围，普通用户只能访问本人相关数据，管理角色访问统计、列表和后台查询。</p>
+<p>3. 数据安全、脱敏、日志审计与异常处理：数据库口令、令牌密钥、真实主机、账号密码、手机号和邮箱在软著材料中统一脱敏，后台对请求异常进行捕获并保留可追溯的运行信息。</p>
+<h2>10 测试与验证</h2>
+<table><thead><tr><th>测试类别</th><th>关键用例</th><th>验证要点</th></tr></thead><tbody><tr><td>UI 交互测试</td><td>重新采集 H5 竖屏截图和桌面管理截图</td><td>页面真实渲染、视口校准、表单和数据区域可见</td></tr><tr><td>功能测试</td><td>登录、列表查询、业务提交、统计查询、错题/风险/记录查询</td><td>接口返回正常，页面可以展示数据</td></tr><tr><td>安全测试</td><td>未登录访问、角色限制、敏感信息脱敏</td><td>受保护页面和接口需要令牌，文档不暴露真实敏感信息</td></tr><tr><td>部署测试</td><td>端口监听、数据库初始化、前端构建和 PDF 导出</td><td>服务可启动，PDF 页数满足 55-60 或裁剪规则</td></tr></tbody></table>
+<h3>10.1 H5 中文登录页界面验证</h3>
+<figure class="h5shot"><img src="../assets/screenshots/01_h5_login_zh.png" alt="图 10-1 H5 中文登录页"><figcaption>图 10-1 H5 中文登录页</figcaption></figure>
+<p>该截图文件为 01_h5_login_zh.png，对应说明文件为 01_h5_login_zh.txt。截图用于验证面向马来西亚留学生的汉语练习平台V1.0的H5 中文登录页在真实运行环境中可访问，并按移动端 H5 竖屏视口校准。截图中的标题、导航、表单、列表、统计或业务结果区域可用于对应 UI 交互测试和功能测试。</p>
+<h3>10.2 H5 中文注册页界面验证</h3>
+<figure class="h5shot"><img src="../assets/screenshots/02_h5_register_zh.png" alt="图 10-2 H5 中文注册页"><figcaption>图 10-2 H5 中文注册页</figcaption></figure>
+<p>该截图文件为 02_h5_register_zh.png，对应说明文件为 02_h5_register_zh.txt。截图用于验证面向马来西亚留学生的汉语练习平台V1.0的H5 中文注册页在真实运行环境中可访问，并按移动端 H5 竖屏视口校准。截图中的标题、导航、表单、列表、统计或业务结果区域可用于对应 UI 交互测试和功能测试。</p>
+<h3>10.3 H5 学生首页界面验证</h3>
+<figure class="h5shot"><img src="../assets/screenshots/03_h5_home_zh.png" alt="图 10-3 H5 学生首页"><figcaption>图 10-3 H5 学生首页</figcaption></figure>
+<p>该截图文件为 03_h5_home_zh.png，对应说明文件为 03_h5_home_zh.txt。截图用于验证面向马来西亚留学生的汉语练习平台V1.0的H5 学生首页在真实运行环境中可访问，并按移动端 H5 竖屏视口校准。截图中的标题、导航、表单、列表、统计或业务结果区域可用于对应 UI 交互测试和功能测试。</p>
+<h3>10.4 H5 练习列表页界面验证</h3>
+<figure class="h5shot"><img src="../assets/screenshots/04_h5_practice_list_zh.png" alt="图 10-4 H5 练习列表页"><figcaption>图 10-4 H5 练习列表页</figcaption></figure>
+<p>该截图文件为 04_h5_practice_list_zh.png，对应说明文件为 04_h5_practice_list_zh.txt。截图用于验证面向马来西亚留学生的汉语练习平台V1.0的H5 练习列表页在真实运行环境中可访问，并按移动端 H5 竖屏视口校准。截图中的标题、导航、表单、列表、统计或业务结果区域可用于对应 UI 交互测试和功能测试。</p>
+<h3>10.5 H5 答题详情页界面验证</h3>
+<figure class="h5shot"><img src="../assets/screenshots/05_h5_practice_detail_zh.png" alt="图 10-5 H5 答题详情页"><figcaption>图 10-5 H5 答题详情页</figcaption></figure>
+<p>该截图文件为 05_h5_practice_detail_zh.png，对应说明文件为 05_h5_practice_detail_zh.txt。截图用于验证面向马来西亚留学生的汉语练习平台V1.0的H5 答题详情页在真实运行环境中可访问，并按移动端 H5 竖屏视口校准。截图中的标题、导航、表单、列表、统计或业务结果区域可用于对应 UI 交互测试和功能测试。</p>
+<h3>10.6 H5 成绩记录页界面验证</h3>
+<figure class="h5shot"><img src="../assets/screenshots/06_h5_records_zh.png" alt="图 10-6 H5 成绩记录页"><figcaption>图 10-6 H5 成绩记录页</figcaption></figure>
+<p>该截图文件为 06_h5_records_zh.png，对应说明文件为 06_h5_records_zh.txt。截图用于验证面向马来西亚留学生的汉语练习平台V1.0的H5 成绩记录页在真实运行环境中可访问，并按移动端 H5 竖屏视口校准。截图中的标题、导航、表单、列表、统计或业务结果区域可用于对应 UI 交互测试和功能测试。</p>
+<h3>10.7 H5 错题本页界面验证</h3>
+<figure class="h5shot"><img src="../assets/screenshots/07_h5_wrong_book_zh.png" alt="图 10-7 H5 错题本页"><figcaption>图 10-7 H5 错题本页</figcaption></figure>
+<p>该截图文件为 07_h5_wrong_book_zh.png，对应说明文件为 07_h5_wrong_book_zh.txt。截图用于验证面向马来西亚留学生的汉语练习平台V1.0的H5 错题本页在真实运行环境中可访问，并按移动端 H5 竖屏视口校准。截图中的标题、导航、表单、列表、统计或业务结果区域可用于对应 UI 交互测试和功能测试。</p>
+<h3>10.8 H5 马来语个人中心页界面验证</h3>
+<figure class="h5shot"><img src="../assets/screenshots/08_h5_profile_ms.png" alt="图 10-8 H5 马来语个人中心页"><figcaption>图 10-8 H5 马来语个人中心页</figcaption></figure>
+<p>该截图文件为 08_h5_profile_ms.png，对应说明文件为 08_h5_profile_ms.txt。截图用于验证面向马来西亚留学生的汉语练习平台V1.0的H5 马来语个人中心页在真实运行环境中可访问，并按移动端 H5 竖屏视口校准。截图中的标题、导航、表单、列表、统计或业务结果区域可用于对应 UI 交互测试和功能测试。</p>
+<h3>10.9 管理端中文看板页界面验证</h3>
+<figure class="screen"><img src="../assets/screenshots/09_admin_dashboard_zh.png" alt="图 10-9 管理端中文看板页"><figcaption>图 10-9 管理端中文看板页</figcaption></figure>
+<p>该截图文件为 09_admin_dashboard_zh.png，对应说明文件为 09_admin_dashboard_zh.txt。截图用于验证面向马来西亚留学生的汉语练习平台V1.0的管理端中文看板页在真实运行环境中可访问，并按桌面管理页面横向视口校准。截图中的标题、导航、表单、列表、统计或业务结果区域可用于对应 UI 交互测试和功能测试。</p>
+<h3>10.10 管理端学生列表页界面验证</h3>
+<figure class="screen"><img src="../assets/screenshots/10_admin_users_zh.png" alt="图 10-10 管理端学生列表页"><figcaption>图 10-10 管理端学生列表页</figcaption></figure>
+<p>该截图文件为 10_admin_users_zh.png，对应说明文件为 10_admin_users_zh.txt。截图用于验证面向马来西亚留学生的汉语练习平台V1.0的管理端学生列表页在真实运行环境中可访问，并按桌面管理页面横向视口校准。截图中的标题、导航、表单、列表、统计或业务结果区域可用于对应 UI 交互测试和功能测试。</p>
+<h3>10.11 管理端英文题库页界面验证</h3>
+<figure class="screen"><img src="../assets/screenshots/11_admin_questions_en.png" alt="图 10-11 管理端英文题库页"><figcaption>图 10-11 管理端英文题库页</figcaption></figure>
+<p>该截图文件为 11_admin_questions_en.png，对应说明文件为 11_admin_questions_en.txt。截图用于验证面向马来西亚留学生的汉语练习平台V1.0的管理端英文题库页在真实运行环境中可访问，并按桌面管理页面横向视口校准。截图中的标题、导航、表单、列表、统计或业务结果区域可用于对应 UI 交互测试和功能测试。</p>
+<h3>10.12 管理端马来语试卷页界面验证</h3>
+<figure class="screen"><img src="../assets/screenshots/12_admin_papers_ms.png" alt="图 10-12 管理端马来语试卷页"><figcaption>图 10-12 管理端马来语试卷页</figcaption></figure>
+<p>该截图文件为 12_admin_papers_ms.png，对应说明文件为 12_admin_papers_ms.txt。截图用于验证面向马来西亚留学生的汉语练习平台V1.0的管理端马来语试卷页在真实运行环境中可访问，并按桌面管理页面横向视口校准。截图中的标题、导航、表单、列表、统计或业务结果区域可用于对应 UI 交互测试和功能测试。</p>
+<h3>10.13 管理端成绩记录页界面验证</h3>
+<figure class="screen"><img src="../assets/screenshots/13_admin_records_zh.png" alt="图 10-13 管理端成绩记录页"><figcaption>图 10-13 管理端成绩记录页</figcaption></figure>
+<p>该截图文件为 13_admin_records_zh.png，对应说明文件为 13_admin_records_zh.txt。截图用于验证面向马来西亚留学生的汉语练习平台V1.0的管理端成绩记录页在真实运行环境中可访问，并按桌面管理页面横向视口校准。截图中的标题、导航、表单、列表、统计或业务结果区域可用于对应 UI 交互测试和功能测试。</p>
+<h2>11 结论</h2>
+<p>面向马来西亚留学生的汉语练习平台V1.0围绕留学生学习、教学或管理场景形成了前端页面、后端接口、数据库结构、运行脚本、截图材料和设计图示等完整设计内容。系统章节覆盖需求概要、总体架构、详细设计、数据设计、接口设计、部署设计、安全权限和测试验证，能够说明软件的功能范围、技术结构、运行方式和交付状态。</p></body></html>

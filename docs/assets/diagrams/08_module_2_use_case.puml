@@ -1,0 +1,33 @@
+@startuml
+title 面向马来西亚留学生的汉语练习平台练习资源模块用例图
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam ArrowColor #3C5488
+skinparam ActorBorderColor #3C5488
+skinparam ActorFontColor #111827
+skinparam UsecaseBorderColor #0072B2
+skinparam UsecaseBackgroundColor #F8FBFF
+skinparam ComponentBorderColor #0072B2
+skinparam ComponentBackgroundColor #F8FBFF
+skinparam DatabaseBorderColor #009E73
+skinparam DatabaseBackgroundColor #F4FFF9
+skinparam SequenceLifeLineBorderColor #3C5488
+skinparam ParticipantBorderColor #0072B2
+skinparam ParticipantBackgroundColor #F8FBFF
+skinparam ActivityBorderColor #0072B2
+skinparam ActivityBackgroundColor #F8FBFF
+
+left to right direction
+actor "学生用户" as Student
+rectangle "练习资源模块" {
+  usecase "等级" as UC2_0
+  usecase "分类" as UC2_1
+  usecase "试卷列表和试卷详情查询" as UC2_2
+  usecase "访问learning/接口" as UC2_api
+}
+Student --> UC2_0
+Student --> UC2_1
+Student --> UC2_2
+Student --> UC2_api
+@enduml

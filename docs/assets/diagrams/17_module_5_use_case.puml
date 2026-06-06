@@ -1,0 +1,32 @@
+@startuml
+title 面向马来西亚留学生的汉语练习平台学习记录模块用例图
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam ArrowColor #3C5488
+skinparam ActorBorderColor #3C5488
+skinparam ActorFontColor #111827
+skinparam UsecaseBorderColor #0072B2
+skinparam UsecaseBackgroundColor #F8FBFF
+skinparam ComponentBorderColor #0072B2
+skinparam ComponentBackgroundColor #F8FBFF
+skinparam DatabaseBorderColor #009E73
+skinparam DatabaseBackgroundColor #F4FFF9
+skinparam SequenceLifeLineBorderColor #3C5488
+skinparam ParticipantBorderColor #0072B2
+skinparam ParticipantBackgroundColor #F8FBFF
+skinparam ActivityBorderColor #0072B2
+skinparam ActivityBackgroundColor #F8FBFF
+
+left to right direction
+actor "学生用户" as Student
+actor "管理员" as Admin
+rectangle "学习记录模块" {
+  usecase "个人成绩记录和管理端全量成绩记录" as UC5_0
+  usecase "访问learning/records、/api/admin/records" as UC5_api
+}
+Student --> UC5_0
+Student --> UC5_api
+Admin --> UC5_0
+Admin --> UC5_api
+@enduml
