@@ -1,0 +1,59 @@
+@startuml
+' 马来西亚留学生汉语练习平台 —— 部署图
+' 对应设计说明书 4.2；默认端口 4031（前台）/ 8033（后台）/ 3306 / 11434。
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam shadowing false
+skinparam node {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontSize 12
+}
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontSize 12
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+
+node "用户设备" as DEV {
+  node "桌面 / 移动浏览器" as BROWSER {
+    component "fronter 前端应用\nVue 3 单页应用" as WEBAPP
+    component "Web Speech API\n语音识别与语音合成" as WEBSPEECH
+  }
+  node "安卓 App（WebView 容器）" as ANDROID {
+    component "WebView 承载同一前端" as WV
+    component "原生语音桥\nSpeechRecognizer + TextToSpeech" as NATIVE
+  }
+}
+
+node "应用服务器（Linux / Node.js）" as SERVER {
+  component "admin 后台服务\nExpress 4.21，监听 8033" as API
+  component "静态资源与上传目录\nuploads/avatars" as STATIC
+  folder "日志文件\nlogs/app.log" as LOG
+}
+
+node "数据库服务器" as DBSRV {
+  database "MySQL 8\n库表与增量迁移" as MYSQL
+}
+
+node "本机模型运行时" as AISRV {
+  component "Ollama 0.19\n监听 11434" as OLLAMA
+  artifact "开源模型\nqwen3:14b / qwen2.5:0.5b" as MODELS
+}
+
+BROWSER --> API : /api JSON + SSE
+WV --> API : /api JSON + SSE
+NATIVE <--> WV : JavaScript 桥\nstartVoice / speak
+WEBAPP ..> WEBSPEECH : 浏览器直接调用
+ANDROID ..> NATIVE : 原生麦克风与扬声器
+
+API --> MYSQL : 连接池 3306
+API --> OLLAMA : HTTP 11434
+API --> LOG : 写入请求与异常
+API --> STATIC : 读取头像
+OLLAMA --> MODELS : 加载权重
+@enduml

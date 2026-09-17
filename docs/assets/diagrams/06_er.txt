@@ -1,0 +1,1 @@
+ER 图展示 users、levels、question_categories、questions、question_options、papers、paper_questions、study_records、user_answers、wrong_questions 等核心数据表之间的关系。该图用于说明题库、试卷、学生答题记录和错题本之间的数据关联，是数据设计章节的重要依据。

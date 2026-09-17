@@ -1,0 +1,284 @@
+@startuml
+' 马来西亚留学生汉语练习平台 —— 实体关系图
+' 对应设计说明书 6.1；共 23 张业务表，字符集 utf8mb4。
+' 为保持可读，每个实体只列主键、外键和主要业务字段，完整字段见 admin/sql/schema.sql。
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam shadowing false
+skinparam linetype ortho
+hide circle
+skinparam entity {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontSize 11
+}
+
+' ---------- 账号与安全 ----------
+entity "users 用户" as users {
+  * id : bigint <<PK>>
+  --
+  username
+  password
+  role : student/admin
+  name / email / phone
+  student_no / nationality
+  language
+  status
+  avatar_url
+  last_login_at
+  last_active_at
+  login_count
+  failed_login_count
+  locked_until
+  token_version
+}
+
+entity "password_resets 密码重置" as password_resets {
+  * id : bigint <<PK>>
+  --
+  user_id <<FK>>
+  code_hash
+  expires_at
+  used_at
+}
+
+entity "login_logs 登录日志" as login_logs {
+  * id : bigint <<PK>>
+  --
+  user_id <<FK>>
+  username
+  action
+  success
+  ip
+  user_agent
+}
+
+' ---------- 题库 ----------
+entity "levels 等级" as levels {
+  * id : bigint <<PK>>
+  --
+  code
+  sort_order
+  status
+}
+
+entity "level_translations 等级翻译" as level_translations {
+  * id : bigint <<PK>>
+  --
+  level_id <<FK>>
+  language_code
+  name
+  description
+}
+
+entity "question_categories 分类" as question_categories {
+  * id : bigint <<PK>>
+  --
+  parent_id <<FK>>
+  code
+  sort_order
+}
+
+entity "question_category_translations 分类翻译" as qct {
+  * id : bigint <<PK>>
+  --
+  category_id <<FK>>
+  language_code
+  name
+}
+
+entity "questions 题目" as questions {
+  * id : bigint <<PK>>
+  --
+  level_id <<FK>>
+  category_id <<FK>>
+  question_type
+  difficulty
+  score
+  status
+  created_by <<FK>>
+}
+
+entity "question_translations 题目翻译" as question_translations {
+  * id : bigint <<PK>>
+  --
+  question_id <<FK>>
+  language_code
+  title
+  content
+  analysis
+}
+
+entity "question_options 选项" as question_options {
+  * id : bigint <<PK>>
+  --
+  question_id <<FK>>
+  option_key
+  is_correct
+  sort_order
+}
+
+entity "question_option_translations 选项翻译" as qot {
+  * id : bigint <<PK>>
+  --
+  option_id <<FK>>
+  language_code
+  content
+}
+
+' ---------- 试卷 ----------
+entity "papers 试卷" as papers {
+  * id : bigint <<PK>>
+  --
+  paper_type
+  level_id <<FK>>
+  total_score
+  duration_minutes
+  status
+}
+
+entity "paper_translations 试卷翻译" as paper_translations {
+  * id : bigint <<PK>>
+  --
+  paper_id <<FK>>
+  language_code
+  title
+  description
+}
+
+entity "paper_questions 试卷组题" as paper_questions {
+  * id : bigint <<PK>>
+  --
+  paper_id <<FK>>
+  question_id <<FK>>
+  sort_order
+  score
+}
+
+' ---------- 答题与复习 ----------
+entity "study_records 学习记录" as study_records {
+  * id : bigint <<PK>>
+  --
+  user_id <<FK>>
+  paper_id <<FK>>
+  total_questions
+  correct_count
+  wrong_count
+  total_score
+  duration_seconds
+  submitted_at
+}
+
+entity "user_answers 用户答案" as user_answers {
+  * id : bigint <<PK>>
+  --
+  user_id <<FK>>
+  question_id <<FK>>
+  paper_id <<FK>>
+  study_record_id <<FK>>
+  selected_option_ids
+  is_correct
+  score
+}
+
+entity "wrong_questions 错题本" as wrong_questions {
+  * id : bigint <<PK>>
+  --
+  user_id <<FK>>
+  question_id <<FK>>
+  wrong_count
+  resolved
+  last_wrong_at
+}
+
+entity "favorite_questions 收藏题" as favorite_questions {
+  * id : bigint <<PK>>
+  --
+  user_id <<FK>>
+  question_id <<FK>>
+}
+
+' ---------- 智能体 ----------
+entity "ai_sessions 智能体会话" as ai_sessions {
+  * id : bigint <<PK>>
+  --
+  user_id <<FK>>
+  scene : student/admin
+  title
+  model
+  message_count
+}
+
+entity "ai_messages 会话消息" as ai_messages {
+  * id : bigint <<PK>>
+  --
+  session_id <<FK>>
+  role
+  content
+  tool_name
+  latency_ms
+}
+
+entity "ai_call_logs 模型调用日志" as ai_call_logs {
+  * id : bigint <<PK>>
+  --
+  user_id <<FK>>
+  session_id <<FK>>
+  scene
+  model
+  tool_names
+  latency_ms
+  status
+}
+
+entity "system_settings 系统设置" as system_settings {
+  * setting_key : varchar <<PK>>
+  --
+  setting_value
+  updated_at
+}
+
+' ---------- 其他 ----------
+entity "i18n_messages 界面文案" as i18n_messages {
+  * id : bigint <<PK>>
+  --
+  module
+  message_key
+  language_code
+  message_value
+}
+
+' ---------- 关系 ----------
+users ||--o{ password_resets
+users ||--o{ login_logs
+users ||--o{ study_records
+users ||--o{ user_answers
+users ||--o{ wrong_questions
+users ||--o{ favorite_questions
+users ||--o{ ai_sessions
+users ||--o{ ai_call_logs
+
+levels ||--o{ level_translations
+levels ||--o{ questions
+levels ||--o{ papers
+
+question_categories ||--o{ qct
+question_categories ||--o{ questions
+
+questions ||--o{ question_translations
+questions ||--o{ question_options
+questions ||--o{ paper_questions
+questions ||--o{ user_answers
+questions ||--o{ wrong_questions
+questions ||--o{ favorite_questions
+question_options ||--o{ qot
+
+papers ||--o{ paper_translations
+papers ||--o{ paper_questions
+papers ||--o{ study_records
+
+study_records ||--o{ user_answers
+
+ai_sessions ||--o{ ai_messages
+ai_sessions ||--o{ ai_call_logs
+@enduml

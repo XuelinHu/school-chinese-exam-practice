@@ -10,3 +10,12 @@ logs/
 
 admin/logs/
 fronter/dist/
+
+# 真实密码只留在本地 .env，示例文件 .env.example 可以提交
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# 用户上传（头像等）不入库
+admin/uploads/

@@ -1,0 +1,49 @@
+@startuml
+' 马来西亚留学生汉语练习平台 —— 答题与判分活动图
+' 对应设计说明书 5.1；判分与三表写入在同一事务内完成。
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam shadowing false
+skinparam activity {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontSize 12
+  DiamondBackgroundColor #FFFFFF
+  DiamondBorderColor #000000
+}
+
+start
+:学生登录，进入练习列表;
+:按当前界面语言读取已发布试卷\n（等级、题目数量、总分）;
+:进入试卷详情，逐题查看\n题干、选项、分类、难度;
+:选择答案并提交;
+
+if (是否已作答全部题目？) then (否)
+  :提示未作答题目，停留当前页;
+  stop
+else (是)
+endif
+
+:开启数据库事务;
+
+if (答案与正确选项一致？) then (是)
+  :正确数 + 1;
+else (否)
+  :错误数 + 1;
+  :写入错题本 wrong_questions\n（错误次数累加）;
+endif
+
+:写入学习记录 study_records\n（得分、正确数、错误数）;
+:写入用户答案 user_answers;
+
+if (三表写入是否全部成功？) then (是)
+  :提交事务;
+  :返回得分与答题结果;
+  :前端展示成绩页;
+else (否)
+  :回滚事务;
+  :返回错误提示，不产生半份成绩;
+endif
+
+stop
+@enduml

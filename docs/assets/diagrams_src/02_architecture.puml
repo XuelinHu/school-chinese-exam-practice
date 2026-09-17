@@ -1,0 +1,81 @@
+@startuml
+' 马来西亚留学生汉语练习平台 —— 系统架构图（组件图）
+' 对应设计说明书 4.1；组件名与仓库目录一致：fronter / admin。
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam shadowing false
+skinparam componentStyle uml2
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontSize 12
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam node {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+
+package "浏览器 / 安卓 WebView" as CLIENT {
+
+  package "fronter 前台（Vue 3 + Vite）" as FE {
+    component "路由与权限守卫\nrouter" as FE_ROUTER
+    component "国际化 i18n\n中 / 英 / 马来语" as FE_I18N
+    component "登录状态\nauth store" as FE_AUTH
+    component "公共服务页面\n登录·注册·找回密码·个人中心" as FE_PUB
+    component "学员端页面\n练习·答题·成绩·错题本" as FE_STU
+    component "管理台布局\nAdminLayout + 12 个分页菜单" as FE_ADMIN
+    component "智能体弹框\nAgentWidget / AgentChat" as FE_AGENT
+    component "语音控件\nuseVoice + 安卓原生桥" as FE_VOICE
+    component "接口封装\nrequest / qs / SSE 读取" as FE_API
+  }
+}
+
+node "应用服务器（Node.js）" as SRV {
+  package "admin 后台（Express）" as BE {
+    component "中间件\nauth · role · active · rateLimit" as BE_MW
+    component "公共服务路由\nauth.js" as BE_AUTH
+    component "学习练习路由\nlearning.js" as BE_LEARN
+    component "管理台路由\nadmin.js · adminContent.js" as BE_ADMIN
+    component "智能体路由\nai.js（SSE 流式）· adminAi.js" as BE_AI
+    component "智能体服务\nollama · tools · agent · settings" as BE_AISVC
+    component "分页工具\npaginate.js" as BE_PAGE
+    component "数据库连接池与事务\ndb.js" as BE_DB
+    component "日志\nlogger.js" as BE_LOG
+  }
+}
+
+database "MySQL 8\n23 张业务表（utf8mb4）" as DB
+node "本机 Ollama 运行时\nqwen3:14b 等开源模型" as OLLAMA
+
+FE_ROUTER --> FE_PUB
+FE_ROUTER --> FE_STU
+FE_ROUTER --> FE_ADMIN
+FE_I18N --> FE_PUB
+FE_AUTH --> FE_API
+FE_PUB --> FE_API
+FE_STU --> FE_API
+FE_ADMIN --> FE_API
+FE_AGENT --> FE_API
+FE_VOICE --> FE_AGENT
+
+FE_API --> BE_MW : HTTPS /api
+BE_MW --> BE_AUTH
+BE_MW --> BE_LEARN
+BE_MW --> BE_ADMIN
+BE_MW --> BE_AI
+BE_AI --> BE_AISVC
+BE_PAGE --> BE_ADMIN
+BE_AUTH --> BE_DB
+BE_LEARN --> BE_DB
+BE_ADMIN --> BE_DB
+BE_AISVC --> BE_DB : 工具查询真实数据
+BE_AISVC --> OLLAMA : /api/chat 流式
+BE_AUTH --> BE_LOG
+BE_AI --> BE_LOG
+
+DB --> BE_DB
+@enduml

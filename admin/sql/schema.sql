@@ -13,8 +13,17 @@ CREATE TABLE IF NOT EXISTS users (
   nationality VARCHAR(80),
   language VARCHAR(20) DEFAULT 'zh-CN',
   status ENUM('active','disabled') NOT NULL DEFAULT 'active',
+  avatar_url VARCHAR(500),
+  last_active_at DATETIME,
+  last_login_at DATETIME,
+  login_count INT NOT NULL DEFAULT 0,
+  failed_login_count INT NOT NULL DEFAULT 0,
+  locked_until DATETIME,
+  -- 令牌吊销版本号：改密/被重置/被停用时自增，旧 JWT 立即失效
+  token_version INT NOT NULL DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_users_last_active (last_active_at)
 );
 
 CREATE TABLE IF NOT EXISTS levels (
@@ -196,4 +205,85 @@ CREATE TABLE IF NOT EXISTS i18n_messages (
   language_code VARCHAR(20) NOT NULL,
   message_value VARCHAR(1000) NOT NULL,
   UNIQUE KEY uk_i18n_message (module, message_key, language_code)
+);
+
+CREATE TABLE IF NOT EXISTS password_resets (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT NOT NULL,
+  code_hash VARCHAR(255) NOT NULL,
+  expires_at DATETIME NOT NULL,
+  used_at DATETIME NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_password_resets_user (user_id, expires_at),
+  CONSTRAINT fk_password_resets_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS login_logs (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT NULL,
+  username VARCHAR(50),
+  action ENUM('login','logout','register','change_password','reset_password') NOT NULL,
+  success TINYINT(1) NOT NULL DEFAULT 1,
+  ip VARCHAR(64),
+  user_agent VARCHAR(500),
+  message VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_login_logs_created (created_at),
+  INDEX idx_login_logs_user (user_id, created_at),
+  INDEX idx_login_logs_action (action, success),
+  CONSTRAINT fk_login_logs_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS ai_sessions (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT NOT NULL,
+  scene ENUM('student','admin') NOT NULL DEFAULT 'student',
+  title VARCHAR(200) NOT NULL DEFAULT '新会话',
+  model VARCHAR(120),
+  message_count INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_ai_sessions_user (user_id, updated_at),
+  INDEX idx_ai_sessions_scene (scene, updated_at),
+  CONSTRAINT fk_ai_sessions_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS ai_messages (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  session_id BIGINT NOT NULL,
+  role ENUM('system','user','assistant','tool') NOT NULL,
+  content MEDIUMTEXT,
+  tool_name VARCHAR(120),
+  tool_args TEXT,
+  model VARCHAR(120),
+  latency_ms INT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_ai_messages_session (session_id, id),
+  CONSTRAINT fk_ai_messages_session FOREIGN KEY (session_id) REFERENCES ai_sessions(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS ai_call_logs (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT NULL,
+  session_id BIGINT NULL,
+  scene VARCHAR(20),
+  model VARCHAR(120),
+  tool_names VARCHAR(500),
+  prompt_chars INT NOT NULL DEFAULT 0,
+  completion_chars INT NOT NULL DEFAULT 0,
+  latency_ms INT NOT NULL DEFAULT 0,
+  status ENUM('ok','error') NOT NULL DEFAULT 'ok',
+  error VARCHAR(500),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_ai_call_logs_created (created_at),
+  INDEX idx_ai_call_logs_model (model, created_at),
+  INDEX idx_ai_call_logs_status (status, created_at),
+  CONSTRAINT fk_ai_call_logs_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+  CONSTRAINT fk_ai_call_logs_session FOREIGN KEY (session_id) REFERENCES ai_sessions(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS system_settings (
+  setting_key VARCHAR(80) PRIMARY KEY,
+  setting_value TEXT,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

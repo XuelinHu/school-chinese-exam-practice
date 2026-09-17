@@ -1,0 +1,225 @@
+{
+  "pages": [
+    {
+      "key": "login",
+      "path": "/login",
+      "role": "public",
+      "name": "登录页面"
+    },
+    {
+      "key": "register",
+      "path": "/register",
+      "role": "public",
+      "name": "注册页面"
+    },
+    {
+      "key": "forgot_password",
+      "path": "/forgot-password",
+      "role": "public",
+      "name": "找回密码页面"
+    },
+    {
+      "key": "home",
+      "path": "/",
+      "role": "student",
+      "name": "学生首页"
+    },
+    {
+      "key": "practice_list",
+      "path": "/practice",
+      "role": "student",
+      "name": "练习列表"
+    },
+    {
+      "key": "practice_detail",
+      "path": "/practice/1",
+      "role": "student",
+      "name": "答题详情"
+    },
+    {
+      "key": "records",
+      "path": "/records",
+      "role": "student",
+      "name": "成绩记录"
+    },
+    {
+      "key": "wrong_book",
+      "path": "/wrong-book",
+      "role": "student",
+      "name": "错题本"
+    },
+    {
+      "key": "profile",
+      "path": "/profile",
+      "role": "student",
+      "name": "个人中心"
+    },
+    {
+      "key": "agent_modal",
+      "path": "/",
+      "role": "student",
+      "name": "智能体对话弹框",
+      "open": "document.querySelector('.agent-fab')?.click()",
+      "ask": "我有哪些错题？",
+      "settleAfterAsk": 30000
+    },
+    {
+      "key": "admin_dashboard",
+      "path": "/admin",
+      "role": "admin",
+      "name": "管理台数据看板",
+      "langs": [
+        [
+          "zh-CN",
+          "zh"
+        ]
+      ]
+    },
+    {
+      "key": "admin_students",
+      "path": "/admin/students",
+      "role": "admin",
+      "name": "学生管理列表",
+      "langs": [
+        [
+          "zh-CN",
+          "zh"
+        ]
+      ]
+    },
+    {
+      "key": "admin_questions",
+      "path": "/admin/questions",
+      "role": "admin",
+      "name": "题库管理列表",
+      "langs": [
+        [
+          "zh-CN",
+          "zh"
+        ]
+      ]
+    },
+    {
+      "key": "admin_papers",
+      "path": "/admin/papers",
+      "role": "admin",
+      "name": "练习试卷列表",
+      "langs": [
+        [
+          "zh-CN",
+          "zh"
+        ]
+      ]
+    },
+    {
+      "key": "admin_records",
+      "path": "/admin/records",
+      "role": "admin",
+      "name": "成绩记录管理",
+      "langs": [
+        [
+          "zh-CN",
+          "zh"
+        ]
+      ]
+    },
+    {
+      "key": "admin_levels",
+      "path": "/admin/levels",
+      "role": "admin",
+      "name": "等级管理列表",
+      "langs": [
+        [
+          "zh-CN",
+          "zh"
+        ]
+      ]
+    },
+    {
+      "key": "admin_categories",
+      "path": "/admin/categories",
+      "role": "admin",
+      "name": "分类管理列表",
+      "langs": [
+        [
+          "zh-CN",
+          "zh"
+        ]
+      ]
+    },
+    {
+      "key": "admin_login_logs",
+      "path": "/admin/login-logs",
+      "role": "admin",
+      "name": "登录日志列表",
+      "langs": [
+        [
+          "zh-CN",
+          "zh"
+        ]
+      ]
+    },
+    {
+      "key": "admin_online",
+      "path": "/admin/online",
+      "role": "admin",
+      "name": "在线状态列表",
+      "langs": [
+        [
+          "zh-CN",
+          "zh"
+        ]
+      ]
+    },
+    {
+      "key": "admin_ai_settings",
+      "path": "/admin/ai/settings",
+      "role": "admin",
+      "name": "智能体设置",
+      "langs": [
+        [
+          "zh-CN",
+          "zh"
+        ]
+      ]
+    },
+    {
+      "key": "admin_ai_sessions",
+      "path": "/admin/ai/sessions",
+      "role": "admin",
+      "name": "智能体会话列表",
+      "langs": [
+        [
+          "zh-CN",
+          "zh"
+        ]
+      ]
+    },
+    {
+      "key": "admin_ai_logs",
+      "path": "/admin/ai/logs",
+      "role": "admin",
+      "name": "智能体调用日志",
+      "langs": [
+        [
+          "zh-CN",
+          "zh"
+        ]
+      ]
+    }
+  ],
+  "langs": [
+    [
+      "zh-CN",
+      "zh"
+    ],
+    [
+      "en-US",
+      "en"
+    ],
+    [
+      "ms-MY",
+      "ms"
+    ]
+  ]
+}

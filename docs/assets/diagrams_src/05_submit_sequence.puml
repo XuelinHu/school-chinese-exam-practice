@@ -1,0 +1,50 @@
+@startuml
+' 马来西亚留学生汉语练习平台 —— 提交答案时序图
+' 对应设计说明书 5.2；同时给出「智能体查询本人数据」的接地时序。
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam shadowing false
+skinparam sequence {
+  ParticipantBackgroundColor #FFFFFF
+  ParticipantBorderColor #000000
+  LifeLineBorderColor #000000
+  ArrowColor #000000
+  FontSize 12
+}
+' 默认的小人图形自带浅蓝灰填充，与「纯白底黑线」不符
+skinparam actor {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+
+' 图题由设计说明书在图下方给出，这里不再重复标注
+
+actor "学生" as S
+participant "答题页面\nPracticeDetail" as P
+participant "后台接口\n/api/learning" as A
+participant "MySQL\n连接池与事务" as DB
+
+S -> P : 选择选项并点击提交
+P -> P : 校验是否全部作答
+P -> A : POST 提交答案（试卷 id + 答案数组）
+A -> A : 校验 JWT、读取题目与正确选项
+
+A -> DB : BEGIN
+A -> DB : INSERT study_records（得分、正确数、错误数）
+loop 每一道题
+  A -> DB : INSERT user_answers
+  alt 答错
+    A -> DB : INSERT / UPDATE wrong_questions（错误次数 + 1）
+  end
+end
+alt 全部成功
+  A -> DB : COMMIT
+  A --> P : 返回得分与逐题结果
+  P --> S : 展示成绩，可跳转成绩页
+else 任意一步失败
+  A -> DB : ROLLBACK
+  A --> P : 返回错误信息
+  P --> S : 提示失败，不产生半份成绩
+end
+
+@enduml

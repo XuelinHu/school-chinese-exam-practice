@@ -4,69 +4,171 @@ import path from 'node:path';
 const root = path.resolve(import.meta.dirname, '..');
 const softwareName = '马来西亚留学生汉语练习平台';
 const version = 'V1.0';
-const archiveName = `${softwareName}${version}`;
-const docsDir = path.join(root, 'docs', 'softcopyright');
-const screenshotsDir = path.join(root, 'docs', 'assets', 'screenshots');
-const diagramsDir = path.join(root, 'docs', 'assets', 'diagrams');
-const archiveDir = path.join(root, '软著', archiveName);
+
+// 交付目录：按软著共同规则输出到项目根 softright/{text,pdf,images/diagrams,images/screenshots}
+const deliveryDir = path.join(root, 'softright');
+const textDir = path.join(deliveryDir, 'text');
+const pdfDir = path.join(deliveryDir, 'pdf');
+const diagramsDir = path.join(deliveryDir, 'images', 'diagrams');
+const screenshotsDir = path.join(deliveryDir, 'images', 'screenshots');
+
+// 只读素材来源：本轮采集的三语原始截图，以及 docs 下已有的设计图
+const rawScreenshotsDir = path.join(root, 'docs', 'assets', 'screenshots_trilingual_raw');
+const diagramSourceDirs = [
+  path.join(root, 'docs', 'assets', 'diagrams'),
+  path.join(root, 'docs', 'assets', 'diagrams_png')
+];
+
+// information.txt 为本轮定稿稿：脚本直接读回这份交付稿，不再在 JS 里维护第二份副本
+const informationPath = path.join(textDir, 'information.txt');
+// 内部事实索引属于内部记录，放在 .tmp/softright/ 下，不打包进交付目录
+const inventoryPath = path.join(root, '.tmp', 'softright', 'inventory.json');
+const factsSummaryPath = path.join(root, '.tmp', 'softright', '已核验事实摘要.md');
+
+// 源码册收录的三条源码根目录，用于反向核对是否存在源码漏收
+const sourceRoots = ['admin/src', 'admin/sql', 'fronter/src'];
+const sourceExts = new Set(['.js', '.mjs', '.vue', '.sql', '.css', '.json']);
+const skippedDirs = new Set(['node_modules', 'dist', 'logs', 'uploads']);
 
 const sourceFiles = [
+  // 后台入口、配置与中间件
   'admin/src/server.js',
   'admin/src/app.js',
   'admin/src/config/db.js',
+  'admin/src/config/ai.js',
+  'admin/src/config/uploads.js',
   'admin/src/middleware/auth.js',
   'admin/src/middleware/role.js',
+  'admin/src/middleware/active.js',
+  'admin/src/middleware/rateLimit.js',
   'admin/src/middleware/requestLogger.js',
+  // 公共服务与学习接口
   'admin/src/routes/auth.js',
   'admin/src/routes/learning.js',
+  // 管理台接口
   'admin/src/routes/admin.js',
+  'admin/src/routes/adminContent.js',
+  'admin/src/routes/adminAi.js',
+  // 智能体服务
+  'admin/src/routes/ai.js',
+  'admin/src/services/ai/ollama.js',
+  'admin/src/services/ai/tools.js',
+  'admin/src/services/ai/agent.js',
+  'admin/src/services/ai/settings.js',
+  // 后台工具
   'admin/src/utils/errors.js',
   'admin/src/utils/response.js',
   'admin/src/utils/logger.js',
+  'admin/src/utils/paginate.js',
+  'admin/src/utils/translations.js',
+  'admin/src/utils/migrate.js',
   'admin/src/utils/initDb.js',
   'admin/src/utils/seedUsers.js',
+  // 数据库脚本
   'admin/sql/schema.sql',
   'admin/sql/seed.sql',
+  'admin/sql/migrations/001_auth_ai.js',
+  'admin/sql/migrations/002_token_version.js',
+  // 前台入口与基础能力
   'fronter/src/main.js',
   'fronter/src/App.vue',
   'fronter/src/router/index.js',
   'fronter/src/api/client.js',
+  'fronter/src/api/ai.js',
   'fronter/src/stores/auth.js',
   'fronter/src/i18n/index.js',
+  'fronter/src/composables/usePagedTable.js',
+  // 公共组件与后台布局
+  'fronter/src/components/Pagination.vue',
+  'fronter/src/components/AppModal.vue',
+  'fronter/src/layouts/AdminLayout.vue',
+  // 智能体组件与语音
+  'fronter/src/components/agent/AgentWidget.vue',
+  'fronter/src/components/agent/AgentChat.vue',
+  'fronter/src/components/agent/AgentControls.vue',
+  'fronter/src/components/agent/AgentModelPicker.vue',
+  'fronter/src/components/agent/format.js',
+  'fronter/src/components/agent/voice/useVoice.js',
+  'fronter/src/components/agent/voice/speech.js',
+  'fronter/src/components/agent/voice/androidBridge.js',
+  // 学员端页面
   'fronter/src/views/Home.vue',
   'fronter/src/views/Login.vue',
   'fronter/src/views/Register.vue',
+  'fronter/src/views/ForgotPassword.vue',
   'fronter/src/views/PracticeList.vue',
   'fronter/src/views/PracticeDetail.vue',
   'fronter/src/views/Records.vue',
   'fronter/src/views/WrongBook.vue',
   'fronter/src/views/Profile.vue',
   'fronter/src/views/Dashboard.vue',
-  'fronter/src/views/AdminTable.vue',
+  // 管理台页面
+  'fronter/src/views/admin/AdminDashboard.vue',
+  'fronter/src/views/admin/AdminStudents.vue',
+  'fronter/src/views/admin/AdminQuestions.vue',
+  'fronter/src/views/admin/AdminPapers.vue',
+  'fronter/src/views/admin/AdminRecords.vue',
+  'fronter/src/views/admin/AdminLevels.vue',
+  'fronter/src/views/admin/AdminCategories.vue',
+  'fronter/src/views/admin/AdminLoginLogs.vue',
+  'fronter/src/views/admin/AdminOnline.vue',
+  'fronter/src/views/admin/AdminAiSettings.vue',
+  'fronter/src/views/admin/AdminAiSessions.vue',
+  'fronter/src/views/admin/AdminAiLogs.vue',
+  // 样式与运行配置
   'fronter/src/assets/style.css',
   'admin/package.json',
   'fronter/package.json'
 ];
 
+// 截图说明的 key 与 docs/assets/screenshots_trilingual_raw/manifest.json 的页面 key 一致。
+// 描述只写截图画面中真实可见的元素，以及已核对的接口、数据表事实。
 const screenshotDescriptions = {
-  '01_practice_zh.png': '中文练习列表页面截图，访问路径为 /practice。页面展示学生登录后的练习入口，包括顶部导航、语言切换控件、练习标题、练习说明、等级名称、题目数量和试卷总分等内容。该截图用于证明系统能够从后台 MySQL 题库读取已发布试卷，并在前台以中文界面呈现练习资源，体现学生端核心学习入口和国际化界面能力。',
-  '02_home_zh.png': '中文首页截图，访问路径为 /。页面展示系统名称、练习入口、错题本入口和成绩入口，顶部导航根据当前学生登录状态展示练习、成绩、错题本、个人中心及退出按钮。该截图用于说明平台首页作为学生端主导航页，能够将练习、错题复习和学习成绩三个主要学习场景集中呈现，形成清晰的学习闭环入口。',
-  '03_wrong_book_zh.png': '中文错题本页面截图，访问路径为 /wrong-book。页面展示错题本标题和当前错题数据状态，顶部导航仍保留学生常用功能入口。该截图用于说明系统具备错题归集和复习入口，后台在答题提交时会依据答题结果更新 wrong_questions 数据表，页面负责向学生展示待复习题目、错误次数和解析信息。',
-  '04_records_zh.png': '中文成绩记录页面截图，访问路径为 /records。页面以表格方式展示练习标题、题目数量、正确数、错误数、得分和提交时间。该截图用于证明系统能够记录学生答题行为，并从 study_records 表读取个人历史成绩，支持学习过程追踪、成绩回看和练习效果评估。',
-  '05_profile_zh.png': '中文个人中心页面截图，访问路径为 /profile。页面展示姓名、邮箱、电话、国籍、语言等个人资料表单，并提供提交保存入口。该截图用于说明系统支持学生资料维护和语言偏好设置，前端表单与 /api/auth/profile 接口关联，后台按当前登录用户更新 users 表中的个人字段。',
-  '06_home_en.png': '英文首页截图，访问路径为 /，通过顶部语言下拉框切换到 English 后采集。页面标题、导航和入口卡片均切换为英文文案。该截图用于说明系统具备前端国际化能力，静态导航文案来自前端 i18n 资源，学习数据则可通过接口 lang 参数读取数据库中的多语言翻译字段。',
-  '07_practice_en.png': '英文练习列表页面截图，访问路径为 /practice，语言为 English。页面中的练习标题、说明、等级和字段标签以英文展示。该截图用于展示练习数据的多语言输出能力，说明前端语言状态会影响接口查询参数，后台按 language_code 从试卷、等级、题目分类等翻译表中读取对应语言内容。',
-  '08_admin_dashboard_zh.png': '中文管理台数据看板截图，访问路径为 /admin。页面展示学生数、题目数、练习数、平均分等统计指标，并提供学生管理、题库、练习试卷和成绩记录入口。该截图用于证明管理员角色登录后可以访问后台管理功能，系统通过 JWT 与角色守卫限制管理页面和管理接口。',
-  '09_admin_questions_zh.png': '中文题库管理列表截图，访问路径为 /admin/questions。页面以表格展示题目 ID、标题、等级、分类、题型、难度、分值和状态。该截图用于说明管理端可以查看题库资源和三语题目数据，为后续题库维护、练习编排和教学管理提供数据基础。'
+  login: '登录页面截图，访问路径为 /login，已采集中文、英文、马来语三种界面。顶栏左侧为软件名称，右侧为首页、登录、注册导航项和语言下拉框；卡片内为用户名字段、密码字段、「记住用户名」复选框和登录按钮，底部为「忘记密码?」与「注册」链接。该页面对应 /api/auth/login 接口，登录成功后由后台签发 JWT 并由前端保存登录态。',
+  register: '注册页面截图，访问路径为 /register，已采集中文、英文、马来语三种界面。表单字段依次为用户名、密码、确认密码、姓名、邮箱、学号、国籍和语言，密码下方提示「密码至少 8 位，需包含字母和数字」，底部为注册按钮和登录链接。该页面对应 /api/auth/register 接口，注册信息写入 users 表，国籍与语言用于界面语言切换。',
+  forgot_password: '找回密码页面截图，访问路径为 /forgot-password，已采集三语界面。表单字段为用户名、身份核验方式下拉框（图中为「用邮箱核验」）和邮箱，主按钮为「获取重置码」。该页对应 /api/auth/password/forgot 接口，后台生成 6 位重置码并以哈希写入 password_resets 表，重置码 10 分钟内有效且只能使用一次。',
+  home: '学生首页截图，访问路径为 /，已采集中文、英文、马来语三种界面。顶部为软件名称与首页、练习、成绩、错题本、个人中心、退出等导航项；正文为练习、错题本、成绩三张入口卡片，练习卡片内列出 HSK1 / HSK2 / Campus Chinese 三个等级。右下角为「汉语学习助教」悬浮球。该页面是学生登录后的主入口，导航与卡片文案取自前端国际化资源。',
+  practice_list: '练习列表页面截图，访问路径为 /practice，已采集中文、英文、马来语三种界面。页面以卡片列出已发布试卷，图中三张卡片为校园生活汉语练习、HSK2 基础语法练习和 HSK1 每日练习，卡片显示标题、说明、等级、题数和总分。该页面对应 /api/learning/papers 接口，标题与说明按 language_code 从翻译表读取。',
+  practice_detail: '答题详情页面截图，访问路径为 /practice/1，已采集三语界面。页面标题为试卷名称并显示进度「1 / 5」；题目卡片显示分类与难度（图中为「拼音 · easy」）、题干和四个选项，底部为上一题与「下一题」按钮；右侧题号列表可点击跳题。调用 /api/learning/papers/:id 接口，题干、选项和解析按 language_code 读取。',
+  records: '成绩记录页面截图，访问路径为 /records，已采集中文、英文、马来语三种界面。页面以表格展示个人练习历史，列依次为标题、题数、正确、错误、得分、提交时间，图中记录包含 HSK1 每日练习与 HSK2 基础语法练习。该页面对应 /api/learning/records 接口，数据来自 study_records 表，按提交时间返回当前学员的记录。',
+  wrong_book: '错题本页面截图，访问路径为 /wrong-book，已采集中文、英文、马来语三种界面。页面以卡片列出待复习错题，每张卡片显示分类标签（图中为词汇、阅读、语法）、错误次数标签、题干和解析。该页面对应 /api/learning/wrong-questions 接口，错题与错误次数来自 wrong_questions 表，答对历史错题后可标记为已解决。',
+  profile: '个人中心页面截图，访问路径为 /profile，已采集中文、英文、马来语三种界面。页面包含资料、修改密码、登录日志三张卡片：资料卡片显示头像、用户名、角色标签和上传头像按钮，并列出姓名、邮箱、电话、学号、国籍、语言字段；修改密码卡片含当前密码、新密码、确认密码；登录日志卡片以表格显示操作、状态、IP 地址和创建时间，支持翻页。',
+  agent_modal: '智能体对话弹框截图，访问路径为 /，由页面右下角悬浮球点开，已采集三语界面。弹框标题为「汉语学习助教」，标题下方显示当前模型名 qwen3:14b，右上角为模型入口和关闭按钮；学员提问「我有哪些错题?」后，回答按题目、分类、等级、解析逐条列出 4 道错题。内容由后台工具 get_my_wrong_questions 查询数据库得到，经 SSE 流式返回。',
+  admin_dashboard: '管理台数据看板截图，访问路径为 /admin。左侧菜单分为数据看板、学生管理、题库、智能体设置四组共 12 个菜单项；顶部统计卡片显示学生数、在线、题目数、练习数、答题记录和正确率，下方为近 7 日趋势、各等级表现，以及高频错题、最近答题两张表格。数据来自 /api/admin/stats 等接口，页面顶部显示当前登录管理员的角色徽标。',
+  admin_students: '管理台学生管理截图，访问路径为 /admin/students。筛选区提供用户名搜索框和角色、状态、在线状态三个下拉框以及重置按钮；表格列为 ID、用户名、姓名、角色、状态、在线状态、答题记录、平均分、错题本、最近活跃、最近登录、登录次数和操作，操作列按账号状态提供编辑、重置密码、解锁、删除按钮；底部分页显示总条数、每页条数和页码。',
+  admin_questions: '管理台题库管理截图，访问路径为 /admin/questions。页面提供新增按钮，筛选区包含搜索框和等级、分类、题型、难度、状态、排序下拉框；表格列为 id、标题、等级、分类、题型、难度、得分、选项数、状态、创建时间和操作，操作列提供编辑和删除按钮。图中列出 10 道题，题型均为单选，难度分为简单、中等、困难，状态均为已发布。',
+  admin_papers: '管理台练习试卷截图，访问路径为 /admin/papers。页面提供新增按钮，筛选区包含搜索框和试卷类型、等级、状态、排序下拉框；表格列为 id、标题、试卷类型、等级、题数、练习次数、总分、时长（分钟）、状态和操作，操作列提供编辑、组卷、删除三个按钮。图中三份试卷的题数均为 5、总分均为 5.00，试卷类型分别为练习和每日。',
+  admin_records: '管理台成绩记录截图，访问路径为 /admin/records。筛选区提供用户名搜索框、提交时间区间选择和重置按钮；表格列为序号、用户名、标题、正确、错误、得分、正确率、时长、提交时间和操作，正确率列同时显示进度条与百分比，操作列的明细按钮用于查看单次作答明细。该页面对应 /api/admin/records 接口，集中显示全部学员的答题结果。',
+  admin_levels: '管理台等级管理截图，访问路径为 /admin/levels。页面提供新增按钮，筛选区包含搜索框、状态下拉框、排序下拉框和重置按钮；表格列为 id、编码、姓名、描述、排序、状态、题数和操作，操作列提供编辑和删除按钮。图中三个等级为 HSK1、HSK2、CAMPUS，题数分别为 5、3、2，名称与描述按语言保存在 level_translations 表。',
+  admin_categories: '管理台分类管理截图，访问路径为 /admin/categories。页面提供新增按钮，筛选区包含搜索框、状态下拉框和排序下拉框以及重置按钮；表格列为 id、编码、姓名、分类、描述、排序、状态、题数和操作，操作列提供编辑和删除按钮。图中四个分类为拼音、词汇、语法、阅读，题数分别为 1、4、2、3，名称与描述保存在分类翻译表中。',
+  admin_login_logs: '管理台登录日志截图，访问路径为 /admin/login-logs。筛选区包含用户名搜索框、操作、练习结果、创建时间区间和重置按钮；表格列为 ID、用户名、姓名、操作、练习结果、IP 地址、消息、创建时间和类型，图中记录的操作均为登录、练习结果均为成功，类型列区分浏览器访问与脚本访问；底部分页显示总条数、每页条数、页码和跳页输入框。',
+  admin_online: '管理台在线状态截图，访问路径为 /admin/online。页面顶部三张统计卡片显示在线人数、学生数和后台管理人数，下方标注在线窗口（分钟）；筛选区包含在线窗口分钟数输入框、角色下拉框、用户名搜索框和重置按钮；表格列为 ID、用户名、姓名、角色、语言、状态、最近活跃、最近登录、登录次数、空闲分钟和在线状态，在线状态以圆点标记显示。',
+  admin_ai_settings: '管理台智能体设置截图，访问路径为 /admin/ai/settings。页面顶部四张卡片显示服务状态、模型服务地址、在线窗口（分钟）和耗时；表单包含默认模型下拉框与加载、卸载、刷新模型三个按钮，启用场景的学员和管理员复选框，学员欢迎语与管理员欢迎语输入框，启用语音与自动播报复选框，工具数量与输入字符上限，底部为保存按钮。',
+  admin_ai_sessions: '管理台智能体会话截图，路径 /admin/ai/sessions。筛选区含标题搜索框、类型筛选和重置按钮；表格列为序号、标题、用户名、类型、模型、消息数、创建时间、最近活跃和操作，操作列提供消息和删除按钮。图中会话标题多为学员提问原文，模型列出现 qwen3:14b、qwen2.5:0.5b。数据来自 ai_sessions、ai_messages 表。',
+  admin_ai_logs: '管理台智能体调用日志截图，访问路径为 /admin/ai/logs。筛选区包含用户名搜索框、模型输入框、类型和状态下拉框以及重置按钮，顶部两张卡片显示平均耗时和失败次数；表格列为序号、用户名、类型、模型、工具、输入字符、输出字符、耗时、状态、创建时间和失败原因，工具列显示本次调用触发的后台工具名。数据来自 ai_call_logs 表。'
 };
 
+// 采集了中文、英文、马来语三语的页面；其余页面只采集中文
+const trilingualPages = new Set([
+  'login',
+  'register',
+  'forgot_password',
+  'home',
+  'practice_list',
+  'practice_detail',
+  'records',
+  'wrong_book',
+  'profile',
+  'agent_modal'
+]);
+
 const diagramDescriptions = {
-  '01_use_case.svg': '用例图展示学生和管理员两个角色与系统功能之间的关系。学生侧覆盖注册登录、语言切换、查看练习、在线答题、成绩记录、错题本和个人资料维护；管理员侧覆盖管理台统计、学生列表、题库列表、试卷列表和成绩记录查看。该图用于概括软件的角色边界和功能范围。',
-  '02_architecture.svg': '系统架构图展示 fronter 前台、admin 后台和 MySQL 数据库之间的分层关系。前台包含路由、国际化、认证状态、学生页面、管理页面和 API 请求封装；后台包含 Express 应用、鉴权中间件、日志模块、认证接口、学习接口、管理接口和数据库连接池。该图用于说明系统主要技术构成和调用方向。',
-  '03_deployment.svg': '部署图说明用户浏览器、Web 前端运行环境、应用服务器和 MySQL 数据库的部署关系。浏览器访问静态资源，Vue 前台调用后台 /api 接口，后台通过连接池访问数据库并写入 logs/app.log 日志文件。该图用于描述系统运行支撑环境和服务间通信路径。',
-  '04_practice_flow.svg': '业务流程图描述学生从登录、进入练习列表、选择试卷、逐题作答到提交并生成成绩和错题记录的完整流程。流程中包含未全部作答时的提示分支，以及错题更新和已解决标记逻辑。该图用于说明练习答题主链路和后台事务处理结果。',
-  '05_submit_sequence.svg': '提交时序图展示学生页面、API Client、learning 路由、事务处理和 MySQL 之间的调用顺序。页面提交答案后，后台查询正确选项、计算得分、写入学习记录、写入用户答案并更新错题本，最后返回结果给页面展示。该图用于解释答题提交接口的协作过程。',
-  '06_er.svg': 'ER 图展示 users、levels、question_categories、questions、question_options、papers、paper_questions、study_records、user_answers、wrong_questions 等核心数据表之间的关系。该图用于说明题库、试卷、学生答题记录和错题本之间的数据关联，是数据设计章节的重要依据。'
+  '01_use_case': '用例图展示学生、管理员两个角色与系统功能之间的关系。学生侧覆盖注册、登录、找回密码与修改密码、个人资料与头像、语言切换、练习列表、在线答题、成绩记录、错题本和智能体问答；管理员侧覆盖数据看板、学生管理、题库与试卷维护、等级与分类维护、成绩记录与登录日志检索、在线状态，以及智能体设置、会话与调用日志查看。该图用于概括软件的角色边界和功能范围。',
+  '02_architecture': '系统架构图展示 fronter 前台、admin 后台、MySQL 数据库和本机 Ollama 模型服务之间的分层关系。前台包含路由、国际化、认证状态、学生页面、管理台分页页面、智能体弹框与语音控件和 API 请求封装；后台包含 Express 应用、鉴权与限流中间件、日志模块、公共服务接口、学习接口、管理台接口、智能体接口和数据库连接池。该图用于说明系统主要技术构成和调用方向。',
+  '03_deployment': '部署图说明用户浏览器、Web 前端运行环境、应用服务器、MySQL 数据库和本机 Ollama 运行时之间的部署关系。浏览器访问静态资源，Vue 前台调用后台 /api 接口并订阅 SSE 流式响应，后台通过连接池访问数据库、通过本机接口访问 Ollama，并写入 logs/app.log 日志文件；安卓环境中语音识别与合成由 WebView 原生桥接完成。该图用于描述系统运行支撑环境和服务间通信路径。',
+  '04_practice_flow': '业务流程图描述学生从注册登录、进入练习列表、选择试卷、逐题作答到提交并生成成绩和错题记录的完整流程。流程中包含未全部作答时的提示分支、提交后的事务判分、错题更新与已解决标记逻辑，以及登录日志、最后活跃时间和令牌版本号在认证环节的校验。该图用于说明练习答题主链路和后台事务处理结果。',
+  '05_submit_sequence': '提交时序图展示学生页面、API Client、learning 路由、事务处理和 MySQL 之间的调用顺序。页面提交答案后，后台查询正确选项、计算得分，并在同一事务中写入学习记录、用户答案和错题本数据，最后返回正确数、错误数和得分给页面展示；登录态由 JWT 中间件回查用户表比对令牌版本号。该图用于解释答题提交接口的协作过程。',
+  '06_er': 'ER 图展示 users、levels、question_categories、questions、question_options、papers、paper_questions、study_records、user_answers、wrong_questions、favorite_questions 等核心数据表之间的关系，并覆盖本轮新增的 password_resets、login_logs、ai_sessions、ai_messages、ai_call_logs、system_settings 六张表。该图用于说明题库、试卷、答题记录、错题本、账号安全与智能体会话之间的数据关联，是数据设计章节的重要依据。'
 };
 
 function redact(text) {
@@ -76,50 +178,130 @@ function redact(text) {
     .replace(/student123456/g, '***')
     .replace(/[A-Z0-9._%+-]+@example\.local/gi, '***@***')
     .replace(/localhost:\d+/g, '***')
+    .replace(/127\.0\.0\.1(:\d+)?/g, '***')
     .replace(/http:\/\/\*\*\*\/api/g, 'http://***/api')
     .replace(/dev_secret/g, '***');
 }
 
+async function fileExists(file) {
+  try {
+    await fs.access(file);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// 递归列出源码根目录下的自研源码，用于反向核对源码册是否漏收
+async function listSourceFiles(dir, out = []) {
+  for (const entry of await fs.readdir(path.join(root, dir), { withFileTypes: true })) {
+    const relative = `${dir}/${entry.name}`;
+    if (entry.isDirectory()) {
+      if (!skippedDirs.has(entry.name)) await listSourceFiles(relative, out);
+    } else if (sourceExts.has(path.extname(entry.name))) {
+      out.push(relative);
+    }
+  }
+  return out;
+}
+
+// 启动校验：既报出「列入源码册但磁盘上不存在」的文件，也报出「磁盘上存在却未列入」的源码，避免源码册漏收或收进不存在的文件
+async function verifySourceFiles() {
+  const missing = [];
+  for (const file of sourceFiles) {
+    if (!(await fileExists(path.join(root, file)))) missing.push(file);
+  }
+  const listed = new Set(sourceFiles);
+  const unlisted = [];
+  for (const dir of sourceRoots) {
+    for (const file of await listSourceFiles(dir)) {
+      if (!listed.has(file)) unlisted.push(file);
+    }
+  }
+  if (missing.length || unlisted.length) {
+    const lines = ['源码册文件校验未通过：'];
+    if (missing.length) lines.push(`  列入源码册但磁盘上不存在（${missing.length} 个）：${missing.join('、')}`);
+    if (unlisted.length) lines.push(`  磁盘上存在但未列入源码册（${unlisted.length} 个）：${unlisted.join('、')}`);
+    throw new Error(lines.join('\n'));
+  }
+}
+
+// 逐页解析原始截图：三语页面要求 zh / en / ms 三张齐全，其余页面要求 zh 一张，并反向核对有无未写说明的截图
+async function resolveScreenshots() {
+  const resolved = {};
+  const missing = [];
+  for (const page of Object.keys(screenshotDescriptions)) {
+    const langs = trilingualPages.has(page) ? ['zh', 'en', 'ms'] : ['zh'];
+    resolved[page] = [];
+    for (const lang of langs) {
+      const file = `${page}_${lang}.png`;
+      if (await fileExists(path.join(rawScreenshotsDir, file))) resolved[page].push(file);
+      else missing.push(file);
+    }
+  }
+  const described = new Set(Object.values(resolved).flat());
+  const undescribed = (await fs.readdir(rawScreenshotsDir)).filter((file) => file.endsWith('.png') && !described.has(file));
+  if (missing.length || undescribed.length) {
+    const lines = ['原始截图校验未通过：'];
+    if (missing.length) lines.push(`  缺少截图（${missing.length} 张）：${missing.join('、')}`);
+    if (undescribed.length) lines.push(`  存在截图但没有对应说明（${undescribed.length} 张）：${undescribed.join('、')}`);
+    throw new Error(lines.join('\n'));
+  }
+  return resolved;
+}
+
+// 逐张解析设计图：优先取 docs/assets/diagrams 下的编辑源，其次同名位图，再退到 docs/assets/diagrams_png
+async function resolveDiagrams() {
+  const resolved = {};
+  const missing = [];
+  for (const key of Object.keys(diagramDescriptions)) {
+    for (const dir of diagramSourceDirs) {
+      for (const ext of ['.svg', '.png']) {
+        const source = path.join(dir, `${key}${ext}`);
+        if (await fileExists(source)) {
+          resolved[key] = { source, file: `${key}${ext}`, fallback: dir !== diagramSourceDirs[0] };
+          break;
+        }
+      }
+      if (resolved[key]) break;
+    }
+    if (!resolved[key]) missing.push(key);
+  }
+  if (missing.length) {
+    throw new Error(`设计图校验未通过，未找到以下图（${missing.length} 张）：${missing.join('、')}`);
+  }
+  return resolved;
+}
+
 async function ensureDirs() {
-  const dirs = [
-    docsDir,
-    screenshotsDir,
-    diagramsDir,
-    path.join(archiveDir, 'pdf'),
-    path.join(archiveDir, 'text'),
-    path.join(archiveDir, 'images', 'diagrams'),
-    path.join(archiveDir, 'images', 'screenshots')
-  ];
-  for (const dir of dirs) await fs.mkdir(dir, { recursive: true });
+  for (const dir of [textDir, pdfDir, diagramsDir, screenshotsDir]) {
+    await fs.mkdir(dir, { recursive: true });
+  }
 }
 
-function informationTxt() {
-  return `软件名称：${softwareName}
-版本号：${version}
-开发的硬件环境：普通 PC 或笔记本开发工作站，建议 4 核及以上 CPU、16GB 及以上内存、固态硬盘，能够同时运行 Node.js、Vite 开发服务、MySQL 数据库和浏览器调试工具。
-运行的硬件环境：可部署在普通 Linux/Windows 应用服务器或教学机房服务器上，建议 2 核及以上 CPU、4GB 及以上内存、20GB 及以上可用磁盘空间；学生端和管理端通过桌面或移动浏览器访问。
-开发该软件的操作系统：Linux 开发环境，当前核验环境为 Asia/Shanghai 时区的本地工作区；软件也可在安装 Node.js 和 MySQL 的 Windows 或 Linux 环境中开发调试。
-软件开发环境 / 开发工具：Node.js、npm、Vue 3、Vite、Express、mysql2、MySQL、Chromium 浏览器、PlantUML、命令行终端和接口调试工具；前端目录为 fronter，后台目录为 admin。
-该软件的运行平台 / 操作系统：浏览器端 H5 Web 应用，后台运行于 Node.js 运行时，数据库运行于 MySQL；支持在 Windows、Linux、macOS 的现代浏览器中访问前台和管理台。
-软件运行支撑环境 / 支持软件：Node.js、npm、MySQL 8.x 或兼容版本、支持 ES Module 的 JavaScript 运行环境、现代浏览器；后台通过 Express 提供 JSON API，前台通过 Vite 构建为静态资源。
-编程语言：JavaScript、Vue 单文件组件、HTML、CSS、SQL。
-源程序量：按 admin/src、admin/sql、fronter/src 等自研核心源码统计，共 33 个主要源码/脚本文件，约 1624 行核心业务代码和 SQL，不包含 node_modules、dist、package-lock、日志文件和第三方依赖源码。
-开发目的：建设面向马来西亚留学生的汉语练习平台，为学生提供多语言界面的汉语练习、在线答题、成绩回看和错题复习能力，为教学管理人员提供题库、练习试卷、学生与成绩数据的管理查看入口，帮助学习者围绕 HSK 入门和校园汉语场景进行持续练习。
-面向行业 / 领域：教育信息化、国际中文教育、留学生汉语学习、在线练习与教学管理领域。
-软件的主要功能：本软件面向马来西亚留学生汉语学习场景，提供学生端和管理端两类角色功能。学生可通过注册登录进入系统，系统使用 JWT 保存登录状态，并通过路由守卫限制未登录用户访问练习、成绩、错题本和个人中心。学生登录后可在首页进入练习列表，系统根据当前语言读取已发布练习试卷、等级、题目数量和总分信息；进入试卷详情后可逐题查看题干、内容、选项、分类、难度和解析，完成所有题目后提交答案，后台按正确选项计算正确数、错误数和总得分，并写入学习记录、用户答案和错题本数据。学生可在成绩页面查看历史练习记录，包括练习标题、题目数量、正确数、错误数、得分和提交时间；可在错题本页面查看历史错题、错误次数和解析，方便针对薄弱知识点复习；可在个人中心维护姓名、邮箱、电话、国籍和语言偏好。系统支持中文、英文、马来语三种界面语言，前端导航和按钮文案来自国际化资源，题库、等级、分类、试卷、题目、选项和解析等学习内容由数据库多语言翻译表提供。管理员登录后可进入管理台查看学生数、题目数、练习数、答题记录数和平均分，可查看学生列表、题库列表、练习试卷列表和成绩记录列表，掌握平台教学资源与学习数据。后台还提供数据库初始化、演示题库和种子账号脚本，并新增请求日志与错误日志模块，便于部署后的运行审计和问题排查。
-软件的技术特点：系统采用前后端分离架构，前台 fronter 使用 Vue 3、Vue Router、Vite 和原生状态对象构建 H5 页面，后台 admin 使用 Node.js、Express、mysql2/promise 和 MySQL 连接池提供 REST 风格 JSON API。后台按认证、学习练习和管理统计拆分路由，使用 JWT 实现登录态校验，使用角色中间件限制管理员接口，使用事务封装保证答题提交时 study_records、user_answers 和 wrong_questions 等多表写入一致性。数据库采用 utf8mb4 字符集，围绕用户、等级、分类、题目、选项、试卷、答题记录、错题本和国际化消息设计 17 张表，并通过外键维护主要数据关系。系统内置 schema.sql、seed.sql、initDb.js 和 seedUsers.js，可快速完成库表初始化和演示数据写入。新增日志模块会记录接口请求、响应状态、耗时和异常信息，并对令牌、密码等敏感字段进行脱敏，日志默认写入后台 logs/app.log。前端通过 VITE_API_BASE 支持 API 地址配置，默认指向脱敏后的本地 API 地址，构建产物可部署为静态资源。
-推荐软件名称：${softwareName}
-软件名称候选：马来西亚留学生汉语练习平台、留学生汉语在线练习管理系统、国际中文学习练习平台、三语汉语题库练习管理软件
-推荐理由：当前名称与 README、页面标题、学生练习场景、三语题库和管理台功能范围一致，能够覆盖学生端练习与后台教学管理两类核心能力。`;
+// information.txt 是本轮定稿稿，也是唯一事实来源：直接读回它的内容，脚本内不再维护第二份会漂移的副本
+async function informationTxt() {
+  return fs.readFile(informationPath, 'utf8');
 }
 
-async function writeDescriptions() {
-  for (const [file, text] of Object.entries(screenshotDescriptions)) {
-    await fs.writeFile(path.join(screenshotsDir, file.replace(/\.\w+$/, '.txt')), text, 'utf8');
+// 不再生成每图 TXT：按 softcopyright-visuals 技能约定，文件/页面/证据/说明/脱敏与检查结果
+// 统一记入共用素材索引（.tmp/softright/inventory.json）。设计说明书的图题由
+// render_optimized_softcopyright.mjs 的 screenshotNotes 生成，删除每图 TXT 不会丢失描述文字；
+// 下方 screenshotDescriptions 现在只保留键名，用于与原始采集清单 manifest.json 对齐校验。
+async function copyAssets(screenshots, diagrams) {
+  for (const files of Object.values(screenshots)) {
+    for (const file of files) {
+      await fs.copyFile(path.join(rawScreenshotsDir, file), path.join(screenshotsDir, file));
+    }
   }
-  for (const [file, text] of Object.entries(diagramDescriptions)) {
-    await fs.writeFile(path.join(diagramsDir, file.replace(/\.\w+$/, '.txt')), text, 'utf8');
+  for (const { source, file } of Object.values(diagrams)) {
+    await fs.copyFile(source, path.join(diagramsDir, file));
   }
+
+  // 共同规则要求交付的运行截图是「原图的脱敏中性灰度副本」。
+  // Node 侧没有可用的图像库，而技能规则本就要求辅助脚本用 Python 3.10+，故交给 PIL 处理。
+  const { execFileSync } = await import('node:child_process');
+  execFileSync('python3', [path.join(root, 'scripts', 'grayscale_pngs.py'), screenshotsDir], { stdio: 'inherit' });
 }
 
 async function sourceMarkdown() {
@@ -132,21 +314,23 @@ async function sourceMarkdown() {
     '',
     '## 源代码属性结构说明',
     '',
-    '本源码由后台 admin、前台 fronter 和数据库脚本三部分组成。后台使用 Node.js、Express、mysql2 和 MySQL 连接池提供认证、学习练习、管理统计、日志记录和数据库初始化能力；前台使用 Vue 3、Vue Router 和 Vite 提供学生端练习页面、管理端看板页面、国际化界面和 API 调用封装；数据库脚本负责创建用户、等级、分类、题库、试卷、答题记录、错题本和国际化消息等业务表。',
+    '本源码由后台 admin、前台 fronter 和数据库脚本三部分组成。后台使用 Node.js、Express、mysql2 和 MySQL 连接池提供账号公共服务、学习练习、管理台分页查询、智能体会话、语音桥接支撑、日志记录和数据库迁移能力；前台使用 Vue 3、Vue Router 和 Vite 提供学生端练习页面、公共服务页面、管理端后台布局与分页表格页面、智能体弹框与语音交互组件、三语国际化界面和 API 调用封装；数据库脚本负责创建用户、等级、分类、题库、试卷、答题记录、错题本、登录日志、密码重置、智能体会话与系统设置等业务表。',
     '',
-    '选入源码稿的范围包括 admin/src、admin/sql、fronter/src 以及两个 package.json 中与系统运行直接相关的配置。已排除 node_modules、dist、package-lock、日志文件和第三方依赖源码。源码中涉及密码、令牌、邮箱、主机地址和数据库连接敏感值均已脱敏。',
+    '选入源码稿的范围包括 admin/src、admin/sql、fronter/src 以及两个 package.json 中与系统运行直接相关的配置。已排除 node_modules、dist、package-lock、日志文件、上传文件和第三方依赖源码。源码中涉及密码、令牌、邮箱、主机地址和数据库连接敏感值均已脱敏。',
     '',
     '## 三级目录结构',
     '',
-    '- admin/src：后台应用入口、路由、中间件、配置和工具模块',
-    '- admin/sql：数据库建表和演示题库初始化脚本',
-    '- fronter/src：前台入口、路由、状态、国际化、页面组件和样式',
+    '- admin/src：后台应用入口、路由、中间件、配置、智能体服务和工具模块',
+    '- admin/sql：数据库建表脚本、增量迁移脚本和演示题库初始化脚本',
+    '- fronter/src：前台入口、路由、状态、国际化、公共组件、智能体组件、后台布局和页面组件',
     '- package.json：前后台运行脚本和依赖配置',
     ''
   ];
+  let lineCount = 0;
   for (const file of sourceFiles) {
     const abs = path.join(root, file);
     const code = redact(await fs.readFile(abs, 'utf8'));
+    lineCount += code.replace(/\n$/, '').split('\n').length;
     const moduleName = file.startsWith('admin/sql') ? '数据库脚本模块' : file.startsWith('admin') ? '后台服务模块' : file.startsWith('fronter') ? '前台页面模块' : '项目配置模块';
     lines.push(`## 文件：${file}`, '');
     lines.push(`文件职责：${describeFile(file)}`);
@@ -155,23 +339,52 @@ async function sourceMarkdown() {
     lines.push(code.trimEnd());
     lines.push('```', '');
   }
-  return lines.join('\n');
+  // 收录数量由本脚本按实际读入的文件统计，不写死在文案里
+  lines.splice(11, 0, `本源码稿共收录 ${sourceFiles.length} 个文件，按换行统计合计 ${lineCount} 行。`);
+  return { markdown: lines.join('\n'), files: sourceFiles.length, lines: lineCount };
 }
 
 function describeFile(file) {
-  if (file.includes('/routes/auth')) return '提供注册、登录、个人资料查询和个人资料更新接口。';
+  if (file.includes('/routes/auth')) return '提供注册、登录、退出、找回密码、修改密码、个人资料、头像上传和本人登录日志接口。';
   if (file.includes('/routes/learning')) return '提供等级、分类、练习列表、试卷详情、答题提交、成绩记录和错题本接口。';
-  if (file.includes('/routes/admin')) return '提供管理台统计、学生列表、题库列表、试卷列表和成绩记录列表接口。';
-  if (file.includes('/middleware/auth')) return '解析 JWT 并完成接口登录态校验。';
+  if (file.includes('/routes/adminContent')) return '提供管理台等级、分类、题库和试卷的分页查询与增删改接口，并维护三语翻译字段。';
+  if (file.includes('/routes/adminAi')) return '提供管理台智能体设置、模型刷新、会话与调用日志的分页查询接口。';
+  if (file.includes('/routes/admin')) return '提供管理台数据看板、学生管理、成绩记录、登录日志和在线状态接口。';
+  if (file.includes('/routes/ai')) return '提供智能体健康检查、模型列表与装卸、场景配置、SSE 流式问答和会话管理接口。';
+  if (file.includes('/services/ai/ollama')) return '封装本地 Ollama 的模型列举、装载卸载、对话推理和能力探测调用。';
+  if (file.includes('/services/ai/tools')) return '定义面向本平台业务的数据库查询工具，为智能体提供真实学情数据。';
+  if (file.includes('/services/ai/agent')) return '实现场景化系统提示词、工具调用循环、降级路由和流式事件编排。';
+  if (file.includes('/services/ai/settings')) return '读写智能体运行参数，并提供模型列表缓存与回落策略。';
+  if (file.includes('/middleware/auth')) return '解析 JWT 并回查用户表比对令牌版本号，完成接口登录态校验与吊销。';
   if (file.includes('/middleware/role')) return '按用户角色限制管理员接口访问。';
+  if (file.includes('/middleware/active')) return '按节流策略刷新用户活跃时间，支撑在线状态统计。';
+  if (file.includes('/middleware/rateLimit')) return '提供内存滑动窗口限流，保护登录、改密和智能体接口。';
   if (file.includes('/middleware/requestLogger')) return '记录 HTTP 请求状态、路径、耗时和用户标识。';
   if (file.includes('/utils/logger')) return '提供控制台和文件双写的日志工具，并脱敏敏感字段。';
+  if (file.includes('/utils/paginate')) return '统一分页参数解析与分页查询封装，并内联校验后的 LIMIT 取值。';
+  if (file.includes('/utils/translations')) return '封装三语翻译表的关联读取与按语言增量写入，避免覆盖其他语种内容。';
+  if (file.includes('/utils/migrate')) return '按版本号顺序执行数据库迁移脚本并记录已应用版本，保证升级幂等。';
   if (file.includes('/config/db')) return '配置 MySQL 连接池和事务封装。';
+  if (file.includes('/config/ai')) return '读取并归一化智能体相关环境变量配置。';
+  if (file.includes('/config/uploads')) return '定义头像等上传文件的存放目录、类型白名单和大小限制。';
   if (file.endsWith('schema.sql')) return '创建系统所需数据库、业务表、唯一约束和外键。';
   if (file.endsWith('seed.sql')) return '写入等级、分类、试卷、题目、选项和多语言演示题库。';
-  if (file.includes('router')) return '定义前台页面路由和登录、管理员访问守卫。';
-  if (file.includes('api/client')) return '封装前台 HTTP JSON 请求和令牌请求头。';
+  if (file.includes('migrations/002')) return '为用户表补充令牌版本号字段，使改密、重置密码和停用账号能立即吊销已签发的令牌。';
+  if (file.includes('migrations/')) return '为已部署数据库增量补充字段和智能体相关业务表。';
+  if (file.includes('router')) return '定义前台页面路由、后台嵌套路由和登录、管理员访问守卫。';
+  if (file.includes('api/client')) return '封装前台 HTTP JSON 请求、原始字节上传、查询串拼接和 SSE 流式读取。';
+  if (file.includes('api/ai')) return '封装智能体接口调用与流式事件订阅。';
   if (file.includes('i18n')) return '维护中文、英文、马来语界面文案和语言切换状态。';
+  if (file.includes('composables/usePagedTable')) return '封装后台分页表格的查询、筛选、防抖搜索与翻页逻辑。';
+  if (file.includes('components/Pagination')) return '实现通用分页控件，提供页码、每页条数和总数展示。';
+  if (file.includes('components/AppModal')) return '实现通用弹框容器，供后台编辑表单与智能体对话复用。';
+  if (file.includes('layouts/AdminLayout')) return '实现管理台侧边栏布局、菜单分组和窄屏抽屉导航。';
+  if (file.includes('agent/format')) return '把模型回答中的行内 Markdown 标记转换为 HTML 片段，先转义再替换标记以避免注入。';
+  if (file.includes('voice/useVoice')) return '编排语音识别与语音播报能力，按运行环境选择原生桥或浏览器接口。';
+  if (file.includes('voice/speech')) return '封装浏览器语音识别与语音合成，并清洗播报文本。';
+  if (file.includes('voice/androidBridge')) return '探测安卓、Capacitor 与 iOS 原生语音桥并注册回调。';
+  if (file.includes('agent/')) return '实现智能体悬浮入口、对话弹框、模型选择与语音控制界面。';
+  if (file.includes('views/admin/')) return '实现管理台分页查询页面的筛选栏、数据表格与编辑弹框。';
   if (file.endsWith('.vue')) return '实现前台或管理端页面组件。';
   return '提供系统运行所需的入口、配置或支撑逻辑。';
 }
@@ -184,195 +397,88 @@ function languageOf(file) {
   return 'js';
 }
 
-function designMarkdown() {
-  const screenshots = Object.keys(screenshotDescriptions);
-  const diagrams = Object.keys(diagramDescriptions);
-  return `# ${softwareName}软件设计说明书
-
-软件名称：${softwareName}
-
-版本号：${version}
-
-## 1 引言
-
-### 1.1 编写目的
-
-本文档说明${softwareName}的需求范围、系统结构、功能模块、数据设计、接口设计、部署运行方式、安全权限和测试验证情况。文档内容依据当前可运行代码、数据库脚本、接口行为、真实运行截图和代码推导图示整理，用于软件著作权登记材料中的软件设计说明。
-
-### 1.2 软件范围
-
-系统面向马来西亚留学生汉语练习场景，提供学生端 H5 学习入口和管理员后台管理入口。学生端覆盖注册登录、三语界面、练习列表、在线答题、成绩记录、错题本和个人中心；管理端覆盖数据看板、学生列表、题库列表、试卷列表和成绩记录列表。后台提供认证、学习练习和管理查询 API，数据库提供题库、试卷、用户、答题、错题和翻译数据存储。
-
-## 2 需求分析
-
-### 2.1 功能需求
-
-1. 用户认证需求：系统应支持学生注册、学生登录、管理员登录、JWT 登录态保存和个人资料维护，对应前台 Login、Register、Profile 页面和后台 /api/auth 系列接口。
-2. 学生练习需求：系统应支持学生查看已发布练习列表、进入练习详情、逐题选择答案、提交答案并查看练习结果，对应 PracticeList、PracticeDetail 页面和 /api/learning/papers 接口。
-3. 学习记录需求：系统应保存学生每次提交的题目数量、正确数、错误数、总分、答题时长和提交时间，对应 study_records、user_answers 数据表和 Records 页面。
-4. 错题复习需求：系统应在学生答错题目时更新错题本，答对历史错题时标记解决状态，对应 wrong_questions 数据表和 WrongBook 页面。
-5. 国际化需求：系统应支持中文、英文、马来语三种界面和题库内容展示，前端静态文案由 i18n 资源维护，题库内容由多语言翻译表提供。
-6. 管理端需求：管理员应能查看平台数据统计、学生列表、题库列表、试卷列表和成绩记录，对应 Dashboard、AdminTable 页面和 /api/admin 系列接口。
-7. 日志运维需求：后台应记录请求状态、路径、耗时、用户标识和异常信息，支持运行审计和问题排查，对应 logger.js 与 requestLogger.js。
-
-### 2.2 非功能需求
-
-系统应具备清晰的前后端分离结构，前台可以独立构建为静态资源，后台可独立运行在 Node.js 环境中。数据库采用 utf8mb4 字符集以支持中文、英文、马来语和拼音字符。认证令牌、密码、数据库口令和接口地址在文档与日志中应进行脱敏。核心答题提交流程应使用事务保证多表写入一致性。
-
-## 3 系统概述
-
-### 3.1 角色和用例
-
-![用例图](../assets/diagrams/01_use_case.svg)
-
-图 3-1 用例图。该图展示学生和管理员两个角色与系统功能的对应关系。学生侧功能围绕学习闭环展开，包括注册登录、练习列表、在线答题、成绩回看、错题复习、个人资料维护和语言切换；管理员侧功能围绕教学管理展开，包括数据看板、学生列表、题库列表、试卷列表和成绩记录。该图用于明确软著材料中的用户边界、业务入口和功能归属，避免将学生功能与管理功能混同。
-
-### 3.2 模块结构
-
-| 模块 | 角色 | 页面或接口 | 数据对象 |
-| --- | --- | --- | --- |
-| 认证与资料模块 | 学生、管理员 | /login、/register、/profile、/api/auth | users |
-| 学习练习模块 | 学生 | /practice、/practice/:id、/api/learning/papers | papers、questions、question_options |
-| 成绩记录模块 | 学生、管理员 | /records、/admin/records | study_records、user_answers |
-| 错题本模块 | 学生 | /wrong-book、/api/learning/wrong-questions | wrong_questions |
-| 题库管理查看模块 | 管理员 | /admin/questions | questions、question_translations |
-| 系统统计模块 | 管理员 | /admin、/api/admin/stats | users、questions、papers、study_records |
-| 国际化模块 | 学生、管理员 | 顶部语言切换、lang 参数 | level_translations、paper_translations、question_translations |
-
-## 4 总体设计
-
-### 4.1 系统架构
-
-![系统架构图](../assets/diagrams/02_architecture.svg)
-
-图 4-1 系统架构图。该图说明系统由 fronter 前台、admin 后台和 MySQL 数据库组成。前台负责路由、界面渲染、国际化、登录状态和 API 请求封装；后台负责认证、学习练习、管理查询、日志记录、数据库连接池和事务控制；数据库保存用户、题库、试卷、答题、错题和翻译数据。该图体现了前后端分离、接口解耦和数据集中存储的总体结构。
-
-### 4.2 部署结构
-
-![部署图](../assets/diagrams/03_deployment.svg)
-
-图 4-2 部署图。该图描述浏览器、Web 前端运行环境、应用服务器和 MySQL 数据库之间的部署关系。用户浏览器加载前端静态资源后，通过脱敏后的 /api 地址访问后台接口；后台运行在 Node.js 环境中，通过 MySQL 连接池访问数据库，并将请求和异常写入日志文件。该图用于说明软件运行支撑环境、服务边界和部署节点职责。
-
-## 5 详细设计
-
-### 5.1 答题业务流程
-
-![答题流程图](../assets/diagrams/04_practice_flow.svg)
-
-图 5-1 答题流程图。该图说明学生从登录、查看练习列表、选择试卷、逐题作答到提交结果的完整流程。流程中特别体现了未全部作答时的前台提示、提交后的后台判分、学习记录写入、用户答案写入和错题本更新逻辑。该图对应 PracticeDetail 页面和 /api/learning/papers/{id}/submit 接口，是系统学习闭环的关键流程。
-
-### 5.2 提交答案时序
-
-![提交答案时序图](../assets/diagrams/05_submit_sequence.svg)
-
-图 5-2 提交答案时序图。该图展示学生页面、API Client、learning 路由、事务封装和 MySQL 之间的调用顺序。后台在事务中查询正确答案、计算得分、写入 study_records、写入 user_answers 并更新 wrong_questions，最后将结果返回给前台展示。该图用于解释多表写入如何保持一致，以及答题结果如何驱动成绩和错题数据更新。
-
-## 6 数据设计
-
-### 6.1 ER 关系
-
-![ER 图](../assets/diagrams/06_er.svg)
-
-图 6-1 ER 图。该图展示用户、等级、分类、题目、选项、试卷、试卷题目、学习记录、用户答案和错题本之间的核心关联。题目从属于等级和分类，试卷通过 paper_questions 组织题目，学生提交后生成 study_records 和 user_answers，答错题目进入 wrong_questions。该图用于说明系统数据模型如何支撑题库、练习、成绩和错题复习功能。
-
-### 6.2 核心数据表
-
-| 表名 | 主要字段 | 用途说明 |
-| --- | --- | --- |
-| users | id、username、password、role、language、status | 保存学生和管理员账号、角色、语言偏好和状态 |
-| levels | id、code、sort_order、status | 保存 HSK 或校园汉语等级 |
-| level_translations | level_id、language_code、name、description | 保存等级多语言名称和说明 |
-| question_categories | id、parent_id、code、status | 保存拼音、词汇、语法、阅读等题目分类 |
-| question_category_translations | category_id、language_code、name | 保存题目分类多语言信息 |
-| questions | id、level_id、category_id、question_type、difficulty、score、status | 保存题目主数据 |
-| question_translations | question_id、language_code、title、content、analysis | 保存题干、内容和解析的多语言文本 |
-| question_options | question_id、option_key、is_correct、sort_order | 保存选项主数据和正确答案标记 |
-| question_option_translations | option_id、language_code、content | 保存选项多语言内容 |
-| papers | id、paper_type、level_id、total_score、duration_minutes、status | 保存练习或试卷主数据 |
-| paper_questions | paper_id、question_id、sort_order、score | 保存试卷与题目的关联关系 |
-| study_records | user_id、paper_id、correct_count、wrong_count、total_score | 保存学生提交记录和成绩 |
-| user_answers | user_id、question_id、study_record_id、selected_option_ids、is_correct | 保存学生每题作答明细 |
-| wrong_questions | user_id、question_id、wrong_count、resolved | 保存学生错题和复习状态 |
-
-## 7 接口设计
-
-| 接口 | 方法 | 角色 | 功能 |
-| --- | --- | --- | --- |
-| /api/health | GET | 公开 | 健康检查 |
-| /api/auth/register | POST | 公开 | 学生注册 |
-| /api/auth/login | POST | 公开 | 用户登录并返回 JWT |
-| /api/auth/profile | GET/PUT | 登录用户 | 查询和更新个人资料 |
-| /api/learning/papers | GET | 公开 | 查询已发布练习列表 |
-| /api/learning/papers/:id | GET | 学生 | 查询试卷详情和题目选项 |
-| /api/learning/papers/:id/submit | POST | 学生 | 提交答案并生成成绩和错题记录 |
-| /api/learning/records | GET | 学生 | 查询个人成绩记录 |
-| /api/learning/wrong-questions | GET | 学生 | 查询个人错题本 |
-| /api/admin/stats | GET | 管理员 | 查询管理台统计指标 |
-| /api/admin/users | GET | 管理员 | 查询学生和用户列表 |
-| /api/admin/questions | GET | 管理员 | 查询题库列表 |
-| /api/admin/papers | GET | 管理员 | 查询试卷列表 |
-| /api/admin/records | GET | 管理员 | 查询全量成绩记录 |
-
-## 8 页面与运行截图
-
-${screenshots.map((file, index) => `![运行截图 ${index + 1}](../assets/screenshots/${file})
-
-图 8-${index + 1} ${screenshotDescriptions[file]}`).join('\n\n')}
-
-## 9 运行与部署设计
-
-后台目录为 admin，可通过 npm run db:init 初始化数据库和演示题库，通过 npm run seed:users 写入演示用户，通过 npm run dev 或 npm start 启动 Express 服务。前台目录为 fronter，可通过 npm run dev 启动开发服务，通过 npm run build 构建生产静态资源。前台默认 API 地址已在文档中脱敏，实际部署可通过 VITE_API_BASE 配置。数据库连接信息通过环境变量覆盖，文档和日志不保留真实敏感值。
-
-## 10 安全与权限设计
-
-系统使用 bcryptjs 对密码进行哈希存储，登录成功后使用 JWT 生成 7 天有效令牌。前端路由守卫根据本地登录态限制学生页面和管理员页面访问，后台 auth 中间件验证令牌，role 中间件限制管理员接口。日志模块会对 authorization、password、token 等字段做脱敏，避免运行日志直接暴露敏感认证信息。
-
-## 11 脚本与运维
-
-系统提供 schema.sql、seed.sql、initDb.js 和 seedUsers.js。schema.sql 创建数据库和 17 张业务表，seed.sql 写入等级、分类、试卷、题目、选项及三语翻译数据，initDb.js 顺序执行建表和演示题库脚本，seedUsers.js 写入管理员和学生演示账号。后台日志默认写入 admin/logs/app.log，可通过 LOG_DIR 改写日志目录。
-
-## 12 测试与验证
-
-本次核验已执行数据库初始化、种子账号写入、前端生产构建、数据库结构查询、接口 smoke test 和浏览器真实页面截图。数据库核验结果为 17 张表全部存在、23 个外键存在、试卷题目无孤儿关联、题目翻译覆盖中文、英文和马来语。接口 smoke test 覆盖健康检查、学生登录、练习列表、试卷详情、答题提交、成绩记录、管理员登录、管理统计和用户列表。前端构建通过 Vite 完成，浏览器截图验证学生端和管理端页面可真实访问。
-
-## 13 结论
-
-${softwareName}已具备学生端汉语练习、三语展示、在线答题、成绩记录、错题复习、个人资料维护和管理员数据查看等核心功能。系统结构清晰，数据库表关系完整，接口能够支撑主要业务流程，日志模块已接入后台请求和错误处理链路，可作为软件著作权登记的软件设计说明材料。`;
-}
-
-async function copyAssets() {
-  for (const file of Object.keys(screenshotDescriptions)) {
-    await fs.copyFile(path.join(screenshotsDir, file), path.join(archiveDir, 'images', 'screenshots', file));
-    await fs.copyFile(path.join(screenshotsDir, file.replace(/\.\w+$/, '.txt')), path.join(archiveDir, 'images', 'screenshots', file.replace(/\.\w+$/, '.txt')));
+// 已核验事实摘要属于内部记录：内容全部取自 .tmp/softright/inventory.json，脚本不新增事实
+async function factsSummary(inventory, sourceStats) {
+  const lines = ['# 已核验事实摘要', '', `生成时间：由 scripts/generate_softcopyright_materials.mjs 依据 .tmp/softright/inventory.json 生成`, ''];
+  const push = (text) => lines.push(`- ${text}`);
+  const meta = inventory.meta || {};
+  push(`软件名称：${meta.softwareName || softwareName}；简称：${meta.shortName || '待确认'}；版本号：${meta.version || version}；交付目录：${meta.deliveryDir || 'softright/'}`);
+  const technical = (inventory.fingerprint || {}).technical || {};
+  if (technical.stack) push(`技术栈：前台 ${technical.stack.frontend}；后台 ${technical.stack.backend}；数据库 ${technical.stack.database}；智能体 ${technical.stack.agent}；语音 ${technical.stack.voice}`);
+  if (technical.ports) push(`端口：前台 ${technical.ports.frontend}，后台 ${technical.ports.backend}，Ollama ${technical.ports.ollama}`);
+  if (Array.isArray(inventory.tables)) push(`数据库：${inventory.tables.length} 张表（${inventory.tables.join('、')}）`);
+  if (inventory.api) {
+    const byFile = Object.entries(inventory.api.byFile || {}).map(([file, count]) => `${file} ${count} 个`).join('，');
+    push(`接口：共 ${inventory.api.total} 个（${byFile}）；分页返回结构为 ${inventory.api.paginationContract}`);
   }
-  for (const file of Object.keys(diagramDescriptions)) {
-    await fs.copyFile(path.join(diagramsDir, file), path.join(archiveDir, 'images', 'diagrams', file));
-    await fs.copyFile(path.join(diagramsDir, file.replace(/\.\w+$/, '.txt')), path.join(archiveDir, 'images', 'diagrams', file.replace(/\.\w+$/, '.txt')));
+  if (inventory.pages) {
+    push(`页面：公开 ${inventory.pages.public.join('、')}；学员 ${inventory.pages.student.join('、')}`);
+    push(`管理台菜单：${inventory.pages.adminMenus.join('、')}`);
+    push(`全局：${inventory.pages.global}`);
   }
+  if (Array.isArray(inventory.modules)) {
+    push(`模块：${inventory.modules.map((module) => `${module.id} ${module.name}`).join('；')}`);
+  }
+  if (Array.isArray((inventory.fingerprint || {}).business?.states)) {
+    push(`业务状态：${inventory.fingerprint.business.states.join('；')}`);
+  }
+  if (Array.isArray((inventory.fingerprint || {}).evidence?.runtime)) {
+    push(`运行证据：${inventory.fingerprint.evidence.runtime.join('；')}`);
+  }
+  if (sourceStats) {
+    // 收录数量由脚本按实际读入的文件统计，可能与索引中的历史记录存在差异，以实际收录为准
+    push(`本次源码册实际收录：${sourceStats.files} 个文件，按换行统计合计 ${sourceStats.lines} 行`);
+  }
+  const recorded = inventory.sourceStats;
+  if (recorded) push(`索引记录的自研源码量：${recorded.files} 个文件、${recorded.lines} 行，配置 ${recorded.configFiles} 个文件、${recorded.configLines} 行（统计口径见 ${recorded.note || '索引说明'}）`);
+  if (Array.isArray(inventory.conflicts)) {
+    for (const conflict of inventory.conflicts) push(`待核对：${conflict}`);
+  }
+  if (Array.isArray(inventory.toConfirm)) {
+    for (const item of inventory.toConfirm) push(`待确认：${item}`);
+  }
+  lines.push('');
+  return lines.join('\n');
 }
 
 async function main() {
+  await verifySourceFiles();
+  const screenshots = await resolveScreenshots();
+  const diagrams = await resolveDiagrams();
   await ensureDirs();
-  await writeDescriptions();
-  const info = informationTxt();
-  await fs.writeFile(path.join(docsDir, 'information.txt'), info, 'utf8');
-  await fs.writeFile(path.join(archiveDir, 'text', 'information.txt'), info, 'utf8');
-  await fs.writeFile(path.join(docsDir, `${softwareName}源代码.md`), await sourceMarkdown(), 'utf8');
-  await fs.writeFile(path.join(docsDir, '软件设计说明书.md'), designMarkdown(), 'utf8');
-  await fs.writeFile(path.join(docsDir, '已核验事实摘要.md'), `# 已核验事实摘要
 
-- 目录命名：后台目录已命名为 admin，前台目录已命名为 fronter。
-- 技术栈：前台 Vue 3 + Vite，后台 Node.js + Express，数据库 MySQL。
-- 数据库：school_chinese_exam_practice，17 张表均已初始化，外键 23 个，演示题库三语数据完整。
-- 日志：后台新增 logger.js 和 requestLogger.js，记录请求、错误和启动/脚本执行信息，日志写入 admin/logs/app.log。
-- 功能：学生端注册登录、练习列表、答题提交、成绩记录、错题本、个人中心；管理端数据看板、学生列表、题库列表、试卷列表和成绩记录。
-- 核验：npm run db:init、npm run seed:users、npm run build、接口 smoke test 和浏览器截图均已执行。
-`, 'utf8');
-  await copyAssets();
-  console.log(JSON.stringify({ docsDir, archiveDir }, null, 2));
+  // information.txt 已位于交付目录，读回后写回同一路径，保证交付稿内容与脚本输出一致
+  const info = await informationTxt();
+  await fs.writeFile(informationPath, info, 'utf8');
+
+  const source = await sourceMarkdown();
+  await fs.writeFile(path.join(textDir, `${softwareName}源代码.md`), source.markdown, 'utf8');
+  // 设计说明书（HTML/MD/PDF）统一由 scripts/render_optimized_softcopyright.mjs 生成：
+  // 两个脚本都写 text/软件设计说明书.md 时，交付稿内容会随执行顺序变化。
+  // 本脚本只负责 information.txt 与源码册。
+
+  const inventory = JSON.parse(await fs.readFile(inventoryPath, 'utf8'));
+  await fs.mkdir(path.dirname(factsSummaryPath), { recursive: true });
+  await fs.writeFile(factsSummaryPath, await factsSummary(inventory, source), 'utf8');
+
+  await copyAssets(screenshots, diagrams);
+
+  const screenshotCount = Object.values(screenshots).reduce((total, files) => total + files.length, 0);
+  console.log(JSON.stringify({
+    textDir,
+    pdfDir,
+    diagramsDir,
+    screenshotsDir,
+    factsSummaryPath,
+    源码册文件数: source.files,
+    源码册行数: source.lines,
+    截图页面数: Object.keys(screenshots).length,
+    截图张数: screenshotCount,
+    设计图: Object.fromEntries(Object.entries(diagrams).map(([key, item]) => [key, item.fallback ? `${item.file}（取自 ${path.relative(root, item.source)}）` : item.file]))
+  }, null, 2));
 }
 
 main().catch((error) => {
-  console.error(error);
+  console.error(error.message || error);
   process.exit(1);
 });

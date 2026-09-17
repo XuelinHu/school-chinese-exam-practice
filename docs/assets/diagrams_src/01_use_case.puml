@@ -1,0 +1,49 @@
+@startuml
+' 马来西亚留学生汉语练习平台 —— 用例图（系统级概览）
+' 用例按功能组归纳，组内包含的具体菜单见设计说明书 3.2 模块结构表。
+' 画法说明：PlantUML 会把同一角色的用例排进同一 rank，
+' 逐条列出 12 个后台菜单会让图宽到在文档里无法辨认，因此这里只到功能组一级。
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Noto Sans CJK SC"
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontSize 13
+}
+skinparam actor {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+
+actor "学生" as Student
+actor "管理员" as Admin
+
+rectangle "马来西亚留学生汉语练习平台" {
+  usecase "注册 / 登录 / 退出与密码管理" as U1
+  usecase "维护个人资料、头像与界面语言" as U2
+  usecase "在线练习、答题与自动判分" as U3
+  usecase "查看成绩、复习错题与收藏" as U4
+  usecase "数据看板与教学资源管理" as U5
+  usecase "学生、成绩与日志管理" as U6
+  usecase "智能体设置、会话与调用日志" as U7
+  usecase "智能体实时问答与语音交互" as U8
+}
+
+Student --> U1
+Student --> U2
+Student --> U3
+Student --> U4
+Student --> U8
+
+Admin --> U1
+Admin --> U2
+Admin --> U5
+Admin --> U6
+Admin --> U7
+Admin --> U8
+
+U3 ..> U4 : <<include>>
+U8 ..> U4 : <<extend>>
+@enduml
