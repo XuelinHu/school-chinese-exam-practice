@@ -7,9 +7,9 @@
 
 ## Runtime
 
-- Backend port: `3000` from `admin/.env.example` `PORT`.
-- Frontend port: `5173` from `fronter/vite.config.js`.
-- API base: `http://localhost:3000/api`, override with `VITE_API_BASE`.
+- Backend port: `8033` from `admin/.env.example` `PORT`.
+- Frontend port: `4031` from `fronter/vite.config.js`.
+- API base: `http://localhost:8033/api`, override with `VITE_API_BASE`.
 - Backend dev: `cd admin && npm run dev`.
 - Frontend dev: `cd fronter && npm run dev`.
 

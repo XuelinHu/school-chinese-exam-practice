@@ -7,7 +7,7 @@ const outDir = path.join(root, 'docs', 'assets', 'screenshots_trilingual_raw');
 const chrome = '/opt/google/chrome/chrome';
 const port = 9333;
 const base = 'http://localhost:5174';
-const api = 'http://localhost:3000/api';
+const api = 'http://localhost:8033/api';
 
 const pages = [
   { key: 'login', path: '/login', role: 'public', name: '登录页面' },

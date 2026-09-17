@@ -41,7 +41,7 @@ npm run dev
 - 管理员：`admin / admin123456`
 - 学生：`student / student123456`
 
-默认 API 地址为 `http://localhost:3000/api`。如需修改，前端可设置 `VITE_API_BASE`。
+默认 API 地址为 `http://localhost:8033/api`。如需修改，前端可设置 `VITE_API_BASE`。
 
 ## 开源协议
 
