@@ -22,17 +22,29 @@ router.get(
     const [settings, models, running] = await Promise.all([readSettings(), listModels(), runningModels()]);
     ok(res, {
       ...settings,
-      // 未配置时回落到推荐模型：这里回空串会让设置页的下拉框选不中任何一项，显示成空白
-      defaultModel: settings.defaultModel || pickRecommendedModel(models),
+      // 未配置时回落到推荐模型：这里回空串会让设置页的下拉框选不中任何一项，显示成空白。
+      // 优先级与 resolveDefaultModel() 一致：测试开关 > 后台设置 > 推荐模型。
+      defaultModel: aiConfig.testModel || settings.defaultModel || pickRecommendedModel(models),
       scenes: SCENE_IDS.map((id) => ({ id, name: SCENES[id].name })),
-      availableModels: models.map((model) => ({ name: model.name, size: model.size, loaded: running.some((r) => r.name === model.name) })),
+      // selectable / excludedReason 用于把超过 24G 或体积未知的模型渲染成禁用项
+      availableModels: models.map((model) => ({
+        name: model.name,
+        size: model.size,
+        sizeText: model.sizeText,
+        parameterSize: model.parameterSize,
+        selectable: model.selectable,
+        excludedReason: model.excludedReason,
+        loaded: running.some((item) => item.name === model.name)
+      })),
       env: {
         enabled: aiConfig.enabled,
         host: aiConfig.host,
         keepAlive: aiConfig.keepAlive,
         maxToolRounds: aiConfig.maxToolRounds,
         numCtx: aiConfig.numCtx,
-        timeoutMs: aiConfig.timeoutMs
+        timeoutMs: aiConfig.timeoutMs,
+        maxModelSizeGb: aiConfig.maxModelSizeGb,
+        testModel: aiConfig.testModel || null
       },
       settingKeys: SETTING_KEYS
     });

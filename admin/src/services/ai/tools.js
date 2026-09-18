@@ -233,10 +233,13 @@ async function platformStats() {
   const [[users]] = await pool.execute(
     `SELECT COUNT(*) total,
             SUM(role = 'student') students,
-            SUM(role = 'admin') admins,
+            SUM(role = 'teacher') teachers,
+            -- 后台角色有两个（超管 + 内容管理员），只数 admin 会漏报
+            SUM(role IN ('admin', 'content_admin')) staff,
             SUM(status = 'active') active,
             SUM(last_active_at > NOW() - INTERVAL 5 MINUTE) online
-     FROM users`
+     FROM users
+     WHERE deleted_at IS NULL`
   );
   const [[questions]] = await pool.execute(
     `SELECT COUNT(*) total,
@@ -260,7 +263,8 @@ async function platformStats() {
     users: {
       total: Number(users.total),
       students: Number(users.students),
-      admins: Number(users.admins),
+      teachers: Number(users.teachers),
+      staff: Number(users.staff),
       active: Number(users.active),
       online_now: Number(users.online)
     },
@@ -281,7 +285,8 @@ async function platformStats() {
 
 async function listStudents({ args }) {
   const limit = clampLimit(args.limit, 10);
-  const conditions = [`u.role = 'student'`];
+  // 软删除的学员不出现在任何名单里
+  const conditions = [`u.role = 'student'`, 'u.deleted_at IS NULL'];
   const params = [];
 
   if (args.keyword) {

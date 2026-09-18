@@ -1,28 +1,31 @@
 <template>
   <div class="agent-controls">
-    <button
-      class="agent-btn"
-      :class="{ 'is-on': listening }"
-      type="button"
-      :disabled="!canListen"
-      :title="micTitle"
-      @click="toggleMic"
-    >
-      <span class="agent-btn-icon">{{ listening ? '⏺' : '🎙' }}</span>
-      <span class="agent-btn-text">{{ listening ? t('listening') : t('holdToTalk') }}</span>
-    </button>
+    <!-- 后台总开关：关掉后整块语音区不渲染，只留语言与新建会话 -->
+    <template v-if="voiceEnabled">
+      <button
+        class="agent-btn"
+        :class="{ 'is-on': listening }"
+        type="button"
+        :disabled="!canListen"
+        :title="micTitle"
+        @click="toggleMic"
+      >
+        <span class="agent-btn-icon">{{ listening ? '⏺' : '🎙' }}</span>
+        <span class="agent-btn-text">{{ listening ? t('listening') : t('holdToTalk') }}</span>
+      </button>
 
-    <button
-      class="agent-btn"
-      :class="{ 'is-on': speaking }"
-      type="button"
-      :disabled="!canSpeak"
-      :title="t('speak')"
-      @click="$emit('toggle-speak')"
-    >
-      <span class="agent-btn-icon">{{ speaking ? '🔊' : '🔈' }}</span>
-      <span class="agent-btn-text">{{ speaking ? t('speaking') : t('speak') }}</span>
-    </button>
+      <button
+        class="agent-btn"
+        :class="{ 'is-on': speaking }"
+        type="button"
+        :disabled="!canSpeak"
+        :title="t('speak')"
+        @click="$emit('toggle-speak')"
+      >
+        <span class="agent-btn-icon">{{ speaking ? '🔊' : '🔈' }}</span>
+        <span class="agent-btn-text">{{ speaking ? t('speaking') : t('speak') }}</span>
+      </button>
+    </template>
 
     <select
       class="agent-lang"
@@ -40,11 +43,16 @@
   </div>
 
   <!-- 语音不可用时给明确原因，不静默失败 -->
-  <p v-if="!canListen" class="agent-note">{{ t(unavailableReason === 'insecure' ? 'insecureContext' : 'voiceUnsupported') }}</p>
-  <p v-else-if="usingNative" class="agent-note muted">{{ t('voiceViaApp') }}</p>
+  <template v-if="voiceEnabled">
+    <p v-if="!canListen" class="agent-note">
+      {{ t(unavailableReason === 'insecure' ? 'insecureContext' : 'voiceUnsupported') }}
+      <!-- 播报不受安全上下文限制：识别被拦时要说清楚，否则用户以为整个语音都不能用了 -->
+      <template v-if="canSpeak"> {{ t('ttsStillWorks') }}</template>
+    </p>
 
-  <p v-if="errorText" class="agent-note error">{{ errorText }}</p>
-  <p v-if="interim" class="agent-note interim">{{ interim }}</p>
+    <p v-if="errorText" class="agent-note error">{{ errorText }}</p>
+    <p v-if="interim" class="agent-note interim">{{ interim }}</p>
+  </template>
 </template>
 
 <script setup>
@@ -57,7 +65,9 @@ import { t, LANGUAGES } from '../../i18n/index.js';
  */
 const props = defineProps({
   voice: { type: Object, required: true },
-  lang: { type: String, default: 'zh-CN' }
+  lang: { type: String, default: 'zh-CN' },
+  /** 后台 ai.voice_enabled：元数据未到时按开启处理，避免闪一下才出现 */
+  voiceEnabled: { type: Boolean, default: true }
 });
 
 const emit = defineEmits(['update:lang', 'toggle-speak', 'new-session', 'listen']);
@@ -67,7 +77,6 @@ const speaking = computed(() => props.voice.state.speaking);
 const interim = computed(() => props.voice.state.interim);
 const canListen = computed(() => props.voice.canListen.value);
 const canSpeak = computed(() => props.voice.canSpeak.value);
-const usingNative = computed(() => props.voice.usingNative.value);
 const unavailableReason = computed(() => props.voice.unavailableReason.value);
 
 const micTitle = computed(() => (listening.value ? t('stopGenerating') : t('holdToTalk')));

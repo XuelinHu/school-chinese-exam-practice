@@ -11,19 +11,27 @@
         <p class="muted">{{ t('analysis') }}: {{ row.analysis }}</p>
       </article>
     </div>
-    <p v-if="!rows.length" class="muted">{{ t('empty') }}</p>
+    <p v-if="error" class="alert error" style="margin-top: 12px">{{ error }}</p>
+    <p v-if="!rows.length && !loading" class="muted">{{ t('empty') }}</p>
+
+    <Pagination
+      style="margin-top: 12px"
+      :page="page"
+      :page-size="size"
+      :total="total"
+      :total-pages="totalPages"
+      :loading="loading"
+      @page="changePage"
+      @size="changePageSize"
+    />
   </section>
 </template>
 
 <script setup>
-import { onMounted, ref, watch } from 'vue';
-import { request } from '../api/client.js';
+import { usePagedTable } from '../composables/usePagedTable.js';
+import Pagination from '../components/Pagination.vue';
 import { state, t } from '../i18n/index.js';
 
-const rows = ref([]);
-async function load() {
-  rows.value = await request(`/learning/wrong-questions?lang=${state.lang}`);
-}
-onMounted(load);
-watch(() => state.lang, load);
+const { rows, total, totalPages, loading, error, page, size, changePage, changePageSize } =
+  usePagedTable('/learning/wrong-questions', { extra: () => ({ lang: state.lang }) });
 </script>

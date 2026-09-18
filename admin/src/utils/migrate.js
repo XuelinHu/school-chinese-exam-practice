@@ -17,11 +17,15 @@ const migrationsDir = path.resolve(__dirname, '../../sql/migrations');
  */
 export async function runMigrations({ connection } = {}) {
   const ownsConnection = !connection;
+  if (ownsConnection && !String(process.env.DB_PASSWORD || '').trim()) {
+    // 与 config/db.js 一致：口令只从环境读，不设兜底（见那里的说明）
+    throw new Error('DB_PASSWORD is not set. Copy admin/.env.example to admin/.env and fill it in.');
+  }
   const conn = connection || (await mysql.createConnection({
     host: process.env.DB_HOST || 'localhost',
     port: Number(process.env.DB_PORT || 3306),
     user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || 'Java@c1024',
+    password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME || 'school_chinese_exam_practice',
     multipleStatements: true
   }));

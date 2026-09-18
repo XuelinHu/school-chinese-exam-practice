@@ -4,6 +4,9 @@
 skinparam backgroundColor #FFFFFF
 skinparam defaultFontName "Noto Sans CJK SC"
 skinparam shadowing false
+' 设计图交付要求纯黑白，注释框默认是淡黄底，必须显式压掉
+skinparam noteBackgroundColor #FFFFFF
+skinparam noteBorderColor #000000
 skinparam node {
   BackgroundColor #FFFFFF
   BorderColor #000000
@@ -20,13 +23,9 @@ skinparam database {
 }
 
 node "用户设备" as DEV {
-  node "桌面 / 移动浏览器" as BROWSER {
+  node "桌面 / 移动浏览器（H5 单端）" as BROWSER {
     component "fronter 前端应用\nVue 3 单页应用" as WEBAPP
     component "Web Speech API\n语音识别与语音合成" as WEBSPEECH
-  }
-  node "安卓 App（WebView 容器）" as ANDROID {
-    component "WebView 承载同一前端" as WV
-    component "原生语音桥\nSpeechRecognizer + TextToSpeech" as NATIVE
   }
 }
 
@@ -42,14 +41,16 @@ node "数据库服务器" as DBSRV {
 
 node "本机模型运行时" as AISRV {
   component "Ollama 0.19\n监听 11434" as OLLAMA
-  artifact "开源模型\nqwen3:14b / qwen2.5:0.5b" as MODELS
+  artifact "本机已下载模型\n≤24GB 上限，前端下拉选取" as MODELS
 }
 
 BROWSER --> API : /api JSON + SSE
-WV --> API : /api JSON + SSE
-NATIVE <--> WV : JavaScript 桥\nstartVoice / speak
-WEBAPP ..> WEBSPEECH : 浏览器直接调用
-ANDROID ..> NATIVE : 原生麦克风与扬声器
+WEBAPP ..> WEBSPEECH : 浏览器直接调用麦克风与扬声器
+
+note bottom of WEBSPEECH
+  语音识别需安全上下文（HTTPS 或 localhost），
+  语音合成（扬声器）不受此限制
+end note
 
 API --> MYSQL : 连接池 3306
 API --> OLLAMA : HTTP 11434

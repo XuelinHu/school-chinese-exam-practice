@@ -8,9 +8,12 @@ CREATE TABLE IF NOT EXISTS users (
   name VARCHAR(100),
   email VARCHAR(120),
   phone VARCHAR(30),
-  role ENUM('student','admin') NOT NULL DEFAULT 'student',
+  -- 用户端 student/teacher，管理端 content_admin/admin（见 middleware/role.js）
+  role ENUM('student','teacher','admin','content_admin') NOT NULL DEFAULT 'student',
   student_no VARCHAR(50),
   nationality VARCHAR(80),
+  -- 合法取值 zh-CN / en-US / ms-MY，与 i18n 和 system_settings 共用一套码。
+  -- 有意保持 VARCHAR 而非 ENUM：改 ENUM 会与另两处的既有取值耦合。
   language VARCHAR(20) DEFAULT 'zh-CN',
   status ENUM('active','disabled') NOT NULL DEFAULT 'active',
   avatar_url VARCHAR(500),
@@ -21,9 +24,13 @@ CREATE TABLE IF NOT EXISTS users (
   locked_until DATETIME,
   -- 令牌吊销版本号：改密/被重置/被停用时自增，旧 JWT 立即失效
   token_version INT NOT NULL DEFAULT 0,
+  -- 软删除：非空即视为已删除。users 上的外键都是 ON DELETE CASCADE，
+  -- 物理删除会连删成绩、错题、收藏与会话，所以删除一律走这里。
+  deleted_at DATETIME NULL DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_users_last_active (last_active_at)
+  INDEX idx_users_last_active (last_active_at),
+  INDEX idx_users_deleted (deleted_at)
 );
 
 CREATE TABLE IF NOT EXISTS levels (
@@ -155,6 +162,8 @@ CREATE TABLE IF NOT EXISTS study_records (
   duration_seconds INT NOT NULL DEFAULT 0,
   started_at DATETIME,
   submitted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  -- 成绩页与教学查看页都是「按人取、按时间倒序」，单列外键索引会退化成 filesort
+  INDEX idx_study_records_user_time (user_id, submitted_at),
   CONSTRAINT fk_study_records_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT fk_study_records_paper FOREIGN KEY (paper_id) REFERENCES papers(id) ON DELETE SET NULL
 );
@@ -184,6 +193,8 @@ CREATE TABLE IF NOT EXISTS wrong_questions (
   resolved TINYINT(1) NOT NULL DEFAULT 0,
   last_wrong_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uk_wrong_user_question (user_id, question_id),
+  -- 错题本固定按「未解决优先 + 最近错优先」排序
+  INDEX idx_wrong_questions_user_state (user_id, resolved, last_wrong_at),
   CONSTRAINT fk_wrong_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT fk_wrong_question FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
 );
@@ -266,7 +277,8 @@ CREATE TABLE IF NOT EXISTS ai_call_logs (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   user_id BIGINT NULL,
   session_id BIGINT NULL,
-  scene VARCHAR(20),
+  -- 与 ai_sessions.scene 同类型，同一语义不留两种定义
+  scene ENUM('student','admin'),
   model VARCHAR(120),
   tool_names VARCHAR(500),
   prompt_chars INT NOT NULL DEFAULT 0,

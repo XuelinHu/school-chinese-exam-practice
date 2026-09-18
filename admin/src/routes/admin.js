@@ -3,10 +3,11 @@ import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { pool } from '../config/db.js';
 import { auth } from '../middleware/auth.js';
-import { allow } from '../middleware/role.js';
+import { allow, ROLE, ALL_ROLES } from '../middleware/role.js';
 import { asyncHandler, ok } from '../utils/response.js';
 import { HttpError } from '../utils/errors.js';
 import { pageParams, queryPage, likeValue } from '../utils/paginate.js';
+import { PRIMARY_LANGUAGE, normalizeLanguage } from '../utils/translations.js';
 import { logger } from '../utils/logger.js';
 import adminContentRoutes from './adminContent.js';
 import adminAiRoutes from './adminAi.js';
@@ -28,11 +29,21 @@ import adminAiRoutes from './adminAi.js';
  */
 
 const router = Router();
-router.use(auth(), allow('admin'));
+
+// 鉴权只做一次（auth 每次都要回查 users，多挂一遍就是多一次查询）。
+router.use(auth());
+
+// 内容菜单先挂：超管与内容管理员都能进。
+// 内容管理员访问本文件其余路径时，子路由匹配不到会 next() 出来，
+// 落到下面那道仅超管的关卡上被 403 拦下。
+router.use('/', allow(ROLE.ADMIN, ROLE.CONTENT_ADMIN), adminContentRoutes);
+
+// 用户、成绩、登录日志、在线状态、看板都含学员个人数据，只给超管。
+// 下面定义的路由与末尾的 /ai 子路由都在这一层之后，因此自动受它保护。
+router.use(allow(ROLE.ADMIN));
 
 /** 最近活跃视为在线的时间窗（分钟）。 */
 const ONLINE_WINDOW_MINUTES = 5;
-const ROLES = ['student', 'admin'];
 const USER_STATUS = ['active', 'disabled'];
 const USER_FIELDS = ['name', 'email', 'phone', 'student_no', 'nationality', 'language'];
 const LANGUAGES = ['zh-CN', 'en-US', 'ms-MY'];
@@ -72,10 +83,12 @@ function onlineMinutes(req) {
 router.get(
   '/stats',
   asyncHandler(async (_req, res) => {
+    // 用户类指标一律排除软删除的账号，否则删掉的人还挂在看板上
     const [[totals]] = await pool.execute(
-      `SELECT (SELECT COUNT(*) FROM users WHERE role = 'student') AS students,
-              (SELECT COUNT(*) FROM users WHERE role = 'student' AND status = 'active') AS active_students,
-              (SELECT COUNT(*) FROM users WHERE last_active_at > NOW() - INTERVAL ${ONLINE_WINDOW_MINUTES} MINUTE) AS online,
+      `SELECT (SELECT COUNT(*) FROM users WHERE role = 'student' AND deleted_at IS NULL) AS students,
+              (SELECT COUNT(*) FROM users WHERE role = 'student' AND status = 'active' AND deleted_at IS NULL) AS active_students,
+              (SELECT COUNT(*) FROM users WHERE deleted_at IS NULL
+                 AND last_active_at > NOW() - INTERVAL ${ONLINE_WINDOW_MINUTES} MINUTE) AS online,
               (SELECT COUNT(*) FROM questions WHERE status = 'published') AS questions,
               (SELECT COUNT(*) FROM papers WHERE status = 'published') AS papers,
               (SELECT COUNT(*) FROM study_records) AS records,
@@ -96,7 +109,7 @@ router.get(
 
     const [signups] = await pool.execute(
       `SELECT DATE(created_at) AS day, COUNT(*) AS count
-       FROM users WHERE created_at >= CURDATE() - INTERVAL 6 DAY
+       FROM users WHERE deleted_at IS NULL AND created_at >= CURDATE() - INTERVAL 6 DAY
        GROUP BY DATE(created_at) ORDER BY day`
     );
 
@@ -156,7 +169,8 @@ router.get(
   '/users',
   asyncHandler(async (req, res) => {
     const { page, pageSize } = pageParams(req.query);
-    const conditions = [];
+    // 默认只看未删除的账号；想看已删除的传 ?deleted=true
+    const conditions = [req.query.deleted === 'true' ? 'u.deleted_at IS NOT NULL' : 'u.deleted_at IS NULL'];
     const params = [];
 
     const keyword = likeValue(req.query.keyword);
@@ -166,7 +180,7 @@ router.get(
     }
     if (req.query.role) {
       conditions.push('u.role = ?');
-      params.push(assertEnum(req.query.role, ROLES, 'role'));
+      params.push(assertEnum(req.query.role, ALL_ROLES, 'role'));
     }
     if (req.query.status) {
       conditions.push('u.status = ?');
@@ -182,7 +196,7 @@ router.get(
     const data = await queryPage({
       columns: `u.id, u.username, u.name, u.email, u.phone, u.role, u.student_no, u.nationality,
                 u.language, u.status, u.avatar_url, u.last_active_at, u.last_login_at, u.login_count,
-                u.locked_until, u.created_at,
+                u.locked_until, u.created_at, u.deleted_at,
                 (u.last_active_at > NOW() - INTERVAL ${onlineMinutes(req)} MINUTE) AS online,
                 (SELECT COUNT(*) FROM study_records r WHERE r.user_id = u.id) AS record_count,
                 (SELECT COALESCE(ROUND(AVG(r.total_score), 1), 0) FROM study_records r WHERE r.user_id = u.id) AS avg_score,
@@ -204,11 +218,13 @@ router.get(
     const id = Number(req.params.id);
     const [[user]] = await pool.execute(
       `SELECT id, username, name, email, phone, role, student_no, nationality, language, status,
-              avatar_url, last_active_at, last_login_at, login_count, failed_login_count, locked_until, created_at
+              avatar_url, last_active_at, last_login_at, login_count, failed_login_count, locked_until,
+              created_at, deleted_at
        FROM users WHERE id = ?`,
       [id]
     );
-    if (!user) throw new HttpError(404, '用户不存在');
+    // 已软删除的账号不再当作「存在」：详情页给 404 语义，列表页有 ?deleted=true 专门看
+    if (!user || user.deleted_at) throw new HttpError(404, '用户不存在');
 
     const [[stats]] = await pool.execute(
       `SELECT (SELECT COUNT(*) FROM study_records WHERE user_id = ?) AS records,
@@ -226,7 +242,7 @@ router.patch(
   '/users/:id',
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
-    const [[user]] = await pool.execute('SELECT id, role FROM users WHERE id = ?', [id]);
+    const [[user]] = await pool.execute('SELECT id, role FROM users WHERE id = ? AND deleted_at IS NULL', [id]);
     if (!user) throw new HttpError(404, '用户不存在');
 
     const sets = [];
@@ -243,10 +259,10 @@ router.patch(
       if (language && !LANGUAGES.includes(language)) throw new HttpError(400, `language 取值非法：${language}`);
     }
     if (req.body?.role !== undefined) {
-      const role = assertEnum(req.body.role, ROLES, 'role');
+      const role = assertEnum(req.body.role, ALL_ROLES, 'role');
       if (id === req.user.id && role !== 'admin') throw new HttpError(400, '不能取消自己的管理员身份');
       if (user.role === 'admin' && role !== 'admin') {
-        const [[admins]] = await pool.execute("SELECT COUNT(*) count FROM users WHERE role = 'admin' AND status = 'active'");
+        const [[admins]] = await pool.execute("SELECT COUNT(*) count FROM users WHERE role = 'admin' AND status = 'active' AND deleted_at IS NULL");
         if (admins.count <= 1) throw new HttpError(409, '至少需要保留一名管理员');
       }
       sets.push('role = ?');
@@ -277,7 +293,7 @@ router.post(
   '/users/:id/reset-password',
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
-    const [[user]] = await pool.execute('SELECT id, username FROM users WHERE id = ?', [id]);
+    const [[user]] = await pool.execute('SELECT id, username FROM users WHERE id = ? AND deleted_at IS NULL', [id]);
     if (!user) throw new HttpError(404, '用户不存在');
 
     const requested = normalizeText(req.body?.newPassword);
@@ -306,9 +322,10 @@ router.post(
   '/users/:id/unlock',
   asyncHandler(async (req, res) => {
     const [result] = await pool.execute(
-      'UPDATE users SET failed_login_count = 0, locked_until = NULL WHERE id = ?',
+      'UPDATE users SET failed_login_count = 0, locked_until = NULL WHERE id = ? AND deleted_at IS NULL',
       [Number(req.params.id)]
     );
+    // 已删除的账号 affectedRows 为 0（值没变也照样算 0），一并按「不存在」处理
     if (!result.affectedRows) throw new HttpError(404, '用户不存在');
     ok(res, null, 'unlocked');
   })
@@ -320,16 +337,26 @@ router.delete(
     const id = Number(req.params.id);
     if (id === req.user.id) throw new HttpError(400, '不能删除自己');
 
-    const [[user]] = await pool.execute('SELECT id, role FROM users WHERE id = ?', [id]);
+    const [[user]] = await pool.execute(
+      'SELECT id, username, role FROM users WHERE id = ? AND deleted_at IS NULL',
+      [id]
+    );
     if (!user) throw new HttpError(404, '用户不存在');
     if (user.role === 'admin') {
-      const [[admins]] = await pool.execute("SELECT COUNT(*) count FROM users WHERE role = 'admin'");
+      const [[admins]] = await pool.execute("SELECT COUNT(*) count FROM users WHERE role = 'admin' AND deleted_at IS NULL");
       if (admins.count <= 1) throw new HttpError(409, '至少需要保留一名管理员');
     }
 
-    // study_records / wrong_questions / ai_sessions 均 ON DELETE CASCADE
-    await pool.execute('DELETE FROM users WHERE id = ?', [id]);
-    logger.info('Admin deleted a user', { admin: req.user.username, userId: id, username: user.username });
+    // **软删除**，不做物理删除：users 上的外键全是 ON DELETE CASCADE，
+    // 物理删一个学员会连带清空 study_records / wrong_questions / favorite_questions /
+    // ai_sessions(+ai_messages) / password_resets，一次误点就不可恢复。
+    // 同时停用账号并自增 token_version —— 否则旧令牌还能用到过期为止。
+    await pool.execute(
+      `UPDATE users SET deleted_at = NOW(), status = 'disabled', token_version = token_version + 1
+       WHERE id = ?`,
+      [id]
+    );
+    logger.info('Admin soft-deleted a user', { admin: req.user.username, userId: id, username: user.username });
     ok(res, null, 'deleted');
   })
 );
@@ -396,6 +423,9 @@ router.get(
   '/records/:id',
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
+    const { page, pageSize } = pageParams(req.query);
+    const language = normalizeLanguage(req.query.lang);
+
     const [[record]] = await pool.execute(
       `SELECT r.*, u.username, u.name AS user_name
        FROM study_records r JOIN users u ON u.id = r.user_id WHERE r.id = ?`,
@@ -403,18 +433,23 @@ router.get(
     );
     if (!record) throw new HttpError(404, '成绩记录不存在');
 
-    const [answers] = await pool.execute(
-      `SELECT a.id, a.question_id, a.is_correct, a.score, a.answered_at,
-              a.selected_option_ids, a.answer_text,
-              COALESCE(qt.title, qz.title) AS title
-       FROM user_answers a
-       JOIN questions q ON q.id = a.question_id
-       LEFT JOIN question_translations qt ON qt.question_id = q.id AND qt.language_code = 'zh-CN'
-       LEFT JOIN question_translations qz ON qz.question_id = q.id AND qz.language_code = 'zh-CN'
-       WHERE a.study_record_id = ? ORDER BY a.id`,
-      [id]
-    );
-    record.answers = answers;
+    // 一份成绩最多 100 道题，一次全下发并不致命，但管理台其余列表都分页，
+    // 这里破例会让人以为漏做，且题目变多后无人察觉。统一走分页信封。
+    // 语言按 `lang` 取、缺失回落 zh-CN —— 别把同一个语言连两次当自连接。
+    record.answers = await queryPage({
+      columns: `a.id, a.question_id, a.is_correct, a.score, a.answered_at,
+                a.selected_option_ids, a.answer_text,
+                COALESCE(qt.title, qz.title) AS title`,
+      from: `FROM user_answers a
+             JOIN questions q ON q.id = a.question_id
+             LEFT JOIN question_translations qt ON qt.question_id = q.id AND qt.language_code = ?
+             LEFT JOIN question_translations qz ON qz.question_id = q.id AND qz.language_code = ?`,
+      conditions: ['a.study_record_id = ?'],
+      params: [language, PRIMARY_LANGUAGE, id],
+      orderBy: 'a.id',
+      page,
+      pageSize
+    });
     ok(res, record);
   })
 );
@@ -481,7 +516,10 @@ router.get(
   asyncHandler(async (req, res) => {
     const minutes = onlineMinutes(req);
     const { page, pageSize } = pageParams(req.query);
-    const conditions = [`u.last_active_at > NOW() - INTERVAL ${minutes} MINUTE`];
+    const conditions = [
+      'u.deleted_at IS NULL',
+      `u.last_active_at > NOW() - INTERVAL ${minutes} MINUTE`
+    ];
     const params = [];
 
     const keyword = likeValue(req.query.keyword);
@@ -491,7 +529,7 @@ router.get(
     }
     if (req.query.role) {
       conditions.push('u.role = ?');
-      params.push(assertEnum(req.query.role, ROLES, 'role'));
+      params.push(assertEnum(req.query.role, ALL_ROLES, 'role'));
     }
 
     const data = await queryPage({
@@ -509,8 +547,11 @@ router.get(
     const [[summary]] = await pool.execute(
       `SELECT COUNT(*) AS total,
               SUM(role = 'student') AS students,
-              SUM(role = 'admin') AS admins
-       FROM users WHERE last_active_at > NOW() - INTERVAL ${minutes} MINUTE`
+              SUM(role = 'teacher') AS teachers,
+              -- 后台角色有两个，只数 admin 会把内容管理员算成 0
+              SUM(role IN ('admin', 'content_admin')) AS staff
+       FROM users
+       WHERE deleted_at IS NULL AND last_active_at > NOW() - INTERVAL ${minutes} MINUTE`
     );
     ok(res, { ...data, windowMinutes: minutes, summary });
   })
@@ -518,7 +559,7 @@ router.get(
 
 // ---------------------------------------------------------------- 子路由
 
-router.use('/', adminContentRoutes);
+// adminContentRoutes 已在文件开头挂载（内容管理员可用）；这里只剩仅超管的 AI 子路由。
 router.use('/ai', adminAiRoutes);
 
 export default router;

@@ -132,7 +132,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="answer in detail.answers" :key="answer.id">
+              <tr v-for="answer in answers.list" :key="answer.id">
                 <td>{{ answer.question_id }}</td>
                 <td class="wrap">{{ answer.title }}</td>
                 <td>{{ answer.is_correct ? '✓' : '✗' }}</td>
@@ -142,7 +142,18 @@
             </tbody>
           </table>
         </div>
-        <p v-if="!(detail.answers || []).length" class="muted">{{ t('empty') }}</p>
+        <p v-if="!answers.list.length" class="muted">{{ t('empty') }}</p>
+
+        <Pagination
+          style="margin-top: 12px"
+          :page="answers.page"
+          :page-size="answers.pageSize"
+          :total="answers.total"
+          :total-pages="answers.totalPages"
+          :loading="detailLoading"
+          @page="changeAnswersPage"
+          @size="changeAnswersSize"
+        />
       </template>
 
       <template #footer>
@@ -153,12 +164,12 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { request } from '../../api/client.js';
+import { reactive, ref } from 'vue';
+import { request, qs } from '../../api/client.js';
 import { usePagedTable } from '../../composables/usePagedTable.js';
 import Pagination from '../../components/Pagination.vue';
 import AppModal from '../../components/AppModal.vue';
-import { t } from '../../i18n/index.js';
+import { state as i18nState, t } from '../../i18n/index.js';
 
 const { rows, total, totalPages, loading, error, query, page, size, changePage, changePageSize, reset } =
   usePagedTable('/admin/records', { filters: { keyword: '', dateFrom: '', dateTo: '' } });
@@ -204,17 +215,50 @@ const detailLoading = ref(false);
 const detailError = ref('');
 const detail = ref(null);
 
-async function openDetail(row) {
-  detail.value = null;
-  detailError.value = '';
+/**
+ * 作答明细分页。
+ *
+ * 没用 `usePagedTable`：那个组合式要求列表就在响应顶层，而这里分页的
+ * `answers` 嵌在成绩记录里，头部那几项统计要与它同一次请求取回。
+ * 翻页就重拉整个信封 —— 统计字段各页相同，多传几十字节换一份简单代码。
+ */
+const answers = reactive({ list: [], total: 0, page: 1, pageSize: 10, totalPages: 1 });
+
+async function loadDetail(id) {
   detailLoading.value = true;
-  detailOpen.value = true;
+  detailError.value = '';
   try {
-    detail.value = await request(`/admin/records/${row.id}`);
+    const params = { page: answers.page, pageSize: answers.pageSize, lang: i18nState.lang };
+    const data = await request(`/admin/records/${id}${qs(params)}`);
+    detail.value = data;
+    const envelope = data.answers ?? {};
+    answers.list = envelope.list ?? [];
+    answers.total = envelope.total ?? 0;
+    answers.totalPages = envelope.totalPages ?? 1;
   } catch (err) {
     detailError.value = err.message;
   } finally {
     detailLoading.value = false;
   }
+}
+
+async function openDetail(row) {
+  detail.value = null;
+  detailError.value = '';
+  detailOpen.value = true;
+  answers.page = 1;
+  answers.pageSize = 10;
+  await loadDetail(row.id);
+}
+
+function changeAnswersPage(next) {
+  answers.page = Math.max(1, Math.min(next, answers.totalPages || 1));
+  return loadDetail(detail.value.id);
+}
+
+function changeAnswersSize(next) {
+  answers.pageSize = Number(next) || 10;
+  answers.page = 1;
+  return loadDetail(detail.value.id);
 }
 </script>

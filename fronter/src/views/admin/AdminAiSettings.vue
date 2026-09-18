@@ -31,7 +31,14 @@
         <span>{{ t('defaultModel') }}</span>
         <div class="row">
           <select v-model="form.defaultModel" style="flex:1 1 200px">
-            <option v-for="item in availableModels" :key="item.name" :value="item.name">{{ modelLabel(item) }}</option>
+            <option
+              v-for="item in availableModels"
+              :key="item.name"
+              :value="item.name"
+              :disabled="item.selectable === false"
+            >
+              {{ modelLabel(item) }}
+            </option>
           </select>
           <button class="btn" type="button" :disabled="!!busy || !form.defaultModel" @click="loadModel">
             {{ busy === 'load' ? t('loading') : t('loadModel') }}
@@ -43,6 +50,9 @@
             {{ busy === 'refresh' ? t('loading') : t('refreshModels') }}
           </button>
         </div>
+        <p v-if="env.testModel" class="muted" :title="t('testModelHint')">
+          ⚠ {{ t('testModelBadge', { model: env.testModel }) }}
+        </p>
         <p v-if="!availableModels.length" class="muted">{{ t('empty') }}</p>
       </div>
 
@@ -130,9 +140,21 @@ const form = reactive({
   numCtx: 16384
 });
 
-/** 选项文案：模型名 +（已加载）标记，供 select 展示。 */
+/** 不可选的模型仍留在下拉里并写明原因 —— 直接隐藏会让人以为模型没下载成功。 */
+function reasonOf(item) {
+  if (item.selectable !== false) return '';
+  if (item.excludedReason === 'too-large') return t('tooLarge', { n: env.value.maxModelSizeGb || 0 });
+  return t('sizeUnknown');
+}
+
+/** 选项文案：模型名 + 体积 +（已加载）标记 + 不可选原因，供 select 展示。 */
 function modelLabel(item) {
-  return item.loaded ? `${item.name} · ${t('loaded')}` : item.name;
+  const parts = [item.name];
+  if (item.sizeText) parts.push(item.sizeText);
+  if (item.loaded) parts.push(t('loaded'));
+  const reason = reasonOf(item);
+  if (reason) parts.push(reason);
+  return parts.join(' · ');
 }
 
 /** 毫秒 → `1.2s` / `820ms`。 */

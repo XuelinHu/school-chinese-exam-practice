@@ -10,9 +10,11 @@
       <header class="agent-head">
         <div>
           <strong>{{ title }}</strong>
-          <p class="muted agent-sub">
-            {{ model || t('model') }}
-            <span v-if="voice.usingNative.value"> · {{ t('voiceViaApp') }}</span>
+          <p class="muted agent-sub">{{ model || t('model') }}</p>
+          <!-- 测试模型常驻警示：置顶显示，免得把退化答案当成生产行为。
+               模型面板里还有一条同样内容的说明，那是去挑模型时才会看到的。 -->
+          <p v-if="meta.testModel" class="agent-note warn" :title="t('testModelHint')">
+            ⚠ {{ t('testModelBadge', { model: meta.testModel }) }}
           </p>
         </div>
         <div class="row">
@@ -67,14 +69,20 @@ let controller = null;
 
 const voice = useVoice();
 
-/** 场景跟着角色走：管理员默认进管理助手，学员进学习助教。 */
-const scene = computed(() => (auth.isAdmin ? 'admin' : 'student'));
-const title = computed(() => meta.value.name || (auth.isAdmin ? t('agentAdmin') : t('agentTutor')));
+/**
+ * 场景跟着角色走：后台人员（超管 + 内容管理员）进管理助手，其余进学习助教。
+ * 教师不是员工，走学员场景 —— 与后端 `resolveScene()` 同口径。
+ */
+const scene = computed(() => (auth.isStaff ? 'admin' : 'student'));
+const title = computed(() => meta.value.name || (auth.isStaff ? t('agentAdmin') : t('agentTutor')));
 
 async function loadMeta() {
   try {
     meta.value = await agentMeta({ scene: scene.value, lang: lang.value });
     if (meta.value.defaultModel && !model.value) model.value = meta.value.defaultModel;
+    // ai.voice_auto_speak 是默认值不是强制值：只在它为真时打开，
+    // 用户自己关掉后不该被下一次拉元数据重新打开。
+    if (meta.value.voice?.autoSpeak) voice.toggleAutoSpeak(true);
   } catch (err) {
     error.value = err.message;
   }
@@ -87,7 +95,10 @@ function open() {
     // 弹框打开即后台预热：冷加载约 20s，提前触发能省掉用户第一次提问的等待
     fetchModels()
       .then((data) => {
-        if (!model.value) model.value = data.defaultModel || data.models?.[0]?.name || '';
+        if (model.value) return;
+        // 不能回落到 models[0]：列表按名称排序，第一个可能是超出显存上限或体积未知的那个
+        const selectable = (data.models || []).filter((item) => item.selectable !== false);
+        model.value = data.defaultModel || selectable[0]?.name || data.models?.[0]?.name || '';
       })
       .catch(() => {});
   }

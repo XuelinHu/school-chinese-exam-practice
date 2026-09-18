@@ -45,6 +45,7 @@
     <AgentControls
       :voice="voice"
       :lang="lang"
+      :voice-enabled="meta.voice?.enabled !== false"
       @update:lang="$emit('update:lang', $event)"
       @toggle-speak="$emit('toggle-speak')"
       @new-session="$emit('new-session')"

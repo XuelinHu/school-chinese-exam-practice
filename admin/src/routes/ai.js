@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { pool } from '../config/db.js';
 import { auth } from '../middleware/auth.js';
-import { allow } from '../middleware/role.js';
+import { allow, isStaff } from '../middleware/role.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import { asyncHandler, ok } from '../utils/response.js';
 import { HttpError } from '../utils/errors.js';
@@ -20,11 +20,11 @@ function safeLang(value) {
   return LANGUAGES.includes(value) ? value : 'zh-CN';
 }
 
-/** 管理端场景需要管理员角色，学员场景任何登录用户都可用。 */
+/** 管理端场景需要后台角色（超管或内容管理员），学员场景任何登录用户都可用。 */
 function resolveScene(requested, user) {
   const scene = SCENES[requested] ? requested : 'student';
-  if (scene === 'admin' && user.role !== 'admin') {
-    throw new HttpError(403, 'Admin scene requires an administrator account');
+  if (scene === 'admin' && !isStaff(user.role)) {
+    throw new HttpError(403, 'Admin scene requires a staff account');
   }
   return scene;
 }
@@ -35,7 +35,14 @@ router.get(
   '/health',
   auth(),
   asyncHandler(async (_req, res) => {
-    ok(res, { enabled: aiConfig.enabled, ...(await health()) });
+    ok(res, {
+      enabled: aiConfig.enabled,
+      // 非空表示当前跑在测试模型上（仅非生产环境可能非空），前端据此显示醒目徽标
+      testModel: aiConfig.testModel || null,
+      maxModelSizeGb: aiConfig.maxModelSizeGb,
+      modelsDir: aiConfig.modelsDir,
+      ...(await health())
+    });
   })
 );
 
@@ -50,10 +57,15 @@ router.get(
     ]);
     const loaded = new Set(running.map((item) => item.name));
     ok(res, {
+      // 每个模型都带 selectable / excludedReason，前端据此渲染禁用项与原因
       models: models.map((model) => ({ ...model, loaded: loaded.has(model.name) })),
       running,
-      // 未配置时回落到推荐模型，避免前端各自拿 list[0]（那会选中 0.5B 的小模型）
-      defaultModel: settings.defaultModel || pickRecommendedModel(models),
+      // 优先级与 settings.js 的 resolveDefaultModel() 保持一致：
+      // 测试开关 > 后台设置 > 推荐模型。都不做时前端会各自拿 list[0]，
+      // 而 list[0] 恰好是 0.5B 的小模型。
+      defaultModel: aiConfig.testModel || settings.defaultModel || pickRecommendedModel(models),
+      maxModelSizeGb: aiConfig.maxModelSizeGb,
+      testModel: aiConfig.testModel || null,
       host: aiConfig.host,
       keepAlive: aiConfig.keepAlive
     });
@@ -109,7 +121,10 @@ router.get(
         sttLanguages: LANGUAGES,
         ttsLanguages: LANGUAGES
       },
-      defaultModel: await resolveDefaultModel()
+      defaultModel: await resolveDefaultModel(),
+      // 测试模型只在非生产生效。下发它是为了让弹框顶部常驻一条警示 ——
+      // 徽标如果只藏在「模型」面板里，一路聊下去的人根本看不到。
+      testModel: aiConfig.testModel
     });
   })
 );
@@ -124,7 +139,7 @@ router.get(
     const conditions = [];
     const params = [];
 
-    if (req.user.role === 'admin' && req.query.all === 'true') {
+    if (isStaff(req.user.role) && req.query.all === 'true') {
       if (req.query.userId) {
         conditions.push('s.user_id = ?');
         params.push(Number(req.query.userId));
@@ -151,11 +166,11 @@ router.get(
   })
 );
 
-/** 校验会话归属：学员只能看自己的，管理员可以看全部。 */
+/** 校验会话归属：普通用户只能看自己的，后台角色可以看全部。 */
 async function assertSessionAccess(sessionId, user) {
   const [[session]] = await pool.execute('SELECT id, user_id, scene, model, title FROM ai_sessions WHERE id = ?', [sessionId]);
   if (!session) throw new HttpError(404, 'Session not found');
-  if (session.user_id !== user.id && user.role !== 'admin') throw new HttpError(403, 'Forbidden');
+  if (session.user_id !== user.id && !isStaff(user.role)) throw new HttpError(403, 'Forbidden');
   return session;
 }
 

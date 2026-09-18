@@ -10,11 +10,16 @@ dotenv.config();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '../..');
 
+// 口令只从环境读，不设兜底（与 config/db.js 一致，见那里的说明）
+if (!String(process.env.DB_PASSWORD || '').trim()) {
+  throw new Error('DB_PASSWORD is not set. Copy admin/.env.example to admin/.env and fill it in.');
+}
+
 const connection = await mysql.createConnection({
   host: process.env.DB_HOST || 'localhost',
   port: Number(process.env.DB_PORT || 3306),
   user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || 'Java@c1024',
+  password: process.env.DB_PASSWORD,
   multipleStatements: true
 });
 

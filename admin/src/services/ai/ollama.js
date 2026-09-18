@@ -125,11 +125,30 @@ async function scanModelsDir() {
   return [...found.values()];
 }
 
-function applyAllowlist(models) {
-  const list = aiConfig.allowlist.length
-    ? models.filter((model) => aiConfig.allowlist.includes(model.name))
-    : models;
-  return list.sort((a, b) => a.name.localeCompare(b.name));
+/**
+ * 模型过滤的唯一收口点：白名单 + 体积上限。
+ *
+ * 被过滤掉的模型**不从这里删除**，只标记 `selectable:false` 与 `excludedReason`。
+ * 直接从列表里抹掉会让人以为模型没下载成功；保留并给出原因，前端才好解释
+ * 「这台机器上有这个模型，但为什么不让你选」。
+ */
+function applyFilters(models, source) {
+  const maxBytes = aiConfig.maxModelSizeGb * 1024 ** 3;
+
+  return models
+    .filter((model) => !aiConfig.allowlist.length || aiConfig.allowlist.includes(model.name))
+    .map((model) => {
+      // manifests 回落拿不到体积（scanModelsDir 里 size 恒为 0）。不能把 0 当作
+      // 「小于上限」放行 —— 那恰好等于对体积未知的模型跳过护栏，而它正是最该拦的。
+      if (source === 'manifests' || !model.size) {
+        return { ...model, selectable: false, excludedReason: 'size-unknown' };
+      }
+      if (model.size > maxBytes) {
+        return { ...model, selectable: false, excludedReason: 'too-large' };
+      }
+      return { ...model, selectable: true, excludedReason: null };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /** 列出本机已下载的模型。 */
@@ -145,12 +164,16 @@ export async function listModels({ refresh = false } = {}) {
     const payload = await response.json();
     models = (payload.models || []).map(normalizeModel);
   } catch (error) {
-    logger.warn('Ollama /api/tags unavailable, falling back to manifests scan', { message: error.message });
+    logger.warn('Ollama /api/tags unavailable, falling back to manifests scan', {
+      message: error.message,
+      modelsDir: aiConfig.modelsDir,
+      modelsDirFound: aiConfig.modelsDirFound
+    });
     models = await scanModelsDir();
     source = 'manifests';
   }
 
-  models = applyAllowlist(models);
+  models = applyFilters(models, source);
   modelCache = { at: Date.now(), models };
   return models.map((model) => ({ ...model, source }));
 }

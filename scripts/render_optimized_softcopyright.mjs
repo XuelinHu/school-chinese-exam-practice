@@ -77,7 +77,6 @@ const sourceFiles = [
   'fronter/src/components/agent/format.js',
   'fronter/src/components/agent/voice/useVoice.js',
   'fronter/src/components/agent/voice/speech.js',
-  'fronter/src/components/agent/voice/androidBridge.js',
   // 学员端页面
   'fronter/src/views/Home.vue',
   'fronter/src/views/Login.vue',
@@ -103,9 +102,14 @@ const sourceFiles = [
   'fronter/src/views/admin/AdminAiSessions.vue',
   'fronter/src/views/admin/AdminAiLogs.vue',
   // 样式与运行配置
-  // 清单与 generate_softcopyright_materials.mjs 的 sourceFiles 保持一致（76 项）。
+  // 清单与 generate_softcopyright_materials.mjs 的 sourceFiles 保持一致（75 项）。
   // 曾误加 .gitignore 与 README.md，使源码册变成 78 个文件 12162 行，与 information.txt
   // 申报的「76 个文件约 12047 行」对不上；两者都非程序源码，README 还带外部徽章图片链接。
+  //
+  // 本轮（全 H5 化）删掉了 voice/androidBridge.js，因此由 76 项变为 75 项；
+  // 新增的 teaching.js、TeachingStudents.vue、TeachingStudent.vue、utils/format.js
+  // **尚未**加入本清单 —— 加进来就要同步改 information.txt 申报的文件数与行数，
+  // 那属于软著材料统一重生时的工作，不在本轮范围内。
   'fronter/src/assets/style.css',
   'admin/package.json',
   'fronter/package.json'
@@ -145,8 +149,7 @@ const requirements = [
   ['FR-27 智能体弹框问答与流式输出', '登录用户在任意页面点击右下角悬浮球打开对话弹框，输入问题后后台以 SSE 逐字返回回答；帧序为 meta、tool_call、tool_result、delta、done，前端实时渲染增量文本，回答结束后把会话、消息与调用日志写入数据库。场景随角色切换，学员进入汉语学习助教、管理员进入平台管理助手。', '智能体对话弹框', '全局悬浮球（示例 /）', 'GET /api/ai/agent、POST /api/ai/chat', 'ai_sessions、ai_messages、ai_call_logs', 'agent_modal_trilingual.png'],
   ['FR-28 模型发现、预热与装卸', '后台通过本机模型运行时的标签、进程与模型信息接口列举可用模型及加载状态，未配置默认模型时按参数量挑选推荐值；智能体弹框打开即触发模型列表预热，管理员与用户均可手动加载、卸载模型并刷新列表，冷加载期间页面给出明确提示。', '智能体设置、智能体对话弹框', '/admin/ai/settings', 'GET /api/ai/models、POST /api/ai/models/load、POST /api/ai/models/unload', 'system_settings', 'admin_ai_settings_zh.png'],
   ['FR-29 语音播报', '智能体回答可一键语音播报，播报前剥离 Markdown 标记并清洗为自然短句，再交当前语音提供方朗读；开启自动播报后每次回答结束自动朗读，新一轮提问或关闭自动播报会立即打断正在播放的语音。', '智能体对话弹框', '全局悬浮球', '前端 useVoice 与 speech 封装（无服务端接口）', 'system_settings（voice_enabled、voice_auto_speak）', 'agent_modal_trilingual.png'],
-  ['FR-30 语音对话', '用户点击麦克风按钮用母语提问，识别出的文本自动填入输入框并可直接提交；识别与播报的提供方各自独立解析，允许安卓原生麦克风搭配浏览器语音合成的组合，语音不可用时页面区分提示安全上下文不满足或浏览器不支持，不静默失败。', '智能体对话弹框', '全局悬浮球', '前端 useVoice 与 speech 封装（无服务端接口）', 'ai_sessions、ai_messages', 'agent_modal_trilingual.png'],
-  ['FR-31 安卓原生语音桥', '页面运行在安卓 App 的 WebView 容器中时改用宿主原生语音能力：页面通过 JavaScript 桥调用原生识别与合成，原生结果回调在 UI 线程写回页面；识别与合成按安卓桥、Capacitor 插件、iOS 消息处理器、浏览器接口的顺序探测。', '智能体对话弹框（安卓 WebView）', '全局悬浮球', 'window.AndroidVoice 桥、Capacitor 插件、iOS messageHandlers', '无（设备侧能力）', 'agent_modal_trilingual.png']
+  ['FR-30 语音对话', '用户点击麦克风按钮用母语提问，识别出的文本自动填入输入框并可直接提交；识别与播报各自独立判断可用性，语音不可用时页面区分提示安全上下文不满足（识别需 HTTPS 或 localhost）或浏览器不支持，播报不受该限制，不静默失败。', '智能体对话弹框', '全局悬浮球', '前端 useVoice 与 speech 封装（无服务端接口）', 'ai_sessions、ai_messages', 'agent_modal_trilingual.png']
 ];
 
 const modules = [
@@ -155,7 +158,7 @@ const modules = [
   ['M3 成绩与错题模块', '学生、管理员', '个人成绩回看、错题归集与解析、错误次数累计、订正状态维护、管理端全量成绩检索与逐题明细', '/records、/wrong-book、/admin/records', '/api/learning/records、/api/learning/wrong-questions、/api/admin/records', 'study_records、wrong_questions、favorite_questions、user_answers'],
   ['M4 管理台分页管理模块', '管理员', '十二个菜单全部分页查询、关键词与条件筛选、题库与试卷及等级分类的增删改、多语言字段按语言录入、用户状态与角色调整、重置密码与解锁账号', '/admin 下的十二个菜单', '/api/admin/*（admin.js 与 adminContent.js）', 'users、questions、papers、levels、question_categories、study_records'],
   ['M5 定制化智能体模块', '学生、管理员', '场景化系统提示词、业务快照注入、服务端工具读取真实数据、意图预接地、SSE 流式输出、会话与调用日志、模型发现与装卸、默认模型推荐', '全局悬浮球弹框、/admin/ai/settings、/admin/ai/sessions、/admin/ai/logs', '/api/ai/*', 'ai_sessions、ai_messages、ai_call_logs、system_settings'],
-  ['M6 语音交互模块', '学生、管理员', '语音播报、语音对话、原生桥优先、Capacitor 与 iOS 桥兼容、浏览器语音接口兜底、不可用时明确提示原因、播报前剥离 Markdown、新一轮提问打断播报', '智能体弹框语音控件', '无（纯前端与设备侧原生桥）', '无（语音开关存于 system_settings）'],
+  ['M6 语音交互模块', '学生、管理员', '语音播报、语音对话、识别与播报各自独立判断可用性、不可用时明确提示原因（安全上下文或浏览器不支持）、播报前剥离 Markdown、新一轮提问打断播报', '智能体弹框语音控件', '无（纯前端浏览器接口）', '无（语音开关存于 system_settings）'],
   ['M7 国际化模块', '学生、管理员', '中文、英文、马来语界面文案与语言状态维护，界面语言落到用户表，题库与试卷内容按语言代码读取', '顶部语言切换、智能体弹框语言选择', 'lang 查询参数', 'level_translations、question_category_translations、question_translations、question_option_translations、paper_translations、i18n_messages'],
   ['M8 日志与运维模块', '运维人员', '请求日志、错误日志、敏感字段脱敏、数据库初始化、增量迁移与版本记录、演示账号种子脚本', 'npm run db:init / db:migrate / seed:users', 'logger.js、requestLogger.js、migrate.js', 'schema_migrations']
 ];
@@ -458,7 +461,7 @@ function designHtml() {
     <h3>1.1 编写目的</h3>
     <p>${softwareName}面向马来西亚留学生汉语练习场景，提供学生端练习与管理端教学查看两类功能，并内置一个基于本机开源大模型的定制化智能体。本文档说明软件的适用范围、功能需求、模块划分、总体架构、关键机制、数据组织、接口约定、运行部署、安全设计与验证结果，供软件著作权登记与后续维护参考。文档中的图示依据已核验源码、路由、接口与数据库脚本生成，运行截图取自真实启动的前台页面与后台管理界面。</p>
     <h3>1.2 适用范围</h3>
-    <p>软件分为学生端、管理端与智能体三条使用路径。学生端支持注册、登录、退出登录、修改密码、以 6 位重置码找回密码、个人资料维护与头像上传、查看本人登录日志，以及首页导航、练习列表、在线答题与提交判分、成绩记录、错题本和个人中心。管理端提供数据看板、学生管理、题库管理、练习试卷、成绩记录、等级管理、分类管理、登录日志、在线状态、智能体设置、智能体会话与智能体调用日志共十二个菜单，每个菜单均为分页查询并支持条件筛选。智能体以全局悬浮球为入口，支持流式问答、语音播报与语音对话，在安卓 App 的 WebView 中改用宿主原生语音能力。后台提供认证、学习练习、管理查询与智能体四组接口，数据库负责保存用户、题库、试卷、成绩、错题、日志、智能体会话与系统设置数据。</p>
+    <p>软件分为学生端、管理端与智能体三条使用路径。学生端支持注册、登录、退出登录、修改密码、以 6 位重置码找回密码、个人资料维护与头像上传、查看本人登录日志，以及首页导航、练习列表、在线答题与提交判分、成绩记录、错题本和个人中心。管理端提供数据看板、学生管理、题库管理、练习试卷、成绩记录、等级管理、分类管理、登录日志、在线状态、智能体设置、智能体会话与智能体调用日志共十二个菜单，每个菜单均为分页查询并支持条件筛选。智能体以全局悬浮球为入口，支持流式问答、语音播报与语音对话。后台提供认证、学习练习、管理查询与智能体四组接口，数据库负责保存用户、题库、试卷、成绩、错题、日志、智能体会话与系统设置数据。</p>
     <h3>1.3 术语与约定的口径</h3>
     <p>本文档所称令牌指登录成功后签发的 JWT，其载荷包含用户编号、用户名、角色与令牌版本号；令牌版本号指用户表中的吊销计数，每次改密、被重置或被停用都会自增。工具接地指智能体在回答前调用服务端预先登记的数据查询工具，以数据库中的真实数据作为作答依据。SSE 指服务端事件流，用于逐字返回模型回答。分页契约指分页接口统一返回 list、total、page、pageSize、totalPages 五个字段的约定。文档中的源码规模、数据表数量、接口数量与验证结论均以第 11 章列出的核验结果为准。</p>
 
@@ -486,7 +489,7 @@ function designHtml() {
     <h3>3.2 模块结构表</h3>
     ${table(['模块', '服务角色', '核心职责', '页面或接口', '数据对象'], modules, '表 3-1 模块结构表')}
     <h3>3.3 技术选型与运行环境</h3>
-    <p>前台目录为 fronter，使用 Vue 3.5.13、Vue Router 4 与 Vite 6 构建为 H5 页面，不依赖第三方 UI 组件库与状态管理库，界面状态使用响应式对象维护，三语文案由手写国际化资源提供。后台目录为 admin，运行在 Node.js 上，使用 Express 4.21、mysql2/promise、jsonwebtoken 与 bcryptjs，按认证、学习练习、后台管理、管理内容、管理智能体与智能体六个路由文件拆分，数据库为 MySQL 8，字符集 utf8mb4。智能体使用部署在本机的 Ollama 运行时，通过其对话、标签、进程与模型信息接口完成推理与模型管理，回答以 SSE 流式返回。语音能力不依赖服务端：浏览器端使用 Web Speech API，安卓端通过 WebView 的 JavaScript 桥调用宿主原生识别与合成。开发环境实测为本机同时运行 Node.js 服务、Vite 开发服务、MySQL 与本机模型运行时。</p>
+    <p>前台目录为 fronter，使用 Vue 3.5.13、Vue Router 4 与 Vite 6 构建为 H5 页面，不依赖第三方 UI 组件库与状态管理库，界面状态使用响应式对象维护，三语文案由手写国际化资源提供。后台目录为 admin，运行在 Node.js 上，使用 Express 4.21、mysql2/promise、jsonwebtoken 与 bcryptjs，按认证、学习练习、后台管理、管理内容、管理智能体与智能体六个路由文件拆分，数据库为 MySQL 8，字符集 utf8mb4。智能体使用部署在本机的 Ollama 运行时，通过其对话、标签、进程与模型信息接口完成推理与模型管理，回答以 SSE 流式返回。语音能力不依赖服务端：浏览器直接使用 Web Speech API 调用麦克风与扬声器。开发环境实测为本机同时运行 Node.js 服务、Vite 开发服务、MySQL 与本机模型运行时。</p>
 
     <h2>4 总体设计</h2>
     <h3>4.1 系统架构</h3>
@@ -495,7 +498,7 @@ function designHtml() {
     ${image(diagram('03_deployment.png'), '图 4-2 部署图：该图说明系统运行时由用户浏览器、Web 前端运行环境、应用服务器与 MySQL 数据库组成。浏览器加载前台静态资源后，通过接口请求封装访问后台服务；后台通过连接池访问数据库，并把请求状态、耗时与异常写入日志文件。该图用于说明系统部署节点、调用方向、数据落库路径与运行审计位置。本机开发环境的实际端口为前台 4031、后台 8033、模型运行时 11434。', 'diagram')}
     <h3>4.3 智能体与语音的分层设计</h3>
     <p>智能体与语音不改变原有的三层结构，而是在其上增加两条链路。智能体链路自下而上分为四层：模型运行时层由本机 Ollama 提供推理服务；封装层由 ollama 模块统一收敛对话、标签、进程、模型信息、加载与卸载接口，并把上游异常转换为统一的错误类型；业务层由工具集从 MySQL 读取真实业务数据，由设置模块读写系统设置表并解析默认模型，由智能体编排模块负责系统提示词、业务快照、工具调用循环与事件流；接入层由智能体路由把事件流转换为 SSE 帧，并在结束时落库会话、消息与调用日志。前台由悬浮球、对话区、模型选择器与语音控件四个组件组成界面。</p>
-    <p>语音链路完全位于前台与设备侧，服务端不提供语音接口。统一编排模块负责探测可用的原生实现并把事件分发给当前活跃的提供方，原生桥模块负责安卓、Capacitor 与 iOS 三种容器的探测与回调注册，浏览器模块负责识别与合成的封装以及播报文本的清洗。两条链路与原有的认证、学习练习、管理查询接口共用同一套鉴权中间件与限流策略，智能体接口本身也要求登录令牌。</p>
+    <p>语音链路完全位于前台，服务端不提供语音接口。统一编排模块负责判断识别与播报各自的可用性并把事件分发给当前活跃的提供方，浏览器模块负责识别与合成的封装以及播报文本的清洗。识别需要安全上下文（HTTPS 或 localhost），播报不需要，两者因此分开判断。该链路与原有的认证、学习练习、管理查询接口共用同一套鉴权中间件与限流策略，智能体接口本身也要求登录令牌。</p>
 
     <h2>5 详细设计</h2>
     <h3>5.1 答题业务流程</h3>
@@ -518,7 +521,7 @@ function designHtml() {
     <h3>5.8 默认模型推荐</h3>
     <p>未显式配置默认模型时，后台按参数量从可用模型中挑选推荐值：把形如 14.8B、494.03M、7b 的参数量描述解析为以 B 为单位的数值并取最大者，参数量相同时比较模型体积，仍相同则按名称排序，保证同一批模型每次选出同一结果。此处不能简单回落到模型列表的第一项：模型运行时的标签接口按名称排序，本机第一条恰好是体积最小的那个模型，而这类小模型不会真正发起工具调用，只会凭记忆编造答案。推荐值同时用于智能体元信息接口与对话接口，避免前端各自取列表首项而选中不适合的模型。</p>
     <h3>5.9 语音提供方选择顺序</h3>
-    <p>语音识别与语音播报各自独立解析提供方。识别侧依次探测安卓 WebView 的 JavaScript 桥、Capacitor 插件与 iOS 的消息处理器，三者都不可用时回落浏览器的语音识别接口，浏览器同样不支持时返回明确的不支持原因；播报侧在原生桥提供合成能力时优先使用原生实现，否则使用浏览器语音合成。独立解析允许出现安卓原生麦克风搭配浏览器语音合成的组合，App 只接入麦克风时不会把播报一并降级。浏览器的识别接口只在安全上下文下可用，不可用时页面区分提示安全上下文不满足与浏览器不支持两种情况，不静默失败。播报前会剥离 Markdown 标记并清洗为自然短句，新一轮提问会立即打断正在播放的语音，实现语音打断。</p>
+    <p>语音识别与语音播报各自独立判断可用性：识别的接口只在安全上下文下可用，播报不受此限制，因此存在「麦克风被拦、播报仍正常」的合法状态，页面分别给出结论而不是合成一个总开关。识别不可用时页面区分提示安全上下文不满足与浏览器不支持两种情况，并同时说明播报仍然可用，不静默失败。播报前会剥离 Markdown 标记并清洗为自然短句，新一轮提问会立即打断正在播放的语音，实现语音打断。</p>
 
     <h2>6 数据设计</h2>
     <h3>6.1 数据关系</h3>
@@ -651,9 +654,9 @@ function designMarkdown() {
     '',
     '命中已知数据意图时先查库再注入上下文，不依赖模型自觉；未配置默认模型时按参数量取最大者，避免回落到体积最小的模型。',
     '',
-    '### 4.6 语音提供方选择顺序',
+    '### 4.6 语音可用性判定',
     '',
-    '识别与播报各自独立解析提供方，顺序为安卓桥、Capacitor、iOS 消息处理器、浏览器接口，不可用时给出明确提示。',
+    '识别与播报各自独立判定：识别要求安全上下文（HTTPS 或 localhost），播报不受此限制；两者不可用时分别给出明确原因。',
     '',
     '## 5 数据表说明',
     '',
@@ -736,9 +739,8 @@ function describeFile(file) {
   if (file.includes('components/Pagination')) return '通用分页控件，提供页码、每页条数和总数展示。';
   if (file.includes('components/AppModal')) return '通用弹框容器，供后台编辑表单与智能体对话复用。';
   if (file.includes('layouts/AdminLayout')) return '管理台侧边栏布局、菜单分组和窄屏抽屉导航。';
-  if (file.includes('voice/useVoice')) return '语音识别与语音播报编排，按运行环境选择原生桥或浏览器接口。';
+  if (file.includes('voice/useVoice')) return '语音识别与语音播报编排，两者独立判定可用性。';
   if (file.includes('voice/speech')) return '浏览器语音识别与语音合成封装，含播报文本清洗。';
-  if (file.includes('voice/androidBridge')) return '安卓、Capacitor 与 iOS 原生语音桥探测与回调注册。';
   if (file.includes('components/agent/format')) return '智能体回答文本的展示清洗与格式化工具。';
   if (file.includes('components/agent/')) return '智能体悬浮入口、对话弹框、模型选择与语音控制界面。';
   if (file.includes('views/admin/')) return '管理台分页查询页面的筛选栏、数据表格与编辑弹框。';

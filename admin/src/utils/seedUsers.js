@@ -2,8 +2,11 @@ import bcrypt from 'bcryptjs';
 import { pool } from '../config/db.js';
 import { logger } from './logger.js';
 
+// 四类角色各至少一个演示账号，方便逐接口核对权限矩阵（见 README「角色与权限」）。
 const users = [
   ['admin', 'admin123456', '系统管理员', 'admin', 'admin@example.local', 'Malaysia'],
+  ['content', 'content123456', '内容管理员', 'content_admin', 'content@example.local', 'Malaysia'],
+  ['teacher', 'teacher123456', '陈老师', 'teacher', 'teacher@example.local', 'Malaysia'],
   ['student', 'student123456', 'Amin', 'student', 'student@example.local', 'Malaysia'],
   ['nurul', 'student123456', 'Nurul Aisyah', 'student', 'nurul@example.local', 'Malaysia'],
   ['weijie', 'student123456', 'Tan Wei Jie', 'student', 'weijie@example.local', 'Malaysia'],
@@ -62,5 +65,5 @@ for (const item of wrongQuestions) {
   );
 }
 
-logger.info('Seed users ready for admin and student accounts');
+logger.info('Seed users ready for admin / content_admin / teacher / student accounts');
 await pool.end();

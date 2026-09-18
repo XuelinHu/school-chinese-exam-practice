@@ -652,6 +652,9 @@ router.get(
       table: 'paper_translations', foreignKey: 'paper_id', id, fields: PAPER_FIELDS
     });
 
+    // 题目列表**故意不分页**：这是组卷编辑器的输入，而 PUT /papers/:id/questions
+    // 是「整体替换」。只给一页的话，保存时会把没显示出来的题目全部删掉 —— 那是数据丢失，
+    // 不是少看几条。列表页 /papers 已分页，这里面试卷最多几十题，可控。
     const lang = listLang(req);
     const [questions] = await pool.execute(
       `SELECT pq.id, pq.question_id, pq.sort_order, pq.score,

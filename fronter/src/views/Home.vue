@@ -17,7 +17,11 @@
         <h3>{{ t('records') }}</h3>
         <p class="muted">Track practice scores</p>
       </router-link>
-      <router-link v-if="auth.user?.role === 'admin'" class="card" to="/admin">
+      <router-link v-if="auth.canTeach" class="card" to="/teaching">
+        <h3>{{ t('teaching') }}</h3>
+        <p class="muted">{{ t('teachingHint') }}</p>
+      </router-link>
+      <router-link v-if="auth.isStaff" class="card" to="/admin">
         <h3>{{ t('dashboard') }}</h3>
         <p class="muted">Question bank and student records</p>
       </router-link>

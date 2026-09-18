@@ -7,8 +7,10 @@
         <router-link v-if="auth.user" to="/practice">{{ t('practice') }}</router-link>
         <router-link v-if="auth.user" to="/records">{{ t('records') }}</router-link>
         <router-link v-if="auth.user" to="/wrong-book">{{ t('wrongBook') }}</router-link>
+        <!-- 教学查看区：教师与超管可见（后端 TEACHING_ROLES 同口径） -->
+        <router-link v-if="auth.canTeach" to="/teaching">{{ t('teaching') }}</router-link>
         <router-link v-if="auth.user" to="/profile">{{ t('profile') }}</router-link>
-        <router-link v-if="auth.isAdmin" to="/admin">{{ t('dashboard') }}</router-link>
+        <router-link v-if="auth.isStaff" to="/admin">{{ t('dashboard') }}</router-link>
         <router-link v-if="!auth.user" to="/login">{{ t('login') }}</router-link>
         <router-link v-if="!auth.user" to="/register">{{ t('register') }}</router-link>
         <button v-if="auth.user" @click="logout">{{ t('logout') }}</button>

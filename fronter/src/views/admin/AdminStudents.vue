@@ -9,8 +9,7 @@
         {{ t('role') }}
         <select v-model="query.role">
           <option value="">{{ t('all') }}</option>
-          <option value="student">{{ label('student') }}</option>
-          <option value="admin">{{ label('admin') }}</option>
+          <option v-for="role in ROLES" :key="role" :value="role">{{ label(role) }}</option>
         </select>
       </label>
       <label>
@@ -119,8 +118,7 @@
         <label>
           {{ t('role') }}
           <select v-model="form.role">
-            <option value="student">{{ label('student') }}</option>
-            <option value="admin">{{ label('admin') }}</option>
+            <option v-for="role in ROLES" :key="role" :value="role">{{ label(role) }}</option>
           </select>
         </label>
         <label>
@@ -195,6 +193,9 @@ import { t, label } from '../../i18n/index.js';
 
 // 与后端 users.language 白名单一致
 const LANGUAGES = ['zh-CN', 'en-US', 'ms-MY'];
+
+// 与后端 users.role 的 ENUM 一致；改角色本身仅超管可操作
+const ROLES = ['student', 'teacher', 'content_admin', 'admin'];
 
 const { rows, total, totalPages, loading, error, query, page, size, load, reset, changePage, changePageSize } =
   usePagedTable('/admin/users', {

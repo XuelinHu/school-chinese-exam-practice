@@ -1,31 +1,27 @@
 import { reactive, computed, onUnmounted } from 'vue';
-import { detectNativeVoice, installNativeCallbacks, nativeSttProvider, nativeTtsProvider } from './androidBridge.js';
 import {
   browserSttProvider,
   browserTtsProvider,
   browserSttSupported,
   browserTtsSupported,
+  isSecure,
   primeVoices,
   toSpeakableText
 } from './speech.js';
 
 /**
- * 语音能力的统一编排：识别（STT）与播报（TTS）**各自独立**挑提供方。
+ * 语音能力的统一编排：识别（STT）与播报（TTS）**各自独立**判断可用性。
  *
- * 「安卓原生麦克风 + 浏览器合成」这种组合是允许的 —— App 只接了麦克风没接 TTS
- * 时，不该把播报也一起降级掉。
- *
- * STT 优先级：安卓桥 → Capacitor → iOS 桥 → Web Speech → 明确报不支持
- * TTS 优先级：原生桥 → Web Speech
+ * 全 H5：只走浏览器 Web Speech，没有原生桥。两者可用条件不同 ——
+ * 识别要安全上下文（HTTPS 或 localhost），`speechSynthesis` 不需要 ——
+ * 所以「公网 http 下能播报但不能识别」是预期状态，不能合并成一个开关。
  */
 export function useVoice() {
-  const native = detectNativeVoice();
-
-  const stt = native ? nativeSttProvider(native) : (browserSttSupported ? browserSttProvider() : null);
-  const tts = native?.speak ? nativeTtsProvider(native) : (browserTtsSupported ? browserTtsProvider() : null);
+  const stt = browserSttSupported ? browserSttProvider() : null;
+  const tts = browserTtsSupported ? browserTtsProvider() : null;
 
   const state = reactive({
-    /** 'android' | 'capacitor' | 'ios' | 'browser' | null */
+    /** 'browser' | null */
     sttProvider: stt?.kind || null,
     ttsProvider: tts?.kind || null,
     listening: false,
@@ -37,28 +33,22 @@ export function useVoice() {
     autoSpeak: false
   });
 
-  // 原生事件只注册一次，路由给当前活跃的 provider 自己的状态机
-  installNativeCallbacks({
-    onStart: () => stt?.handle?.('onStart'),
-    onPartial: (text) => stt?.handle?.('onPartial', text),
-    onResult: (text, isFinal) => stt?.handle?.('onResult', text, isFinal),
-    onError: (code, message) => stt?.handle?.('onError', code, message),
-    onEnd: () => stt?.handle?.('onEnd'),
-    onSpeakStart: () => tts?.handle?.('onSpeakStart'),
-    onSpeakEnd: () => tts?.handle?.('onSpeakEnd')
-  });
-
-  const canListen = computed(() => Boolean(stt));
+  /**
+   * 识别可用 = 浏览器有接口 **且** 处于安全上下文。
+   *
+   * 两个条件都得看：Chrome 在普通 http 下照样暴露 `webkitSpeechRecognition`，
+   * 只判断 `Boolean(stt)` 会让按钮亮着、由用户点下去才报错 —— 那正是公网裸 IP
+   * 入口上的情形。安全上下文是页面级常量，不会中途改变。
+   */
+  const canListen = computed(() => Boolean(stt) && isSecure);
   const canSpeak = computed(() => Boolean(tts));
 
   /** 不可用原因，页面直接拿去显示对应文案。 */
   const unavailableReason = computed(() => {
     if (canListen.value) return '';
-    return browserSttSupported ? 'insecure' : 'unsupported';
+    if (!browserSttSupported) return 'unsupported';
+    return 'insecure';
   });
-
-  /** 当前是否走原生桥（页面据此显示「App 原生麦克风」）。 */
-  const usingNative = computed(() => Boolean(native));
 
   /**
    * 开始一轮识别，说完（或被取消）时 resolve。
@@ -130,7 +120,7 @@ export function useVoice() {
   }
 
   // 提前加载音色，避免第一次播报用的是默认音
-  if (tts?.kind === 'browser') primeVoices();
+  if (tts) primeVoices();
 
   onUnmounted(() => {
     stopListening();
@@ -138,7 +128,7 @@ export function useVoice() {
   });
 
   return {
-    state, canListen, canSpeak, unavailableReason, usingNative,
+    state, canListen, canSpeak, unavailableReason,
     startListening, stopListening, speak, stopSpeaking, toggleAutoSpeak
   };
 }

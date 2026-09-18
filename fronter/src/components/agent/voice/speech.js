@@ -1,5 +1,5 @@
 /**
- * 浏览器 Web Speech API 封装（无原生桥时的回落方案）。
+ * 浏览器 Web Speech API 封装 —— 全 H5 后这是唯一的语音通道。
  *
  * 两个坑：
  *  1. `speechSynthesis.getVoices()` 首次调用往往返回空数组，音色是异步加载的 ——

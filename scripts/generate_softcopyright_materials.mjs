@@ -90,7 +90,6 @@ const sourceFiles = [
   'fronter/src/components/agent/format.js',
   'fronter/src/components/agent/voice/useVoice.js',
   'fronter/src/components/agent/voice/speech.js',
-  'fronter/src/components/agent/voice/androidBridge.js',
   // 学员端页面
   'fronter/src/views/Home.vue',
   'fronter/src/views/Login.vue',
@@ -165,7 +164,7 @@ const trilingualPages = new Set([
 const diagramDescriptions = {
   '01_use_case': '用例图展示学生、管理员两个角色与系统功能之间的关系。学生侧覆盖注册、登录、找回密码与修改密码、个人资料与头像、语言切换、练习列表、在线答题、成绩记录、错题本和智能体问答；管理员侧覆盖数据看板、学生管理、题库与试卷维护、等级与分类维护、成绩记录与登录日志检索、在线状态，以及智能体设置、会话与调用日志查看。该图用于概括软件的角色边界和功能范围。',
   '02_architecture': '系统架构图展示 fronter 前台、admin 后台、MySQL 数据库和本机 Ollama 模型服务之间的分层关系。前台包含路由、国际化、认证状态、学生页面、管理台分页页面、智能体弹框与语音控件和 API 请求封装；后台包含 Express 应用、鉴权与限流中间件、日志模块、公共服务接口、学习接口、管理台接口、智能体接口和数据库连接池。该图用于说明系统主要技术构成和调用方向。',
-  '03_deployment': '部署图说明用户浏览器、Web 前端运行环境、应用服务器、MySQL 数据库和本机 Ollama 运行时之间的部署关系。浏览器访问静态资源，Vue 前台调用后台 /api 接口并订阅 SSE 流式响应，后台通过连接池访问数据库、通过本机接口访问 Ollama，并写入 logs/app.log 日志文件；安卓环境中语音识别与合成由 WebView 原生桥接完成。该图用于描述系统运行支撑环境和服务间通信路径。',
+  '03_deployment': '部署图说明用户浏览器、Web 前端运行环境、应用服务器、MySQL 数据库和本机 Ollama 运行时之间的部署关系。浏览器访问静态资源，Vue 前台调用后台 /api 接口并订阅 SSE 流式响应，后台通过连接池访问数据库、通过本机接口访问 Ollama，并写入 logs/app.log 日志文件；语音识别与合成由浏览器直接调用麦克风与扬声器完成，其中识别需安全上下文（HTTPS 或 localhost），播报不受此限制。该图用于描述系统运行支撑环境和服务间通信路径。',
   '04_practice_flow': '业务流程图描述学生从注册登录、进入练习列表、选择试卷、逐题作答到提交并生成成绩和错题记录的完整流程。流程中包含未全部作答时的提示分支、提交后的事务判分、错题更新与已解决标记逻辑，以及登录日志、最后活跃时间和令牌版本号在认证环节的校验。该图用于说明练习答题主链路和后台事务处理结果。',
   '05_submit_sequence': '提交时序图展示学生页面、API Client、learning 路由、事务处理和 MySQL 之间的调用顺序。页面提交答案后，后台查询正确选项、计算得分，并在同一事务中写入学习记录、用户答案和错题本数据，最后返回正确数、错误数和得分给页面展示；登录态由 JWT 中间件回查用户表比对令牌版本号。该图用于解释答题提交接口的协作过程。',
   '06_er': 'ER 图展示 users、levels、question_categories、questions、question_options、papers、paper_questions、study_records、user_answers、wrong_questions、favorite_questions 等核心数据表之间的关系，并覆盖本轮新增的 password_resets、login_logs、ai_sessions、ai_messages、ai_call_logs、system_settings 六张表。该图用于说明题库、试卷、答题记录、错题本、账号安全与智能体会话之间的数据关联，是数据设计章节的重要依据。'
@@ -380,9 +379,8 @@ function describeFile(file) {
   if (file.includes('components/AppModal')) return '实现通用弹框容器，供后台编辑表单与智能体对话复用。';
   if (file.includes('layouts/AdminLayout')) return '实现管理台侧边栏布局、菜单分组和窄屏抽屉导航。';
   if (file.includes('agent/format')) return '把模型回答中的行内 Markdown 标记转换为 HTML 片段，先转义再替换标记以避免注入。';
-  if (file.includes('voice/useVoice')) return '编排语音识别与语音播报能力，按运行环境选择原生桥或浏览器接口。';
+  if (file.includes('voice/useVoice')) return '编排语音识别与语音播报能力，两者独立判定可用性。';
   if (file.includes('voice/speech')) return '封装浏览器语音识别与语音合成，并清洗播报文本。';
-  if (file.includes('voice/androidBridge')) return '探测安卓、Capacitor 与 iOS 原生语音桥并注册回调。';
   if (file.includes('agent/')) return '实现智能体悬浮入口、对话弹框、模型选择与语音控制界面。';
   if (file.includes('views/admin/')) return '实现管理台分页查询页面的筛选栏、数据表格与编辑弹框。';
   if (file.endsWith('.vue')) return '实现前台或管理端页面组件。';

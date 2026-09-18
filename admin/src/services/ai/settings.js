@@ -102,7 +102,11 @@ function parseParamCount(text) {
  */
 export function pickRecommendedModel(models = []) {
   if (!models.length) return '';
-  const sorted = [...models].sort((a, b) => {
+  // 只在可选的（体积未超上限、体积已知）模型里挑。体积超限不等于跑不了 ——
+  // Ollama 会把它放到 CPU/内存上，只是慢 —— 所以不该被**自动**选中；
+  // 但一个可选的都没有时退回全量，好过返回空串让上层报「没有可用模型」。
+  const selectable = models.filter((model) => model.selectable !== false);
+  const sorted = [...(selectable.length ? selectable : models)].sort((a, b) => {
     const diff = parseParamCount(b.parameterSize) - parseParamCount(a.parameterSize);
     if (diff) return diff;
     const sizeDiff = Number(b.size || 0) - Number(a.size || 0);
@@ -117,6 +121,9 @@ export function pickRecommendedModel(models = []) {
  * 免得前端各自回落到 models[0]。不抛异常 —— Ollama 不可用时元数据接口仍要能返回。
  */
 export async function resolveDefaultModel() {
+  // 测试开关优先于后台设置：否则每换一次测试模型都要去后台改一遍默认值。
+  // 该值只在非生产环境非空，见 config/ai.js 的 resolveTestModel()。
+  if (aiConfig.testModel) return aiConfig.testModel;
   const settings = await readSettings();
   if (settings.defaultModel) return settings.defaultModel;
   try {
@@ -126,10 +133,17 @@ export async function resolveDefaultModel() {
   }
 }
 
-/** 解析本次对话实际使用的模型：请求指定 > 后台设置 > 环境变量 > 推荐模型。 */
+/**
+ * 解析本次对话实际使用的模型：请求指定 > 测试开关 > 后台设置 > 环境变量 > 推荐模型。
+ *
+ * 测试开关排在「请求指定」之后：前端下拉默认就落在测试模型上（够快），
+ * 但用户显式改选别的模型时应当被尊重，否则会出现「选了 A 却跑了 B」。
+ */
 export async function resolveModel(requested) {
   const requestedName = String(requested || '').trim();
   if (requestedName) return requestedName;
+
+  if (aiConfig.testModel) return aiConfig.testModel;
 
   const settings = await readSettings();
   if (settings.defaultModel) return settings.defaultModel;

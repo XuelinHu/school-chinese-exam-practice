@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/auth.js';
 import learningRoutes from './routes/learning.js';
 import adminRoutes from './routes/admin.js';
+import teachingRoutes from './routes/teaching.js';
 import aiRoutes from './routes/ai.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import { touchActive } from './middleware/active.js';
@@ -26,6 +27,8 @@ app.get('/api/health', (_req, res) => res.json({ code: 200, message: 'success', 
 app.use('/api/auth', authRoutes);
 app.use('/api/learning', learningRoutes);
 app.use('/api/admin', adminRoutes);
+// 教学查看区：教师与超管可读，全部只读（见 routes/teaching.js 顶部说明）
+app.use('/api/teaching', teachingRoutes);
 app.use('/api/ai', aiRoutes);
 
 app.use((req, res) => res.status(404).json({ code: 404, message: `Not found: ${req.path}` }));

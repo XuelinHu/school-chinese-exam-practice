@@ -3,6 +3,7 @@ import { pool, tx } from '../config/db.js';
 import { auth } from '../middleware/auth.js';
 import { asyncHandler, ok } from '../utils/response.js';
 import { HttpError } from '../utils/errors.js';
+import { pageParams, queryPage } from '../utils/paginate.js';
 
 const router = Router();
 
@@ -69,19 +70,21 @@ router.get('/categories', asyncHandler(async (req, res) => {
 
 router.get('/papers', asyncHandler(async (req, res) => {
   const language = lang(req);
-  const [rows] = await pool.execute(
-    `SELECT p.id, p.paper_type, p.total_score, p.duration_minutes, pt.title, pt.description, lt.name level_name,
-            COUNT(pq.id) question_count
-     FROM papers p
-     JOIN paper_translations pt ON pt.paper_id = p.id AND pt.language_code = ?
-     LEFT JOIN level_translations lt ON lt.level_id = p.level_id AND lt.language_code = ?
-     LEFT JOIN paper_questions pq ON pq.paper_id = p.id
-     WHERE p.status = 'published'
-     GROUP BY p.id, p.paper_type, p.total_score, p.duration_minutes, pt.title, pt.description, lt.name
-     ORDER BY p.id DESC`,
-    [language, language]
-  );
-  ok(res, rows);
+  const { page, pageSize } = pageParams(req.query);
+  // 题数改用相关子查询：queryPage 的 COUNT(*) 不能带 GROUP BY，否则 total 会变成分组数
+  const data = await queryPage({
+    columns: `p.id, p.paper_type, p.total_score, p.duration_minutes, pt.title, pt.description, lt.name level_name,
+              (SELECT COUNT(*) FROM paper_questions pq WHERE pq.paper_id = p.id) question_count`,
+    from: `FROM papers p
+           JOIN paper_translations pt ON pt.paper_id = p.id AND pt.language_code = ?
+           LEFT JOIN level_translations lt ON lt.level_id = p.level_id AND lt.language_code = ?`,
+    conditions: ["p.status = 'published'"],
+    params: [language, language],
+    orderBy: 'p.id DESC',
+    page,
+    pageSize
+  });
+  ok(res, data);
 }));
 
 router.get('/papers/:id', auth(), asyncHandler(async (req, res) => {
@@ -170,30 +173,38 @@ router.post('/papers/:id/submit', auth(), asyncHandler(async (req, res) => {
 
 router.get('/records', auth(), asyncHandler(async (req, res) => {
   const language = lang(req);
-  const [rows] = await pool.execute(
-    `SELECT r.*, pt.title paper_title
-     FROM study_records r
-     LEFT JOIN paper_translations pt ON pt.paper_id = r.paper_id AND pt.language_code = ?
-     WHERE r.user_id = ?
-     ORDER BY r.submitted_at DESC`,
-    [language, req.user.id]
-  );
-  ok(res, rows);
+  const { page, pageSize } = pageParams(req.query);
+  const data = await queryPage({
+    columns: 'r.*, pt.title paper_title',
+    from: `FROM study_records r
+           LEFT JOIN paper_translations pt ON pt.paper_id = r.paper_id AND pt.language_code = ?`,
+    conditions: ['r.user_id = ?'],
+    params: [language, req.user.id],
+    // id 兜底：同秒提交的两条若只按时间排，翻页时顺序不稳定会漏行或重行
+    orderBy: 'r.submitted_at DESC, r.id DESC',
+    page,
+    pageSize
+  });
+  ok(res, data);
 }));
 
 router.get('/wrong-questions', auth(), asyncHandler(async (req, res) => {
   const language = lang(req);
-  const [rows] = await pool.execute(
-    `SELECT w.id, w.wrong_count, w.resolved, w.last_wrong_at, q.id question_id, qt.title, qt.analysis, ct.name category_name
-     FROM wrong_questions w
-     JOIN questions q ON q.id = w.question_id
-     JOIN question_translations qt ON qt.question_id = q.id AND qt.language_code = ?
-     JOIN question_category_translations ct ON ct.category_id = q.category_id AND ct.language_code = ?
-     WHERE w.user_id = ?
-     ORDER BY w.resolved ASC, w.last_wrong_at DESC`,
-    [language, language, req.user.id]
-  );
-  ok(res, rows);
+  const { page, pageSize } = pageParams(req.query);
+  const data = await queryPage({
+    columns: `w.id, w.wrong_count, w.resolved, w.last_wrong_at, q.id question_id,
+              qt.title, qt.analysis, ct.name category_name`,
+    from: `FROM wrong_questions w
+           JOIN questions q ON q.id = w.question_id
+           JOIN question_translations qt ON qt.question_id = q.id AND qt.language_code = ?
+           JOIN question_category_translations ct ON ct.category_id = q.category_id AND ct.language_code = ?`,
+    conditions: ['w.user_id = ?'],
+    params: [language, language, req.user.id],
+    orderBy: 'w.resolved ASC, w.last_wrong_at DESC, w.id DESC',
+    page,
+    pageSize
+  });
+  ok(res, data);
 }));
 
 export default router;
