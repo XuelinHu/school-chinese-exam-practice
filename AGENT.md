@@ -165,3 +165,7 @@ Four roles, defined once in `admin/src/middleware/role.js`:
 ## GitHub Commit Language
 
 - Use English for all GitHub commit messages and pull/push related commit notes.
+
+## Port allocation
+
+Web: 4031. API/services: 8033. See `PORTS.md`; keep dev/preview ports fixed and fail on conflicts.

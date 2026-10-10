@@ -160,3 +160,7 @@ Ollama 地址由 `admin/.env` 的 `OLLAMA_HOST` 指定，模型目录由 `OLLAMA
 ## 开源协议
 
 本项目使用 GNU General Public License v2.0（GPL-2.0）开源，详见 `LICENSE`。
+
+## 启动端口
+
+网页入口：4031；后台服务：8033。完整启动约定见 [PORTS.md](./PORTS.md)。
