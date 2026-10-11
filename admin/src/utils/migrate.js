@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import dotenv from 'dotenv';
 import { logger } from './logger.js';
 import { assertDatabaseName } from '../config/databaseName.js';
@@ -91,4 +91,13 @@ export async function applyMigrations({ connection, pool = defaultPool, database
 
 export async function runMigrations(options = {}) {
   return applyMigrations(options);
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+  try {
+    const result = await runMigrations();
+    logger.info(`PostgreSQL migrations ready: ${result.applied.length} applied, ${result.skipped.length} already applied.`);
+  } finally {
+    await defaultPool.end();
+  }
 }
