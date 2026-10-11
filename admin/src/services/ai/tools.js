@@ -41,7 +41,7 @@ async function getMyProfile({ ctx }) {
   if (!user) return { found: false };
 
   const [[wrong]] = await pool.execute(
-    'SELECT COUNT(*) total, SUM(resolved = 0) unresolved FROM wrong_questions WHERE user_id = ?',
+    'SELECT COUNT(*) total, COUNT(*) FILTER (WHERE resolved = 0) unresolved FROM wrong_questions WHERE user_id = ?',
     [ctx.userId]
   );
 
@@ -232,23 +232,23 @@ async function getQuestionDetail({ ctx, args }) {
 async function platformStats() {
   const [[users]] = await pool.execute(
     `SELECT COUNT(*) total,
-            SUM(role = 'student') students,
-            SUM(role = 'teacher') teachers,
+            COUNT(*) FILTER (WHERE role = 'student') students,
+            COUNT(*) FILTER (WHERE role = 'teacher') teachers,
             -- 后台角色有两个（超管 + 内容管理员），只数 admin 会漏报
-            SUM(role IN ('admin', 'content_admin')) staff,
-            SUM(status = 'active') active,
-            SUM(last_active_at > NOW() - INTERVAL 5 MINUTE) online
+            COUNT(*) FILTER (WHERE role IN ('admin', 'content_admin')) staff,
+            COUNT(*) FILTER (WHERE status = 'active') active,
+            COUNT(*) FILTER (WHERE last_active_at > NOW() - INTERVAL '5 minutes') online
      FROM users
      WHERE deleted_at IS NULL`
   );
   const [[questions]] = await pool.execute(
     `SELECT COUNT(*) total,
-            SUM(status = 'published') published,
-            SUM(difficulty = 'hard') hard
+            COUNT(*) FILTER (WHERE status = 'published') published,
+            COUNT(*) FILTER (WHERE difficulty = 'hard') hard
      FROM questions`
   );
   const [[papers]] = await pool.execute(
-    `SELECT COUNT(*) total, SUM(status = 'published') published FROM papers`
+    `SELECT COUNT(*) total, COUNT(*) FILTER (WHERE status = 'published') published FROM papers`
   );
   const [[records]] = await pool.execute(
     `SELECT COUNT(*) total, COALESCE(ROUND(AVG(total_score), 2), 0) avg_score,
@@ -256,7 +256,7 @@ async function platformStats() {
      FROM study_records`
   );
   const [[wrong]] = await pool.execute(
-    'SELECT COUNT(*) total, SUM(resolved = 0) unresolved FROM wrong_questions'
+    'SELECT COUNT(*) total, COUNT(*) FILTER (WHERE resolved = 0) unresolved FROM wrong_questions'
   );
 
   return {
@@ -336,7 +336,7 @@ async function topWrongQuestions({ ctx, args }) {
 
   const [rows] = await pool.execute(
     `SELECT w.question_id, COUNT(DISTINCT w.user_id) AS student_count,
-            SUM(w.wrong_count) AS total_wrong, SUM(w.resolved = 0) AS unresolved,
+            SUM(w.wrong_count) AS total_wrong, COUNT(*) FILTER (WHERE w.resolved = 0) AS unresolved,
             qt.title, ct.name AS category_name, lt.name AS level_name, q.difficulty
      FROM wrong_questions w
      JOIN questions q ON q.id = w.question_id

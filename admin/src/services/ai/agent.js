@@ -141,7 +141,7 @@ export async function buildSnapshot({ scene, ctx }) {
         [ctx.userId]
       );
       const [[wrong]] = await pool.execute(
-        'SELECT COUNT(*) total, SUM(resolved = 0) unresolved FROM wrong_questions WHERE user_id = ?',
+        'SELECT COUNT(*) total, COUNT(*) FILTER (WHERE resolved = 0) unresolved FROM wrong_questions WHERE user_id = ?',
         [ctx.userId]
       );
       lines.push(

@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 
-process.env.DB_PASSWORD ||= 'http-smoke-test-only';
-process.env.JWT_SECRET ||= 'http-smoke-jwt-secret-for-tests';
+process.env.PGPASSWORD ||= 'http-smoke-test-only';
+process.env.JWT_SECRET ||= 'http-smoke-jwt-secret-for-tests-32-chars';
 
 const { default: app } = await import('../src/app.js');
 

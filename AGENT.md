@@ -3,11 +3,11 @@
 ## Project
 
 - Project: `school-chinese-exam-practice`
-- Stack: Vue 3 + Vite frontend, Node.js + Express backend, MySQL, local Ollama for the AI agent
+- Stack: Vue 3 + Vite frontend, Node.js + Express backend, PostgreSQL 18, local Ollama for the AI agent
 
 ## Runtime
 
-- **`admin/.env` is required** — there is no fallback. `DB_PASSWORD` and `JWT_SECRET` are read
+- **`admin/.env` is required** — there is no fallback. `PGPASSWORD` and `JWT_SECRET` are read
   with `requireEnv()` and the process exits with a clear message if either is empty. Copy
   `admin/.env.example` to `admin/.env` before the first `npm run dev`.
 - Backend port: `8033` from `admin/.env.example` `PORT`.
@@ -23,23 +23,21 @@
 
 ## Database
 
-- Type: MySQL.
+- Type: PostgreSQL 18.
 - Database name: `school_chinese_exam_practice`.
 - Env file: `admin/.env` based on `admin/.env.example`.
-- Variables: `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `JWT_SECRET`.
-- Schema: `admin/sql/schema.sql`.
-- Seed: `admin/sql/seed.sql`, plus `npm run db:init` and `npm run seed:users`.
-- `seed:users` is demo-only: it requires `ALLOW_DEMO_SEED=1`, a `DB_NAME` ending in `_dev`,
+- Variables: `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE`, `JWT_SECRET`.
+- Schema and reference seed: `admin/postgres/schema.sql`, `admin/postgres/seed.sql`.
+- `seed:users` is demo-only: it requires `ALLOW_DEMO_SEED=1`, a `PGDATABASE` ending in `_dev`,
   `_test`, or `_demo`, and four distinct 16+ character role passwords in local `admin/.env`.
   It updates demo account passwords and sample learning rows; never run it against production.
 - For a new deployment, `npm run admin:bootstrap -- --username admin --password-stdin` creates
   the first super admin only when no non-deleted admin exists. It also requires
   `CONFIRM_ADMIN_BOOTSTRAP=1` and a 16-64 character password on stdin; never pass passwords as args.
-- **Migrations: `npm run db:migrate`.** `db:init` uses the validated `DB_NAME`, runs `schema.sql`,
-  applies migrations, then seeds data. Schema changes for deployed instances go in
-  `admin/sql/migrations/NNN_*.js` (idempotent, SHA-256 tracked in `schema_migrations`); add the
-  same change to `schema.sql` so a fresh database builds in one pass. Migrations run under a
-  per-database MySQL advisory lock and fail on changed checksums or unknown versions.
+- **Migrations: `npm run db:migrate`.** The target database and project role must already exist;
+  the app role has no database-creation privilege. `db:init` applies the PostgreSQL baseline and
+  seed. Deployed schema changes go in `admin/postgres/migrations/NNN_*.sql`; keep changes
+  idempotent, checksum tracked and protected by the PostgreSQL advisory migration lock.
 - Migrations must be **genuinely** idempotent. `information_schema.COLUMN_TYPE` holds only the
   type (`enum('a','b')`, lowercase, no `NOT NULL`/`DEFAULT`), so comparing it against a full
   column definition always mismatches and re-runs the `ALTER` forever. Compare type, nullability
@@ -49,8 +47,8 @@
   Never hard-delete a user: the foreign keys on `users` are all `ON DELETE CASCADE`, so one
   click would also wipe `study_records`, `wrong_questions`, `favorite_questions`,
   `ai_sessions` (+`ai_messages`) and `password_resets`.
-- `created_at` columns are `TIMESTAMP` while business time columns are `DATETIME`. New columns
-  use `DATETIME`; rewriting the existing ones is a separate change with timezone risk.
+- Legacy MySQL `DATETIME` maps to PostgreSQL `TIMESTAMP`; MySQL `TIMESTAMP` maps to
+  `TIMESTAMPTZ`. Use timezone-aware audit timestamps and document business-time zones.
 - `favorite_questions` and `i18n_messages` are empty tables kept for schema stability.
 - Keep real passwords only in local `.env`.
 
@@ -60,7 +58,7 @@
   `OLLAMA_MODELS`, `AI_ENABLED`, `AI_MODELS`, `AI_DEFAULT_MODEL`, `AI_KEEP_ALIVE`,
   `AI_MAX_TOOL_ROUNDS`, `AI_NUM_CTX`, `AI_TIMEOUT_MS`, `AI_MAX_MODEL_SIZE_GB`, `AI_TEST_MODEL`.
 - Backend: `admin/src/services/ai/{ollama,tools,agent,settings}.js`, routes in `admin/src/routes/ai.js`.
-- Business grounding comes from server-side tools (`tools.js`) that query MySQL. The model is
+- Business grounding comes from server-side tools (`tools.js`) that query PostgreSQL. The model is
   **never** allowed to invent scores, question text or counts — prompts require a tool call
   for any personal or platform data.
 - Two scenes: `student` (汉语学习助教) and `admin` (平台管理助手). The admin scene requires a
@@ -102,8 +100,7 @@
 
 ## Known Traps
 
-- `pool.execute('... LIMIT ?', [n])` throws `Incorrect arguments to mysqld_stmt_execute`.
-  LIMIT/OFFSET must be inlined as validated integers — see `admin/src/utils/paginate.js`.
+- Pagination uses validated and capped integer LIMIT/OFFSET values in `admin/src/utils/paginate.js`.
 - Express 4 does not catch async handler rejections. The SSE chat route wraps its handler
   explicitly; without that a bad request becomes an `unhandledRejection` and kills the process.
 - qwen3 tool calling: `tool_calls[].function.arguments` arrives as an **object**, not a JSON

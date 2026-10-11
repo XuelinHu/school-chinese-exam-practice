@@ -31,10 +31,10 @@ async function getQuestionsByPaper(paperId, language, { page, pageSize }) {
   if (!result.list.length) return result;
   const ids = result.list.map((row) => row.id);
   const [options] = await pool.query(
-    `SELECT o.id, o.question_id, o.option_key, ot.content
+      `SELECT o.id, o.question_id, o.option_key, ot.content
      FROM question_options o
      JOIN question_option_translations ot ON ot.option_id = o.id AND ot.language_code = ?
-     WHERE o.question_id IN (?)
+     WHERE o.question_id = ANY(?)
      ORDER BY o.question_id, o.sort_order`,
     [language, ids]
   );
@@ -116,7 +116,7 @@ router.post('/papers/:id/submit', auth(), asyncHandler(async (req, res) => {
   const durationSeconds = Number(req.body.duration_seconds || 0);
   const result = await tx(async (conn) => {
     const [questions] = await conn.execute(
-      `SELECT pq.question_id, pq.score, GROUP_CONCAT(o.id ORDER BY o.id) correct_option_ids
+      `SELECT pq.question_id, pq.score, ARRAY_AGG(o.id ORDER BY o.id) correct_option_ids
        FROM paper_questions pq
        JOIN question_options o ON o.question_id = pq.question_id AND o.is_correct = 1
        WHERE pq.paper_id = ?
@@ -134,7 +134,7 @@ router.post('/papers/:id/submit', auth(), asyncHandler(async (req, res) => {
       const question = byQuestion.get(questionId);
       if (!question) continue;
       const selectedIds = (item.selected_option_ids || []).map(Number).sort((a, b) => a - b);
-      const correctIds = String(question.correct_option_ids).split(',').map(Number).sort((a, b) => a - b);
+      const correctIds = question.correct_option_ids.map(Number).sort((a, b) => a - b);
       const isCorrect = JSON.stringify(selectedIds) === JSON.stringify(correctIds);
       const score = isCorrect ? Number(question.score) : 0;
       if (isCorrect) correctCount += 1;
@@ -145,7 +145,7 @@ router.post('/papers/:id/submit', auth(), asyncHandler(async (req, res) => {
     const wrongCount = questions.length - correctCount;
     const [record] = await conn.execute(
       `INSERT INTO study_records (user_id, paper_id, total_questions, correct_count, wrong_count, total_score, duration_seconds, started_at, submitted_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, DATE_SUB(NOW(), INTERVAL ? SECOND), NOW())`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, NOW() - (? * INTERVAL '1 second'), NOW())`,
       [req.user.id, paperId, questions.length, correctCount, wrongCount, totalScore, durationSeconds, durationSeconds]
     );
 
@@ -159,7 +159,8 @@ router.post('/papers/:id/submit', auth(), asyncHandler(async (req, res) => {
         await conn.execute(
           `INSERT INTO wrong_questions (user_id, question_id, wrong_count, resolved, last_wrong_at)
            VALUES (?, ?, 1, 0, NOW())
-           ON DUPLICATE KEY UPDATE wrong_count = wrong_count + 1, resolved = 0, last_wrong_at = NOW()`,
+           ON CONFLICT (user_id, question_id) DO UPDATE
+             SET wrong_count = wrong_questions.wrong_count + 1, resolved = 0, last_wrong_at = NOW()`,
           [req.user.id, item.question_id]
         );
       } else {

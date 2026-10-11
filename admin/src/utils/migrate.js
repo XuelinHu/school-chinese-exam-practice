@@ -1,129 +1,94 @@
-import fs from 'node:fs/promises';
-import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { fileURLToPath, pathToFileURL } from 'node:url';
-import mysql from 'mysql2/promise';
+import { readdir, readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import { logger } from './logger.js';
 import { assertDatabaseName } from '../config/databaseName.js';
+import { pool as defaultPool } from '../config/db.js';
 
 dotenv.config();
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const migrationsDir = path.resolve(__dirname, '../../sql/migrations');
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
-/**
- * 逐个执行尚未应用的迁移并记录 SHA-256。迁移必须自身幂等，以便 DDL 中断后安全重试。
- */
-export async function applyMigrations(conn, migrations, { lockName = migrationLockName() } = {}) {
+async function loadMigrations() {
+  const migrations = [{
+    id: '001_initial_schema',
+    description: 'Initial PostgreSQL schema',
+    sql: await readFile(path.join(root, 'postgres', 'schema.sql'), 'utf8')
+  }];
+  const directory = path.join(root, 'postgres', 'migrations');
+  let files = [];
+  try { files = await readdir(directory); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+  for (const file of files.filter((name) => /^\d{3}_[a-z0-9_]+\.sql$/i.test(name)).sort()) {
+    migrations.push({
+      id: path.basename(file, '.sql'),
+      description: path.basename(file, '.sql').replace(/^\d{3}_/, '').replaceAll('_', ' '),
+      sql: await readFile(path.join(directory, file), 'utf8')
+    });
+  }
+  return migrations;
+}
+
+export async function applyMigrations({ connection, pool = defaultPool, database, migrations } = {}) {
+  const ownsConnection = !connection;
+  const conn = connection || await pool.getConnection();
+  const targetDatabase = assertDatabaseName(database || process.env.PGDATABASE || 'school_chinese_exam_practice');
+  const definitions = migrations || await loadMigrations();
+  const ids = definitions.map((migration) => migration.id);
+  if (ids.some((id) => !id) || new Set(ids).size !== ids.length) throw new Error('Migration ids must be non-empty and unique.');
   let locked = false;
   try {
-    const [lockRows] = await conn.query('SELECT GET_LOCK(?, 30) AS acquired', [lockName]);
-    if (Number(lockRows[0]?.acquired) !== 1) throw new Error('Timed out waiting for the database migration lock');
+    const [lockRows] = await conn.query(
+      "SELECT pg_advisory_lock(hashtext('school-chinese-exam'), hashtext(?)) AS acquired",
+      [targetDatabase]
+    );
     locked = true;
 
-    await conn.query(`
-      CREATE TABLE IF NOT EXISTS schema_migrations (
-        id VARCHAR(120) PRIMARY KEY,
-        description VARCHAR(255),
-        checksum CHAR(64) NULL,
-        applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    const [checksumColumns] = await conn.query(
-      `SELECT COUNT(*) AS count FROM information_schema.COLUMNS
-       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'schema_migrations' AND COLUMN_NAME = 'checksum'`
-    );
-    if (Number(checksumColumns[0]?.count) === 0) {
-      await conn.query('ALTER TABLE schema_migrations ADD COLUMN checksum CHAR(64) NULL');
-    }
-
-    const [rows] = await conn.query('SELECT id, checksum FROM schema_migrations');
-    const applied = new Map(rows.map((row) => [row.id, row.checksum]));
-    const knownIds = new Set(migrations.map((migration) => migration.id));
-    const unknownId = [...applied.keys()].find((id) => !knownIds.has(id));
-    if (unknownId) throw new Error(`Database contains unknown migration ${unknownId}`);
-    if (knownIds.size !== migrations.length) throw new Error('Migration ids must be unique');
-
-    const changed = [];
-    for (const migration of migrations) {
-      const checksum = applied.get(migration.id);
-      if (checksum != null) {
-        if (checksum !== migration.checksum) throw new Error(`Migration checksum mismatch for ${migration.id}`);
+    await conn.query(`CREATE TABLE IF NOT EXISTS schema_migrations (
+      id VARCHAR(120) PRIMARY KEY,
+      description VARCHAR(255) NOT NULL,
+      checksum CHAR(64) NOT NULL,
+      applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`);
+    const [rows] = await conn.query('SELECT id, checksum FROM schema_migrations ORDER BY id');
+    const knownIds = new Set(ids);
+    const unknown = rows.find((row) => !knownIds.has(row.id));
+    if (unknown) throw new Error(`Database contains unknown migration ${unknown.id}.`);
+    const recorded = new Map(rows.map((row) => [row.id, row.checksum.trim()]));
+    const result = { applied: [], skipped: [] };
+    for (const migration of definitions) {
+      const checksum = createHash('sha256').update(migration.sql).digest('hex');
+      const previous = recorded.get(migration.id);
+      if (previous) {
+        if (previous !== checksum) throw new Error(`Migration checksum mismatch for ${migration.id}.`);
+        result.skipped.push(migration.id);
         continue;
       }
-
-      if (applied.has(migration.id)) {
-        await conn.query('UPDATE schema_migrations SET checksum = ? WHERE id = ? AND checksum IS NULL', [migration.checksum, migration.id]);
-        logger.warn(`Recorded current checksum for legacy migration ${migration.id}; prior contents cannot be verified.`);
-        continue;
+      await conn.beginTransaction();
+      try {
+        if (migration.sql.trim()) await conn.query(migration.sql);
+        await conn.query('INSERT INTO schema_migrations (id, description, checksum) VALUES (?, ?, ?)', [
+          migration.id, migration.description, checksum
+        ]);
+        await conn.commit();
+        result.applied.push(migration.id);
+        logger.info(`Applied PostgreSQL migration ${migration.id}`);
+      } catch (error) {
+        await conn.rollback().catch(() => {});
+        throw error;
       }
-
-      const result = await migration.up(conn);
-      await conn.query('INSERT INTO schema_migrations (id, description, checksum) VALUES (?, ?, ?)', [
-        migration.id,
-        migration.description || '',
-        migration.checksum
-      ]);
-      changed.push(migration.id);
-      logger.info(`Applied migration ${migration.id}`, { changed: result || [] });
     }
-    return changed;
+    return result;
   } finally {
-    if (locked) await conn.query('SELECT RELEASE_LOCK(?)', [lockName]);
-  }
-}
-
-function migrationLockName() {
-  const database = process.env.DB_NAME || 'school_chinese_exam_practice';
-  return `school-exam-${createHash('sha256').update(database).digest('hex').slice(0, 32)}`;
-}
-
-export async function runMigrations({ connection } = {}) {
-  const ownsConnection = !connection;
-  if (ownsConnection && !String(process.env.DB_PASSWORD || '').trim()) {
-    // 与 config/db.js 一致：口令只从环境读，不设兜底（见那里的说明）
-    throw new Error('DB_PASSWORD is not set. Copy admin/.env.example to admin/.env and fill it in.');
-  }
-  const database = assertDatabaseName(process.env.DB_NAME || 'school_chinese_exam_practice');
-  const conn = connection || (await mysql.createConnection({
-    host: process.env.DB_HOST || 'localhost',
-    port: Number(process.env.DB_PORT || 3306),
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD,
-    database,
-    multipleStatements: true
-  }));
-
-  try {
-    const files = (await fs.readdir(migrationsDir)).filter((file) => file.endsWith('.js')).sort();
-    const migrations = [];
-    const ids = new Set();
-    for (const file of files) {
-      const source = await fs.readFile(path.join(migrationsDir, file), 'utf8');
-      const module = await import(pathToFileURL(path.join(migrationsDir, file)).href);
-      const migration = module.default;
-      if (!migration?.id || typeof migration.up !== 'function') {
-        throw new Error(`Malformed migration module: ${file}`);
-      }
-      if (ids.has(migration.id)) throw new Error(`Duplicate migration id: ${migration.id}`);
-      ids.add(migration.id);
-      migrations.push({ ...migration, checksum: createHash('sha256').update(source).digest('hex') });
+    try {
+      if (locked) await conn.query("SELECT pg_advisory_unlock(hashtext('school-chinese-exam'), hashtext(?))", [targetDatabase]);
+    } finally {
+      if (ownsConnection) conn.release();
     }
-    return await applyMigrations(conn, migrations, { lockName: migrationLockName() });
-  } finally {
-    if (ownsConnection) await conn.end();
   }
 }
 
-// 允许 `npm run db:migrate` 直接执行
-if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
-  try {
-    const applied = await runMigrations();
-    logger.info(applied.length ? `Migrations applied: ${applied.join(', ')}` : 'No pending migrations.');
-  } catch (error) {
-    logger.error('Migration failed', { message: error.message });
-    process.exitCode = 1;
-  }
+export async function runMigrations(options = {}) {
+  return applyMigrations(options);
 }

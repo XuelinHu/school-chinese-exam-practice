@@ -29,7 +29,7 @@ const SORTS = {
   questions: {
     id: 'q.id DESC',
     score: 'q.score DESC, q.id DESC',
-    difficulty: 'FIELD(q.difficulty, "hard", "normal", "easy"), q.id DESC',
+    difficulty: "CASE q.difficulty WHEN 'hard' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END, q.id DESC",
     updated: 'q.updated_at DESC, q.id DESC'
   },
   papers: {

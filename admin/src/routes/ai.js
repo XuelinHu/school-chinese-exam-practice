@@ -280,7 +280,7 @@ async function chatHandler(req, res) {
   }
 
   // 历史：取最近若干轮，新会话为空。
-  // LIMIT 必须内联：mysql2 的预处理语句不支持 LIMIT 占位符，会抛 ER_WRONG_ARGUMENTS。
+  // LIMIT 使用服务端校验过的整数值。
   const historyLimit = Math.max(1, Math.min(aiConfig.historyTurns * 2, 200));
   const [historyRows] = await pool.execute(
     `SELECT role, content FROM ai_messages

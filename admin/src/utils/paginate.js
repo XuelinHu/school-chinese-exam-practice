@@ -5,9 +5,7 @@ const MAX_PAGE_SIZE = 100;
 /**
  * 解析并钳制分页参数。
  *
- * 注意：LIMIT/OFFSET 不能走 `pool.execute` 的 `?` 占位 —— mysql2 的预处理语句
- * 会抛 `Incorrect arguments to mysqld_stmt_execute`。因此这里返回的 pageSize/offset
- * 只允许是 Number.isInteger 校验并钳制过的值，由调用方直接内联进 SQL。
+ * LIMIT/OFFSET 使用经过整数校验并钳制的值，避免把用户输入拼接进 SQL。
  */
 export function pageParams(query = {}, { defaultSize = 10, maxSize = MAX_PAGE_SIZE } = {}) {
   const limit = Math.min(Math.max(Number(maxSize) || MAX_PAGE_SIZE, 1), MAX_PAGE_SIZE);

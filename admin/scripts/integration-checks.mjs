@@ -10,8 +10,8 @@ import { assertDemoSeedAllowed } from '../src/utils/demoSeedGuard.js';
 const directory = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(directory, '../.env') });
 
-if (!/_test$/i.test(process.env.DB_NAME || '')) {
-  throw new Error('Integration checks require DB_NAME to end with _test.');
+if (!/_test$/i.test(process.env.PGDATABASE || '')) {
+  throw new Error('Integration checks require PGDATABASE to end with _test.');
 }
 assertDemoSeedAllowed(process.env);
 
@@ -55,6 +55,7 @@ try {
   await waitForApi(base, api);
   run('scripts/check-permissions.mjs');
   run('scripts/check-pagination.mjs');
+  await checkPracticeSubmission(base);
 } finally {
   if (api.exitCode === null) {
     api.kill('SIGTERM');
@@ -64,6 +65,38 @@ try {
 }
 
 console.log('Isolated permission and pagination checks passed.');
+
+async function checkPracticeSubmission(apiBase) {
+  const loginResponse = await fetch(`${apiBase}/auth/login`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: 'student', password: process.env.SEED_STUDENT_PASSWORD })
+  });
+  const login = await loginResponse.json();
+  assert.ok(login.data?.token, 'student login must return a token');
+  const headers = { Authorization: `Bearer ${login.data.token}`, 'Content-Type': 'application/json' };
+  const papersResponse = await fetch(`${apiBase}/learning/papers?page=1&pageSize=1`, { headers });
+  const papers = await papersResponse.json();
+  const paper = papers.data?.list?.[0];
+  assert.ok(paper?.id, 'seeded practice paper must be listed');
+  const detailResponse = await fetch(`${apiBase}/learning/papers/${paper.id}?page=1&pageSize=100`, { headers });
+  const detail = await detailResponse.json();
+  const questions = detail.data?.questions?.list || [];
+  assert.ok(questions.length, 'practice paper must include questions');
+  const submission = await fetch(`${apiBase}/learning/papers/${paper.id}/submit`, {
+    method: 'POST', headers,
+    body: JSON.stringify({ duration_seconds: 12, answers: questions.map((question) => ({
+      question_id: question.id, selected_option_ids: question.options.slice(0, 1).map((option) => option.id)
+    })) })
+  });
+  const result = await submission.json();
+  assert.equal(submission.status, 200, JSON.stringify(result));
+  assert.equal(result.data.total_questions, questions.length);
+  assert.ok(result.data.record_id);
+  const recordsResponse = await fetch(`${apiBase}/learning/records?page=1&pageSize=5`, { headers });
+  const records = await recordsResponse.json();
+  assert.ok(records.data.list.some((record) => record.id === result.data.record_id), 'submitted result must appear in history');
+  console.log(`End-to-end practice submission passed (${questions.length} questions).`);
+}
 
 async function freePort() {
   const server = createServer();

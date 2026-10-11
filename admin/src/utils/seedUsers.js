@@ -21,7 +21,7 @@ for (const [username, password, name, role, email, nationality] of users) {
   await pool.execute(
     `INSERT INTO users (username, password, name, email, role, nationality, language, status)
      VALUES (?, ?, ?, ?, ?, ?, 'zh-CN', 'active')
-     ON DUPLICATE KEY UPDATE password=VALUES(password), name=VALUES(name), role=VALUES(role), email=VALUES(email), nationality=VALUES(nationality), status='active'`,
+     ON CONFLICT (username) DO UPDATE SET password=EXCLUDED.password, name=EXCLUDED.name, role=EXCLUDED.role, email=EXCLUDED.email, nationality=EXCLUDED.nationality, status='active'`,
     [username, hash, name, email, role, nationality]
   );
 }
@@ -43,10 +43,10 @@ const records = [
 for (const record of records) {
   await pool.execute(
     `INSERT INTO study_records (id, user_id, paper_id, total_questions, correct_count, wrong_count, total_score, duration_seconds, started_at, submitted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, DATE_SUB(?, INTERVAL ? SECOND), ?)
-     ON DUPLICATE KEY UPDATE user_id=VALUES(user_id), paper_id=VALUES(paper_id), total_questions=VALUES(total_questions),
-       correct_count=VALUES(correct_count), wrong_count=VALUES(wrong_count), total_score=VALUES(total_score),
-       duration_seconds=VALUES(duration_seconds), started_at=VALUES(started_at), submitted_at=VALUES(submitted_at)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?::timestamp - (? * INTERVAL '1 second'), ?)
+     ON CONFLICT (id) DO UPDATE SET user_id=EXCLUDED.user_id, paper_id=EXCLUDED.paper_id, total_questions=EXCLUDED.total_questions,
+       correct_count=EXCLUDED.correct_count, wrong_count=EXCLUDED.wrong_count, total_score=EXCLUDED.total_score,
+       duration_seconds=EXCLUDED.duration_seconds, started_at=EXCLUDED.started_at, submitted_at=EXCLUDED.submitted_at`,
     [...record, record[7], record[8]]
   );
 }
@@ -62,10 +62,11 @@ for (const item of wrongQuestions) {
   await pool.execute(
     `INSERT INTO wrong_questions (user_id, question_id, wrong_count, resolved, last_wrong_at)
      VALUES (?, ?, ?, ?, ?)
-     ON DUPLICATE KEY UPDATE wrong_count=VALUES(wrong_count), resolved=VALUES(resolved), last_wrong_at=VALUES(last_wrong_at)`,
+     ON CONFLICT (user_id, question_id) DO UPDATE SET wrong_count=EXCLUDED.wrong_count, resolved=EXCLUDED.resolved, last_wrong_at=EXCLUDED.last_wrong_at`,
     item
   );
 }
 
 logger.info('Seed users ready for admin / content_admin / teacher / student accounts');
+await pool.query("SELECT setval(pg_get_serial_sequence('study_records', 'id'), GREATEST(COALESCE(MAX(id), 1), 1), MAX(id) IS NOT NULL) FROM study_records");
 await pool.end();

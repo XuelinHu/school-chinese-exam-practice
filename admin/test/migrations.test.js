@@ -1,103 +1,76 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { applyMigrations } from '../src/utils/migrate.js';
 import { assertDatabaseName } from '../src/config/databaseName.js';
 import { assertDemoSeedAllowed } from '../src/utils/demoSeedGuard.js';
 
-function createConnection({ lockAcquired = 1, applied = [] } = {}) {
-  let released = false;
-  const state = { applied, released: () => released, statements: [] };
+process.env.PGPASSWORD ||= 'unit-migration-test-only';
+const { applyMigrations } = await import('../src/utils/migrate.js');
+
+function createConnection(applied = []) {
+  const state = { applied, released: false, statements: [] };
   const connection = {
     async query(sql, params = []) {
       state.statements.push(sql);
-      if (sql.includes('GET_LOCK')) return [[{ acquired: lockAcquired }]];
-      if (sql.includes('RELEASE_LOCK')) {
-        released = true;
-        return [{ affectedRows: 1 }];
-      }
       if (sql.startsWith('SELECT id, checksum')) return [state.applied];
-      if (sql.startsWith('UPDATE schema_migrations SET checksum')) {
-        const row = state.applied.find((item) => item.id === params[1]);
-        if (row) row.checksum = params[0];
-        return [{ affectedRows: 1 }];
-      }
       if (sql.startsWith('INSERT INTO schema_migrations')) {
         state.applied.push({ id: params[0], description: params[1], checksum: params[2] });
-        return [{ affectedRows: 1 }];
       }
       if (sql === 'BROKEN DDL') throw new Error('DDL failed');
-      if (sql.includes('information_schema.COLUMNS')) return [[{ count: 1 }]];
-      return [{ affectedRows: 0 }];
-    }
+      return [[], { affectedRows: 1 }];
+    },
+    async beginTransaction() {},
+    async commit() {},
+    async rollback() {},
+    release() { state.released = true; }
   };
-  state.connection = connection;
-  return state;
+  return { state, connection };
 }
 
-const migration = { id: '001_test', description: 'test migration', checksum: 'a'.repeat(64), up: async () => ['test'] };
+const migration = { id: '001_test', description: 'test migration', sql: 'SELECT 1' };
 
 test('database names are safe SQL identifiers', () => {
   assert.equal(assertDatabaseName('school_chinese_exam_practice_test'), 'school_chinese_exam_practice_test');
   for (const invalid of ['school-chinese-exam-practice', 'x`; DROP DATABASE app;--', 'a'.repeat(65), '']) {
-    assert.throws(() => assertDatabaseName(invalid), /DB_NAME may contain only/);
+    assert.throws(() => assertDatabaseName(invalid), /PGDATABASE may contain only/);
   }
 });
 
 test('demo seeding requires opt-in, isolated database, and unique strong role passwords', () => {
   const env = {
-    ALLOW_DEMO_SEED: '1',
-    DB_NAME: 'school_chinese_exam_practice_test',
-    SEED_ADMIN_PASSWORD: 'Admin-Password-2026!A',
-    SEED_CONTENT_PASSWORD: 'Content-Password-2026!B',
-    SEED_TEACHER_PASSWORD: 'Teacher-Password-2026!C',
-    SEED_STUDENT_PASSWORD: 'Student-Password-2026!D'
+    ALLOW_DEMO_SEED: '1', PGDATABASE: 'school_chinese_exam_practice_test',
+    SEED_ADMIN_PASSWORD: 'Admin-Password-2026!A', SEED_CONTENT_PASSWORD: 'Content-Password-2026!B',
+    SEED_TEACHER_PASSWORD: 'Teacher-Password-2026!C', SEED_STUDENT_PASSWORD: 'Student-Password-2026!D'
   };
   assert.deepEqual(assertDemoSeedAllowed(env), {
-    admin: env.SEED_ADMIN_PASSWORD,
-    content: env.SEED_CONTENT_PASSWORD,
-    teacher: env.SEED_TEACHER_PASSWORD,
-    student: env.SEED_STUDENT_PASSWORD
+    admin: env.SEED_ADMIN_PASSWORD, content: env.SEED_CONTENT_PASSWORD,
+    teacher: env.SEED_TEACHER_PASSWORD, student: env.SEED_STUDENT_PASSWORD
   });
   assert.throws(() => assertDemoSeedAllowed({ ...env, ALLOW_DEMO_SEED: '0' }), /ALLOW_DEMO_SEED/);
-  assert.throws(() => assertDemoSeedAllowed({ ...env, DB_NAME: 'school_chinese_exam_practice' }), /restricted/);
+  assert.throws(() => assertDemoSeedAllowed({ ...env, PGDATABASE: 'school_chinese_exam_practice' }), /restricted/);
   assert.throws(() => assertDemoSeedAllowed({ ...env, SEED_ADMIN_PASSWORD: 'too-short' }), /at least 16/);
   assert.throws(() => assertDemoSeedAllowed({ ...env, SEED_STUDENT_PASSWORD: env.SEED_ADMIN_PASSWORD }), /different/);
 });
 
 test('migration runner records and skips unchanged migrations', async () => {
-  const state = createConnection();
-  await applyMigrations(state.connection, [migration]);
-  await applyMigrations(state.connection, [migration]);
+  const { state, connection } = createConnection();
+  await applyMigrations({ connection, database: 'school_chinese_exam_practice_test', migrations: [migration] });
+  await applyMigrations({ connection, database: 'school_chinese_exam_practice_test', migrations: [migration] });
   assert.equal(state.applied.length, 1);
-  assert.equal(state.statements.filter((sql) => sql === 'BROKEN DDL').length, 0);
-  assert.equal(state.released(), true);
+  assert.equal(state.released, false);
+  assert.equal(state.statements.filter((sql) => sql === 'SELECT 1').length, 1);
 });
 
-test('migration failures are not recorded and advisory lock is released', async () => {
-  const state = createConnection();
-  await assert.rejects(
-    applyMigrations(state.connection, [{ ...migration, up: async (conn) => conn.query('BROKEN DDL') }]),
-    /DDL failed/
-  );
+test('migration failures are not recorded and release owned connections', async () => {
+  const { state, connection } = createConnection();
+  const pool = { async getConnection() { return connection; } };
+  await assert.rejects(applyMigrations({ pool, database: 'exam_test', migrations: [{ ...migration, sql: 'BROKEN DDL' }] }), /DDL failed/);
   assert.equal(state.applied.length, 0);
-  assert.equal(state.released(), true);
+  assert.equal(state.released, true);
 });
 
-test('migration runner backfills legacy checksums and rejects drift, unknown ids, duplicates and lock timeout', async () => {
-  const legacy = createConnection({ applied: [{ id: migration.id, checksum: null }] });
-  await applyMigrations(legacy.connection, [migration]);
-  assert.equal(legacy.applied[0].checksum, migration.checksum);
-
-  const drift = createConnection({ applied: [{ id: migration.id, checksum: 'b'.repeat(64) }] });
-  await assert.rejects(applyMigrations(drift.connection, [migration]), /checksum mismatch/);
-
-  const unknown = createConnection({ applied: [{ id: '999_removed', checksum: 'c'.repeat(64) }] });
-  await assert.rejects(applyMigrations(unknown.connection, [migration]), /unknown migration/);
-
-  const duplicate = createConnection();
-  await assert.rejects(applyMigrations(duplicate.connection, [migration, migration]), /must be unique/);
-
-  const timeout = createConnection({ lockAcquired: 0 });
-  await assert.rejects(applyMigrations(timeout.connection, [migration]), /Timed out/);
-  assert.equal(timeout.released(), false);
+test('migration runner rejects checksum drift and unknown migration ids', async () => {
+  const drift = createConnection([{ id: migration.id, checksum: 'b'.repeat(64) }]);
+  await assert.rejects(applyMigrations({ connection: drift.connection, database: 'exam_test', migrations: [migration] }), /checksum mismatch/);
+  const unknown = createConnection([{ id: '999_removed', checksum: 'c'.repeat(64) }]);
+  await assert.rejects(applyMigrations({ connection: unknown.connection, database: 'exam_test', migrations: [migration] }), /unknown migration/);
 });

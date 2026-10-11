@@ -39,13 +39,12 @@ async function bootstrap() {
     throw new Error('Bootstrap password must contain 16-64 characters.');
   }
 
-  const database = assertDatabaseName(process.env.DB_NAME || 'school_chinese_exam_practice');
-  const lockName = `exam-admin-bootstrap-${database}`.slice(0, 64);
+  const database = assertDatabaseName(process.env.PGDATABASE || 'school_chinese_exam_practice');
   const connection = await pool.getConnection();
   let lockAcquired = false;
   try {
-    const [[lock]] = await connection.query('SELECT GET_LOCK(?, 10) AS acquired', [lockName]);
-    if (lock.acquired !== 1) throw new Error('Could not acquire the administrator bootstrap lock.');
+    await connection.query("SELECT pg_advisory_lock(hashtext('exam-admin-bootstrap'), hashtext(?))", [database]);
+    lockAcquired = true;
     lockAcquired = true;
 
     const [admins] = await connection.query(
@@ -64,7 +63,7 @@ async function bootstrap() {
     );
   } finally {
     try {
-      if (lockAcquired) await connection.query('SELECT RELEASE_LOCK(?)', [lockName]);
+      if (lockAcquired) await connection.query("SELECT pg_advisory_unlock(hashtext('exam-admin-bootstrap'), hashtext(?))", [database]);
     } finally {
       connection.release();
     }

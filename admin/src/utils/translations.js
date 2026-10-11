@@ -4,7 +4,7 @@ import { HttpError } from './errors.js';
 /**
  * 三语内容读写。
  *
- * 翻译表都有 `(外键, language_code)` 唯一键，因此统一走 `INSERT ... ON DUPLICATE KEY UPDATE`。
+ * 翻译表都有 `(外键, language_code)` 唯一键，因此统一走 PostgreSQL `ON CONFLICT`。
  *
  * **约定：编辑题目/试卷/等级/分类时必须保留三语字段。** 后台表单按语言分 Tab 提交，
  * 这里只更新请求里真正带了内容的语言；某个语言整体为空则原样保留，
@@ -49,7 +49,7 @@ function hasContent(fields, payload) {
 export async function writeTranslations({ table, foreignKey, id, fields, values, runner = pool }) {
   if (!values || typeof values !== 'object') return;
 
-  const updates = fields.map((field) => `${field} = VALUES(${field})`).join(', ');
+  const updates = fields.map((field) => `${field} = EXCLUDED.${field}`).join(', ');
   const columns = [foreignKey, 'language_code', ...fields];
 
   for (const [language, payload] of Object.entries(values)) {
@@ -58,7 +58,7 @@ export async function writeTranslations({ table, foreignKey, id, fields, values,
 
     await runner.execute(
       `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${columns.map(() => '?').join(', ')})
-       ON DUPLICATE KEY UPDATE ${updates}`,
+       ON CONFLICT (${foreignKey}, language_code) DO UPDATE SET ${updates}`,
       [id, language, ...fields.map((field) => normalizeText(payload[field]))]
     );
   }

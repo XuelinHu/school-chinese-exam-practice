@@ -88,7 +88,7 @@ router.get(
       `SELECT (SELECT COUNT(*) FROM users WHERE role = 'student' AND deleted_at IS NULL) AS students,
               (SELECT COUNT(*) FROM users WHERE role = 'student' AND status = 'active' AND deleted_at IS NULL) AS active_students,
               (SELECT COUNT(*) FROM users WHERE deleted_at IS NULL
-                 AND last_active_at > NOW() - INTERVAL ${ONLINE_WINDOW_MINUTES} MINUTE) AS online,
+                 AND last_active_at > NOW() - INTERVAL '${ONLINE_WINDOW_MINUTES} minutes') AS online,
               (SELECT COUNT(*) FROM questions WHERE status = 'published') AS questions,
               (SELECT COUNT(*) FROM papers WHERE status = 'published') AS papers,
               (SELECT COUNT(*) FROM study_records) AS records,
@@ -103,13 +103,13 @@ router.get(
               COUNT(DISTINCT user_id) AS users,
               ROUND(AVG(total_score), 1) AS avg_score
        FROM study_records
-       WHERE submitted_at >= CURDATE() - INTERVAL 6 DAY
+       WHERE submitted_at >= CURRENT_DATE - INTERVAL '6 days'
        GROUP BY DATE(submitted_at) ORDER BY day`
     );
 
     const [signups] = await pool.execute(
       `SELECT DATE(created_at) AS day, COUNT(*) AS count
-       FROM users WHERE deleted_at IS NULL AND created_at >= CURDATE() - INTERVAL 6 DAY
+       FROM users WHERE deleted_at IS NULL AND created_at >= CURRENT_DATE - INTERVAL '6 days'
        GROUP BY DATE(created_at) ORDER BY day`
     );
 
@@ -187,7 +187,7 @@ router.get(
       params.push(assertEnum(req.query.status, USER_STATUS, 'status'));
     }
     if (req.query.online === 'true') {
-      conditions.push(`u.last_active_at > NOW() - INTERVAL ${onlineMinutes(req)} MINUTE`);
+      conditions.push(`u.last_active_at > NOW() - INTERVAL '${onlineMinutes(req)} minutes'`);
     }
     if (req.query.locked === 'true') {
       conditions.push('u.locked_until IS NOT NULL AND u.locked_until > NOW()');
@@ -197,7 +197,7 @@ router.get(
       columns: `u.id, u.username, u.name, u.email, u.phone, u.role, u.student_no, u.nationality,
                 u.language, u.status, u.avatar_url, u.last_active_at, u.last_login_at, u.login_count,
                 u.locked_until, u.created_at, u.deleted_at,
-                (u.last_active_at > NOW() - INTERVAL ${onlineMinutes(req)} MINUTE) AS online,
+                (u.last_active_at > NOW() - INTERVAL '${onlineMinutes(req)} minutes') AS online,
                 (SELECT COUNT(*) FROM study_records r WHERE r.user_id = u.id) AS record_count,
                 (SELECT COALESCE(ROUND(AVG(r.total_score), 1), 0) FROM study_records r WHERE r.user_id = u.id) AS avg_score,
                 (SELECT COUNT(*) FROM wrong_questions w WHERE w.user_id = u.id AND w.resolved = 0) AS unresolved_wrong`,
@@ -518,7 +518,7 @@ router.get(
     const { page, pageSize } = pageParams(req.query);
     const conditions = [
       'u.deleted_at IS NULL',
-      `u.last_active_at > NOW() - INTERVAL ${minutes} MINUTE`
+      `u.last_active_at > NOW() - INTERVAL '${minutes} minutes'`
     ];
     const params = [];
 
@@ -535,7 +535,7 @@ router.get(
     const data = await queryPage({
       columns: `u.id, u.username, u.name, u.role, u.avatar_url, u.language, u.status,
                 u.last_active_at, u.last_login_at, u.login_count,
-                TIMESTAMPDIFF(MINUTE, u.last_active_at, NOW()) AS idle_minutes`,
+                FLOOR(EXTRACT(EPOCH FROM (NOW() - u.last_active_at)) / 60)::int AS idle_minutes`,
       from: 'FROM users u',
       conditions,
       params,
@@ -546,12 +546,12 @@ router.get(
 
     const [[summary]] = await pool.execute(
       `SELECT COUNT(*) AS total,
-              SUM(role = 'student') AS students,
-              SUM(role = 'teacher') AS teachers,
+              COUNT(*) FILTER (WHERE role = 'student') AS students,
+              COUNT(*) FILTER (WHERE role = 'teacher') AS teachers,
               -- 后台角色有两个，只数 admin 会把内容管理员算成 0
-              SUM(role IN ('admin', 'content_admin')) AS staff
+              COUNT(*) FILTER (WHERE role IN ('admin', 'content_admin')) AS staff
        FROM users
-       WHERE deleted_at IS NULL AND last_active_at > NOW() - INTERVAL ${minutes} MINUTE`
+       WHERE deleted_at IS NULL AND last_active_at > NOW() - INTERVAL '${minutes} minutes'`
     );
     ok(res, { ...data, windowMinutes: minutes, summary });
   })

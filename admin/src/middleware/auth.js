@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { pool } from '../config/db.js';
 import { HttpError } from '../utils/errors.js';
+import { jwtSecret } from '../config/secrets.js';
 
 /**
  * 解析 JWT 并校验账号的**当前**状态。
@@ -24,7 +25,7 @@ export function auth(required = true) {
 
     let payload;
     try {
-      payload = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret');
+      payload = jwt.verify(token, jwtSecret);
     } catch {
       return next(new HttpError(401, 'Invalid token'));
     }

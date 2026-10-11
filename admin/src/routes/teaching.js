@@ -108,7 +108,7 @@ router.get(
       [id]
     );
     const [[wrong]] = await pool.execute(
-      'SELECT COUNT(*) AS total, SUM(resolved = 0) AS unresolved FROM wrong_questions WHERE user_id = ?',
+      'SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE resolved = 0) AS unresolved FROM wrong_questions WHERE user_id = ?',
       [id]
     );
     ok(res, {

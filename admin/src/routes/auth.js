@@ -11,6 +11,7 @@ import { asyncHandler, ok } from '../utils/response.js';
 import { HttpError } from '../utils/errors.js';
 import { pageParams, queryPage, likeValue } from '../utils/paginate.js';
 import { logger } from '../utils/logger.js';
+import { jwtSecret } from '../config/secrets.js';
 import { avatarDir, sniffImage, UPLOAD_URL_PREFIX } from '../config/uploads.js';
 
 const router = Router();
@@ -72,7 +73,7 @@ function validatePassword(password, confirmPassword) {
 function signToken(user) {
   return jwt.sign(
     { id: user.id, username: user.username, role: user.role, tv: user.token_version ?? 0 },
-    process.env.JWT_SECRET || 'dev_secret',
+    jwtSecret,
     { expiresIn: '7d' }
   );
 }
@@ -311,7 +312,7 @@ router.post(
     const code = String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
     await pool.execute('UPDATE password_resets SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL', [user.id]);
     await pool.execute(
-      'INSERT INTO password_resets (user_id, code_hash, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL ? MINUTE))',
+      "INSERT INTO password_resets (user_id, code_hash, expires_at) VALUES (?, ?, NOW() + (? * INTERVAL '1 minute'))",
       [user.id, await bcrypt.hash(code, 10), RESET_CODE_TTL_MINUTES]
     );
 

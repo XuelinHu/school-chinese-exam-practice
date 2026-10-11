@@ -5,13 +5,13 @@
   <img height="20" alt="Vite 6.0.3" src="https://img.shields.io/badge/vite-6.0.3-646CFF" />
   <img height="20" alt="Vue Router 4.5.0" src="https://img.shields.io/badge/vue_router-4.5.0-4FC08D" />
   <img height="20" alt="Express 4.21.2" src="https://img.shields.io/badge/express-4.21.2-000000" />
-  <img height="20" alt="MySQL configured" src="https://img.shields.io/badge/mysql-configured-4479A1" />
+  <img height="20" alt="PostgreSQL 18" src="https://img.shields.io/badge/PostgreSQL-18-4169E1" />
   <img height="20" alt="License GPL-2.0" src="https://img.shields.io/badge/license-GPL--2.0-3DA639" />
 </p>
 
 马来西亚留学生汉语练习平台
 
-一个基于 Vue3、Node.js/Express 和 MySQL 的三语汉语练习平台，支持中文、英文、马来语，
+一个基于 Vue3、Node.js/Express 和 PostgreSQL 18 的三语汉语练习平台，支持中文、英文、马来语，
 并内置基于本机 Ollama 的定制化智能体（支持语音播报与语音对话）。
 
 ## 功能
@@ -83,25 +83,27 @@
 ### 数据
 
 - 题库：等级、分类、题目、选项、解析全部三语
-- MySQL，建表和演示题库位于 `admin/sql`，增量迁移在 `admin/sql/migrations`
+- PostgreSQL schema、幂等题库 seed 和增量迁移位于 `admin/postgres`
 
 ## 启动
 
 ```bash
 cd admin
 npm install
-cp .env.example .env          # 必填：DB_PASSWORD、JWT_SECRET
+cp .env.example .env          # 必填：PGPASSWORD、JWT_SECRET
 npm run db:init
 npm run db:migrate            # 幂等核对增量迁移；db:init 也会执行迁移
 npm run dev
 ```
 
-`DB_NAME` 仅允许字母、数字和下划线，`db:init` 会创建并连接该配置指定的数据库，不会依赖 SQL 文件中的硬编码库名。迁移版本及 JS 源文件 SHA-256 记录在 `schema_migrations`，并由 MySQL advisory lock 串行执行；旧台账没有 checksum 时会以当前迁移文件内容建立新的校验基线，之后的改写会被拒绝。新迁移仍须保持幂等，以便 DDL 中断后安全重试。
+`PGDATABASE` 仅允许字母、数字和下划线。数据库与 `school_chinese_exam_practice_app` 角色由部署人员预先创建；应用不持有建库权限。迁移版本和 SQL SHA-256 记录在 `schema_migrations`，通过 PostgreSQL advisory lock 串行执行，检测 checksum 漂移与未知迁移。
 
-`.env` 现在是**必需**的：`DB_PASSWORD` 与 `JWT_SECRET` 缺一个，进程会带着明确提示退出，
+创建项目数据库与受限运行角色时，以独立 PostgreSQL 管理员执行 `admin/postgres/provision-role.psql`；该脚本从环境变量 `APP_DB_ROLE_PASSWORD` 读取运行角色口令，至少 24 个字符。应用只使用 `PGUSER=school_chinese_exam_practice_app`，不使用数据库管理员账号。
+
+`.env` 现在是**必需**的：`PGPASSWORD` 与至少 32 字符的 `JWT_SECRET` 缺一项，进程会带着明确提示退出，
 不再回落到代码里的默认口令。
 
-新部署的首个超级管理员通过一次性 `admin:bootstrap` 创建；命令会在 MySQL advisory lock 下确认不存在未软删除的超级管理员，成功后后续执行将被拒绝。密码只从标准输入读取，长度必须为 16–64 位：
+新部署的首个超级管理员通过一次性 `admin:bootstrap` 创建；命令会在 PostgreSQL advisory lock 下确认不存在未软删除的超级管理员，成功后后续执行将被拒绝。密码只从标准输入读取，长度必须为 16–64 位：
 
 ```powershell
 $env:CONFIRM_ADMIN_BOOTSTRAP = '1'
@@ -118,7 +120,7 @@ try {
 
 ### 数据库备份与恢复
 
-备份使用 gzip + AES-256-GCM 加密，并在 MySQL 一致性只读快照中导出 InnoDB 表；需要在 `admin/.env` 配置独立的 `DB_BACKUP_ENCRYPTION_KEY`（32 字节，即 64 位十六进制），不要提交或丢失此密钥。备份默认写入 `admin/backups/`，输出文件不会覆盖已存在的备份。
+备份通过 `pg_dump` custom archive 导出并使用 AES-256-GCM 加密；需要在 `admin/.env` 配置独立的 `DB_BACKUP_ENCRYPTION_KEY`（32 字节，即 64 位十六进制），不要提交或丢失此密钥。备份默认写入 `admin/backups/`，输出文件不会覆盖已存在的备份。
 
 ```bash
 cd admin
@@ -126,13 +128,12 @@ node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"  #
 npm run db:backup
 ```
 
-恢复只允许目标 `DB_NAME` 以 `_test` 结尾，并必须显式传入 `--replace`；目标库需先通过 `db:init` 建好与快照相同的 schema。建议先复制生产快照到隔离环境并确认密钥，再恢复，避免对日常库做覆盖操作。
+恢复要求指定不同于源库的 `_test` 目标，并显式传入 `--replace`；恢复会替换目标库中的对象，不会创建或删除数据库。先创建隔离目标库并确认备份密钥。
 
 ```powershell
 cd admin
-$env:DB_NAME = 'school_exam_restore_test'
-npm run db:init
-npm run db:restore -- --source .\backups\snapshot.scebak --replace
+$env:PGDATABASE = 'school_chinese_exam_practice'
+npm run db:restore -- --source .\backups\snapshot.scepg --database school_exam_restore_test --replace
 ```
 
 ```bash

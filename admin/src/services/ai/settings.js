@@ -70,7 +70,7 @@ export async function writeSettings(patch = {}) {
   for (const [key, value] of entries) {
     await pool.execute(
       `INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?)
-       ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)`,
+       ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value`,
       [key, value]
     );
   }
