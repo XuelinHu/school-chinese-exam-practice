@@ -106,6 +106,25 @@ npm run dev
 `.env` 现在是**必需**的：`DB_PASSWORD` 与 `JWT_SECRET` 缺一个，进程会带着明确提示退出，
 不再回落到代码里的默认口令。
 
+### 数据库备份与恢复
+
+备份使用 gzip + AES-256-GCM 加密，并在 MySQL 一致性只读快照中导出 InnoDB 表；需要在 `admin/.env` 配置独立的 `DB_BACKUP_ENCRYPTION_KEY`（32 字节，即 64 位十六进制），不要提交或丢失此密钥。备份默认写入 `admin/backups/`，输出文件不会覆盖已存在的备份。
+
+```bash
+cd admin
+node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"  # 把结果手动写入 admin/.env
+npm run db:backup
+```
+
+恢复只允许目标 `DB_NAME` 以 `_test` 结尾，并必须显式传入 `--replace`；目标库需先通过 `db:init` 建好与快照相同的 schema。建议先复制生产快照到隔离环境并确认密钥，再恢复，避免对日常库做覆盖操作。
+
+```powershell
+cd admin
+$env:DB_NAME = 'school_exam_restore_test'
+npm run db:init
+npm run db:restore -- --source .\backups\snapshot.scebak --replace
+```
+
 ```bash
 cd fronter
 npm install
