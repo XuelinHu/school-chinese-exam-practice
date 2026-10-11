@@ -4,7 +4,7 @@ import path from 'node:path';
 import { Router, raw } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { pool } from '../config/db.js';
+import { pool, tx } from '../config/db.js';
 import { auth } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import { asyncHandler, ok } from '../utils/response.js';
@@ -13,6 +13,7 @@ import { pageParams, queryPage, likeValue } from '../utils/paginate.js';
 import { logger } from '../utils/logger.js';
 import { jwtSecret } from '../config/secrets.js';
 import { avatarDir, sniffImage, UPLOAD_URL_PREFIX } from '../config/uploads.js';
+import { verifyOidcAccessToken } from '../auth/oidc.js';
 
 const router = Router();
 
@@ -176,6 +177,51 @@ router.post(
     ok(res, { token: signToken(user), user: fresh });
   })
 );
+
+router.post('/oidc', rateLimit({ keyPrefix: 'oidc-login', windowMs: 15 * 60_000, max: 30 }), asyncHandler(async (req, res) => {
+  let identity;
+  try { identity = await verifyOidcAccessToken(req.body?.accessToken); }
+  catch { throw new HttpError(401, 'Invalid identity token'); }
+
+  const [[user]] = await pool.execute('SELECT * FROM users WHERE oidc_subject = ? AND deleted_at IS NULL', [identity.subject]);
+  if (!user) throw new HttpError(403, 'No local account is linked. Sign in with your local account and link it from your profile first.');
+  assertUserIsActive(user);
+  await pool.execute(
+    'UPDATE users SET last_login_at = NOW(), last_active_at = NOW(), login_count = login_count + 1, failed_login_count = 0, locked_until = NULL WHERE id = ?',
+    [user.id]
+  );
+  await writeLoginLog(req, { userId: user.id, username: user.username, action: 'login', message: 'OIDC login' });
+  const [[fresh]] = await pool.execute(`SELECT ${publicUserFields} FROM users WHERE id = ?`, [user.id]);
+  ok(res, { token: signToken(user), user: fresh });
+}));
+
+router.post('/oidc/link', auth(), rateLimit({ keyPrefix: 'oidc-link', windowMs: 15 * 60_000, max: 10, keyBy: rateLimitKeyByUser }), asyncHandler(async (req, res) => {
+  let identity;
+  try { identity = await verifyOidcAccessToken(req.body?.accessToken); }
+  catch { throw new HttpError(401, 'Invalid identity token'); }
+
+  try {
+    await tx(async (connection) => {
+      const [[user]] = await connection.execute('SELECT id, username, oidc_subject FROM users WHERE id = ? AND deleted_at IS NULL FOR UPDATE', [req.user.id]);
+      if (!user) throw new HttpError(404, 'User not found');
+      if (user.oidc_subject && user.oidc_subject !== identity.subject) throw new HttpError(409, 'This local account is already linked to another identity');
+      const [[existing]] = await connection.execute('SELECT id FROM users WHERE oidc_subject = ? AND id <> ?', [identity.subject, req.user.id]);
+      if (existing) throw new HttpError(409, 'This identity is already linked to another local account');
+      await connection.execute('UPDATE users SET oidc_subject = ? WHERE id = ?', [identity.subject, req.user.id]);
+    });
+  } catch (error) {
+    if (error.code === '23505') throw new HttpError(409, 'This identity is already linked to another local account');
+    throw error;
+  }
+  await writeLoginLog(req, { userId: req.user.id, username: req.user.username, action: 'login', message: 'OIDC identity linked' });
+  ok(res, { linked: true });
+}));
+
+router.get('/oidc/status', auth(), asyncHandler(async (req, res) => {
+  const [[user]] = await pool.execute('SELECT oidc_subject IS NOT NULL AS linked FROM users WHERE id = ? AND deleted_at IS NULL', [req.user.id]);
+  if (!user) throw new HttpError(404, 'User not found');
+  ok(res, { linked: user.linked });
+}));
 
 router.post(
   '/logout',

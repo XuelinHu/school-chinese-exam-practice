@@ -24,6 +24,10 @@
       </button>
     </form>
 
+    <button class="btn secondary oidc-login" type="button" :disabled="loading" @click="startOidcLogin">
+      {{ t('unifiedLogin') }}
+    </button>
+
     <div class="row auth-links">
       <router-link to="/forgot-password">{{ t('forgotPassword') }}</router-link>
       <router-link to="/register">{{ t('register') }}</router-link>
@@ -36,6 +40,7 @@ import { ref, reactive, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { authStore as auth } from '../stores/auth.js';
 import { t } from '../i18n/index.js';
+import { beginOidcLogin } from '../auth/oidc.js';
 
 const route = useRoute();
 const router = useRouter();
@@ -49,7 +54,14 @@ const error = ref('');
 onMounted(() => {
   const saved = localStorage.getItem(REMEMBER_KEY);
   if (saved) form.username = saved;
+  error.value = localStorage.getItem('oidc-login-error') || '';
+  localStorage.removeItem('oidc-login-error');
 });
+
+function startOidcLogin() {
+  error.value = '';
+  beginOidcLogin().catch((err) => { error.value = err.message; });
+}
 
 async function submit() {
   loading.value = true;

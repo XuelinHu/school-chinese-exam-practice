@@ -74,6 +74,22 @@ export const authStore = reactive({
     return data.user;
   },
 
+  async loginWithOidc(accessToken) {
+    const data = await request('/auth/oidc', { method: 'POST', body: { accessToken } });
+    setToken(data.token);
+    this.applyUser(data.user);
+    this.ready = true;
+    return data.user;
+  },
+
+  async linkOidc(accessToken) {
+    return request('/auth/oidc/link', { method: 'POST', body: { accessToken } });
+  },
+
+  async oidcLinked() {
+    return request('/auth/oidc/status');
+  },
+
   async register(form) {
     return request('/auth/register', { method: 'POST', body: form });
   },

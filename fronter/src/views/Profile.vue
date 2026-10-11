@@ -46,6 +46,13 @@
       </div>
     </section>
 
+    <section class="card">
+      <h3>{{ t('unifiedAccount') }}</h3>
+      <p>{{ oidcStatus === null ? t('loading') : oidcStatus ? t('unifiedLinked') : t('unifiedNotLinked') }}</p>
+      <p v-if="oidcMessage" class="alert" :class="oidcMessage === t('unifiedLinked') ? 'success' : 'error'">{{ oidcMessage }}</p>
+      <button v-if="oidcStatus === false" class="btn" type="button" @click="linkUnifiedAccount">{{ t('linkUnifiedAccount') }}</button>
+    </section>
+
     <!-- 修改密码 -->
     <section class="card">
       <h3>{{ t('changePassword') }}</h3>
@@ -111,6 +118,7 @@ import { authStore as auth } from '../stores/auth.js';
 import { usePagedTable } from '../composables/usePagedTable.js';
 import Pagination from '../components/Pagination.vue';
 import { t, label, LANGUAGES, setLang } from '../i18n/index.js';
+import { beginOidcLogin } from '../auth/oidc.js';
 
 const router = useRouter();
 const user = computed(() => auth.user);
@@ -125,6 +133,8 @@ const avatarUrl = ref('');
 const pw = reactive({ oldPassword: '', newPassword: '', confirmPassword: '' });
 const pwSaving = ref(false);
 const pwError = ref('');
+const oidcStatus = ref(null);
+const oidcMessage = ref('');
 
 // 必须包 reactive()：usePagedTable 返回的是一堆 ref，模板里的 logs.rows / logs.total
 // 不会自动解包，直接渲染会得到空单元格和「共 [object Object] 条」
@@ -216,5 +226,14 @@ async function changePassword() {
 onMounted(async () => {
   const fresh = await auth.refresh().catch(() => null);
   fillFromUser(fresh || auth.user);
+  const linked = await auth.oidcLinked().catch(() => ({ linked: false }));
+  oidcStatus.value = linked.linked;
+  oidcMessage.value = sessionStorage.getItem('oidc-link-result') || '';
+  sessionStorage.removeItem('oidc-link-result');
+  if (oidcMessage.value === 'Unified identity linked.') oidcMessage.value = t('unifiedLinked');
 });
+
+function linkUnifiedAccount() {
+  beginOidcLogin({ link: true }).catch((error) => { oidcMessage.value = error.message; });
+}
 </script>

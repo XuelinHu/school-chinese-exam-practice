@@ -6,6 +6,9 @@
   <img height="20" alt="Vue Router 4.5.0" src="https://img.shields.io/badge/vue_router-4.5.0-4FC08D" />
   <img height="20" alt="Express 4.21.2" src="https://img.shields.io/badge/express-4.21.2-000000" />
   <img height="20" alt="PostgreSQL 18" src="https://img.shields.io/badge/PostgreSQL-18-4169E1" />
+  <img height="20" alt="OpenID Connect" src="https://img.shields.io/badge/OpenID_Connect-PKCE-7B42BC" />
+  <img height="20" alt="keycloak-js 26.2.4" src="https://img.shields.io/badge/keycloak--js-26.2.4-4D4D4D" />
+  <img height="20" alt="jose 6.2.12" src="https://img.shields.io/badge/jose-6.2.12-555555" />
   <img height="20" alt="License GPL-2.0" src="https://img.shields.io/badge/license-GPL--2.0-3DA639" />
 </p>
 
@@ -19,6 +22,7 @@
 ### 公共服务
 
 - 注册 / 登录 / 退出 / 修改密码 / 找回密码（6 位重置码，10 分钟有效、一次性）
+- 统一账号通过 OpenID Connect Authorization Code + PKCE 登录；本地账号需先在个人中心主动绑定
 - 个人资料：头像上传、三语界面偏好（落库，跨设备生效）、学号与国籍
 - 登录日志：本人登录、改密、重置等操作留痕，分页查看
 - 账号安全：连续 5 次密码错误锁定 15 分钟；改密/重置/停用后旧令牌立即失效
@@ -102,6 +106,8 @@ npm run dev
 
 `.env` 现在是**必需**的：`PGPASSWORD` 与至少 32 字符的 `JWT_SECRET` 缺一项，进程会带着明确提示退出，
 不再回落到代码里的默认口令。
+
+统一身份服务默认使用 `https://192.168.1.9:8042/realms/front` 与客户端 `school-chinese-exam-web`；前端也可通过 `VITE_OIDC_ISSUER`、`VITE_OIDC_CLIENT_ID` 覆盖。首次使用时，先用本地账号登录，再从个人中心绑定统一身份；系统只按不可变的 OIDC `sub` 绑定，不按用户名或邮箱自动合并。后端验证 issuer、签名、过期时间、`account` audience 与 `azp` 后，再换发本系统 JWT。若开发证书由本仓库 CA 签发，启动 API 的 Node 进程需设置 `NODE_EXTRA_CA_CERTS` 指向可信 CA 文件。
 
 新部署的首个超级管理员通过一次性 `admin:bootstrap` 创建；命令会在 PostgreSQL advisory lock 下确认不存在未软删除的超级管理员，成功后后续执行将被拒绝。密码只从标准输入读取，长度必须为 16–64 位：
 

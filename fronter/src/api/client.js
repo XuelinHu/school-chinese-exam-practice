@@ -35,7 +35,7 @@ function notifyUnauthorized() {
 function buildHeaders(extra = {}, { json = true } = {}) {
   const headers = { ...extra };
   if (json) headers['Content-Type'] = 'application/json';
-  if (token()) headers.Authorization = `Bearer ${token()}`;
+  if (token() && !headers.Authorization) headers.Authorization = `Bearer ${token()}`;
   return headers;
 }
 
