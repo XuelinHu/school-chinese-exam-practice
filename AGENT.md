@@ -27,10 +27,11 @@
 - Variables: `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `JWT_SECRET`.
 - Schema: `admin/sql/schema.sql`.
 - Seed: `admin/sql/seed.sql`, plus `npm run db:init` and `npm run seed:users`.
-- **Migrations: `npm run db:migrate`.** `schema.sql` uses `CREATE TABLE IF NOT EXISTS`, so it
-  cannot add columns to an existing database — schema changes for deployed instances go in
-  `admin/sql/migrations/NNN_*.js` (idempotent, tracked in `schema_migrations`). Add the same
-  change to `schema.sql` as well so a fresh database builds in one pass.
+- **Migrations: `npm run db:migrate`.** `db:init` uses the validated `DB_NAME`, runs `schema.sql`,
+  applies migrations, then seeds data. Schema changes for deployed instances go in
+  `admin/sql/migrations/NNN_*.js` (idempotent, SHA-256 tracked in `schema_migrations`); add the
+  same change to `schema.sql` so a fresh database builds in one pass. Migrations run under a
+  per-database MySQL advisory lock and fail on changed checksums or unknown versions.
 - Migrations must be **genuinely** idempotent. `information_schema.COLUMN_TYPE` holds only the
   type (`enum('a','b')`, lowercase, no `NOT NULL`/`DEFAULT`), so comparing it against a full
   column definition always mismatches and re-runs the `ALTER` forever. Compare type, nullability

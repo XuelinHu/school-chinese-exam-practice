@@ -1,5 +1,6 @@
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
+import { assertDatabaseName } from './databaseName.js';
 
 dotenv.config();
 
@@ -18,12 +19,14 @@ function requireEnv(name) {
   return value;
 }
 
+const database = assertDatabaseName(process.env.DB_NAME || 'school_chinese_exam_practice');
+
 export const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
   port: Number(process.env.DB_PORT || 3306),
   user: process.env.DB_USER || 'root',
   password: requireEnv('DB_PASSWORD'),
-  database: process.env.DB_NAME || 'school_chinese_exam_practice',
+  database,
   waitForConnections: true,
   connectionLimit: 10,
   namedPlaceholders: true

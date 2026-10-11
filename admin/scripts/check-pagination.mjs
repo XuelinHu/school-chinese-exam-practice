@@ -24,25 +24,31 @@ async function token(username, password) {
 const adminToken = await token('admin', 'admin123456');
 const studentToken = await token('student', 'student123456');
 const teacherToken = await token('teacher', 'teacher123456');
+const teachingStudentsResponse = await fetch(`${BASE}/teaching/students?page=1&pageSize=100`, {
+  headers: { Authorization: `Bearer ${teacherToken}` }
+});
+const teachingStudents = (await teachingStudentsResponse.json()).data?.list || [];
+const teachingStudentId = teachingStudents.find((user) => user.username === 'student')?.id;
+if (!teachingStudentId) throw new Error('Could not find the seeded student account in the teaching list');
 
 // [说明, 路径, token]
 const CASES = [
-  ['学员端 试卷', '/learning/papers?page=1&pageSize=5', studentToken],
-  ['学员端 成绩', '/learning/records?page=1&pageSize=5', studentToken],
-  ['学员端 错题', '/learning/wrong-questions?page=1&pageSize=5', studentToken],
-  ['教学 学员列表', '/teaching/students?page=1&pageSize=5', teacherToken],
-  ['教学 成绩记录', '/teaching/students/2/records?page=1&pageSize=5', teacherToken],
-  ['教学 错题', '/teaching/students/2/wrong-questions?page=1&pageSize=5', teacherToken],
-  ['后台 学生管理', '/admin/users?page=1&pageSize=5', adminToken],
-  ['后台 成绩记录', '/admin/records?page=1&pageSize=5', adminToken],
-  ['后台 登录日志', '/admin/login-logs?page=1&pageSize=5', adminToken],
-  ['后台 在线状态', '/admin/online?page=1&pageSize=5', adminToken],
-  ['后台 题库', '/admin/questions?page=1&pageSize=5', adminToken],
-  ['后台 试卷', '/admin/papers?page=1&pageSize=5', adminToken],
-  ['后台 等级', '/admin/levels?page=1&pageSize=5', adminToken],
-  ['后台 分类', '/admin/categories?page=1&pageSize=5', adminToken],
-  ['后台 智能体会话', '/admin/ai/sessions?page=1&pageSize=5', adminToken],
-  ['后台 调用日志', '/admin/ai/logs?page=1&pageSize=5', adminToken]
+  ['学员端 试卷', '/learning/papers?page=1&pageSize=1', studentToken],
+  ['学员端 成绩', '/learning/records?page=1&pageSize=1', studentToken],
+  ['学员端 错题', '/learning/wrong-questions?page=1&pageSize=1', studentToken],
+  ['教学 学员列表', '/teaching/students?page=1&pageSize=1', teacherToken],
+  ['教学 成绩记录', `/teaching/students/${teachingStudentId}/records?page=1&pageSize=1`, teacherToken],
+  ['教学 错题', `/teaching/students/${teachingStudentId}/wrong-questions?page=1&pageSize=1`, teacherToken],
+  ['后台 学生管理', '/admin/users?page=1&pageSize=1', adminToken],
+  ['后台 成绩记录', '/admin/records?page=1&pageSize=1', adminToken],
+  ['后台 登录日志', '/admin/login-logs?page=1&pageSize=1', adminToken],
+  ['后台 在线状态', '/admin/online?page=1&pageSize=1', adminToken],
+  ['后台 题库', '/admin/questions?page=1&pageSize=1', adminToken],
+  ['后台 试卷', '/admin/papers?page=1&pageSize=1', adminToken],
+  ['后台 等级', '/admin/levels?page=1&pageSize=1', adminToken],
+  ['后台 分类', '/admin/categories?page=1&pageSize=1', adminToken],
+  ['后台 智能体会话', '/admin/ai/sessions?page=1&pageSize=1', adminToken],
+  ['后台 调用日志', '/admin/ai/logs?page=1&pageSize=1', adminToken]
 ];
 
 const FIELDS = ['list', 'total', 'page', 'pageSize', 'totalPages'];
@@ -77,8 +83,8 @@ for (const [label, path, bearer] of CASES) {
   console.log(`ok   ${label.padEnd(16)} total=${String(data.total).padStart(4)} page=${data.page}/${data.totalPages} 本页 ${data.list.length} 条`);
 }
 
-// 第二页必须与第一页不同（否则说明 page 参数没生效，只是把第一页重复返回）
-for (const [label, path, bearer] of CASES.slice(0, 3)) {
+// 小页长让种子数据能覆盖分页；所有多页端点都需确认第二页内容发生变化。
+for (const [label, path, bearer] of CASES) {
   const [first, second] = await Promise.all([1, 2].map(async (page) => {
     const res = await fetch(`${BASE}${path.replace('page=1', `page=${page}`)}`, {
       headers: { Authorization: `Bearer ${bearer}` }

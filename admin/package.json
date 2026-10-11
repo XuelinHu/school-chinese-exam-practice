@@ -8,6 +8,7 @@
     "db:init": "node src/utils/initDb.js",
     "db:migrate": "node src/utils/migrate.js",
     "seed:users": "node src/utils/seedUsers.js",
+    "test": "node --test",
     "check:permissions": "node scripts/check-permissions.mjs",
     "check:pagination": "node scripts/check-pagination.mjs"
   },

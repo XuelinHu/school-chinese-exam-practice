@@ -96,10 +96,12 @@ cd admin
 npm install
 cp .env.example .env          # 必填：DB_PASSWORD、JWT_SECRET
 npm run db:init
-npm run db:migrate            # 已有数据库执行增量迁移，可重复执行
+npm run db:migrate            # 幂等核对增量迁移；db:init 也会执行迁移
 npm run seed:users
 npm run dev
 ```
+
+`DB_NAME` 仅允许字母、数字和下划线，`db:init` 会创建并连接该配置指定的数据库，不会依赖 SQL 文件中的硬编码库名。迁移版本及 JS 源文件 SHA-256 记录在 `schema_migrations`，并由 MySQL advisory lock 串行执行；旧台账没有 checksum 时会以当前迁移文件内容建立新的校验基线，之后的改写会被拒绝。新迁移仍须保持幂等，以便 DDL 中断后安全重试。
 
 `.env` 现在是**必需**的：`DB_PASSWORD` 与 `JWT_SECRET` 缺一个，进程会带着明确提示退出，
 不再回落到代码里的默认口令。

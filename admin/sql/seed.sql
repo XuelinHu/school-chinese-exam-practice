@@ -1,5 +1,3 @@
-USE school_chinese_exam_practice;
-
 INSERT INTO levels (code, sort_order, status) VALUES
 ('HSK1', 1, 'active'),
 ('HSK2', 2, 'active'),

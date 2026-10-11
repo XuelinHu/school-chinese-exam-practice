@@ -52,6 +52,7 @@ import AppModal from '../AppModal.vue';
 import AgentChat from './AgentChat.vue';
 import AgentModelPicker from './AgentModelPicker.vue';
 import { agentMeta, chat, models as fetchModels } from '../../api/ai.js';
+import { request } from '../../api/client.js';
 import { useVoice } from './voice/useVoice.js';
 import { authStore as auth } from '../../stores/auth.js';
 import { t, state as i18nState, setLang } from '../../i18n/index.js';
@@ -219,9 +220,7 @@ async function switchLang(next) {
   if (auth.user) {
     auth.user = { ...auth.user, language: next };
     localStorage.setItem('user', JSON.stringify(auth.user));
-    await import('../../api/client.js')
-      .then(({ request }) => request('/auth/profile', { method: 'PUT', body: { language: next } }))
-      .catch(() => {});
+    await request('/auth/profile', { method: 'PUT', body: { language: next } }).catch(() => {});
   }
   await loadMeta();
 }

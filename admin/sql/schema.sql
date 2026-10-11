@@ -1,6 +1,3 @@
-CREATE DATABASE IF NOT EXISTS school_chinese_exam_practice DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE school_chinese_exam_practice;
-
 CREATE TABLE IF NOT EXISTS users (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   username VARCHAR(50) NOT NULL UNIQUE,

@@ -17,6 +17,16 @@ const app = express();
 
 // FRP 等本机回环代理转发时才信任 X-Forwarded-For，避免任意来源伪造客户端 IP
 app.set('trust proxy', 'loopback');
+app.disable('x-powered-by');
+app.use((_req, res, next) => {
+  res.set({
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'no-referrer',
+    'Cross-Origin-Resource-Policy': 'same-site'
+  });
+  next();
+});
 app.use(cors());
 app.use(express.json({ limit: '1mb' }));
 app.use(requestLogger);
@@ -34,19 +44,34 @@ app.use('/api/ai', aiRoutes);
 app.use((req, res) => res.status(404).json({ code: 404, message: `Not found: ${req.path}` }));
 app.use((err, req, res, _next) => {
   const status = err.status || 500;
-  logger.error('HTTP request failed', {
-    method: req.method,
-    path: req.originalUrl,
-    status,
-    message: err.message,
-    stack: process.env.NODE_ENV === 'production' ? undefined : err.stack
-  });
+  const parserError = err.type === 'entity.parse.failed' || err.type === 'entity.too.large';
+  if (status >= 500) {
+    logger.error('HTTP request failed', {
+      method: req.method,
+      path: req.originalUrl,
+      status,
+      message: err.message,
+      stack: process.env.NODE_ENV === 'production' ? undefined : err.stack
+    });
+  }
   // SSE 等场景下响应头已发出，无法再改状态码，只能终止连接
   if (res.headersSent) {
     res.end();
     return;
   }
-  res.status(status).json({ code: status, message: err.message || 'Internal server error' });
+  const message =
+    err.type === 'entity.parse.failed'
+      ? 'JSON 格式不正确'
+      : err.type === 'entity.too.large'
+        ? '请求体超过允许大小'
+        : status >= 500
+          ? 'Internal server error'
+          : err.message || 'Bad request';
+  res.status(status).json({
+    code: status,
+    message,
+    ...(parserError ? { error: err.type === 'entity.too.large' ? 'payload_too_large' : 'invalid_json' } : {})
+  });
 });
 
 export default app;

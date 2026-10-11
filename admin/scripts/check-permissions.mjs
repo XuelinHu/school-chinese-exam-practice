@@ -32,17 +32,17 @@ const CASES = [
   ['GET', '/admin/ai/logs?page=1&pageSize=5', { admin: 200, content: 403, teacher: 403, student: 403 }],
   // ── 教学查看区：教师 + 超管
   ['GET', '/teaching/students?page=1&pageSize=5', { admin: 200, content: 403, teacher: 200, student: 403 }],
-  ['GET', '/teaching/students/2', { admin: 200, content: 403, teacher: 200, student: 403 }],
-  ['GET', '/teaching/students/2/records?page=1&pageSize=5', { admin: 200, content: 403, teacher: 200, student: 403 }],
-  ['GET', '/teaching/students/2/wrong-questions?page=1&pageSize=5', { admin: 200, content: 403, teacher: 200, student: 403 }],
+  ['GET', '/teaching/students/:studentId', { admin: 200, content: 403, teacher: 200, student: 403 }],
+  ['GET', '/teaching/students/:studentId/records?page=1&pageSize=5', { admin: 200, content: 403, teacher: 200, student: 403 }],
+  ['GET', '/teaching/students/:studentId/wrong-questions?page=1&pageSize=5', { admin: 200, content: 403, teacher: 200, student: 403 }],
   // ── 学员端（任何登录用户）
   ['GET', '/learning/records?page=1&pageSize=5', { admin: 200, content: 200, teacher: 200, student: 200 }],
   ['GET', '/learning/wrong-questions?page=1&pageSize=5', { admin: 200, content: 200, teacher: 200, student: 200 }],
   ['GET', '/learning/papers?page=1&pageSize=5', { admin: 200, content: 200, teacher: 200, student: 200 }],
   // ── 教学区不得存在写方法（方法不允许 / 未实现都算合格，绝不能是 2xx）
   ['POST', '/teaching/students', { admin: 404, content: 403, teacher: 404, student: 403 }],
-  ['DELETE', '/teaching/students/2', { admin: 404, content: 403, teacher: 404, student: 403 }],
-  ['PUT', '/teaching/students/2', { admin: 404, content: 403, teacher: 404, student: 403 }]
+  ['DELETE', '/teaching/students/:studentId', { admin: 404, content: 403, teacher: 404, student: 403 }],
+  ['PUT', '/teaching/students/:studentId', { admin: 404, content: 403, teacher: 404, student: 403 }]
 ];
 
 const tokens = {};
@@ -60,11 +60,22 @@ for (const [username, password] of Object.entries(ACCOUNTS)) {
   tokens[username] = body.data.token;
 }
 
+const teachingStudentsResponse = await fetch(`${BASE}/teaching/students?page=1&pageSize=100`, {
+  headers: { Authorization: `Bearer ${tokens.teacher}` }
+});
+const teachingStudents = (await teachingStudentsResponse.json()).data?.list || [];
+const teachingStudentId = teachingStudents.find((user) => user.username === 'student')?.id;
+if (!teachingStudentId) {
+  console.error('Could not find the seeded student account in the teaching list');
+  process.exit(1);
+}
+
 let failures = 0;
 for (const [method, path, expect] of CASES) {
+  const resolvedPath = path.replaceAll(':studentId', String(teachingStudentId));
   const got = {};
   for (const username of Object.keys(ACCOUNTS)) {
-    const res = await fetch(`${BASE}${path}`, {
+    const res = await fetch(`${BASE}${resolvedPath}`, {
       method,
       headers: { Authorization: `Bearer ${tokens[username]}`, 'Content-Type': 'application/json' },
       body: method === 'GET' ? undefined : '{}'
@@ -75,10 +86,10 @@ for (const [method, path, expect] of CASES) {
   const bad = Object.keys(expect).filter((role) => got[role] !== expect[role]);
   if (bad.length) {
     failures += 1;
-    console.log(`FAIL ${method} ${path}`);
+    console.log(`FAIL ${method} ${resolvedPath}`);
     for (const role of bad) console.log(`       ${role}: expected ${expect[role]}, got ${got[role]}`);
   } else {
-    console.log(`ok   ${method} ${path.split('?')[0]}`);
+    console.log(`ok   ${method} ${resolvedPath.split('?')[0]}`);
   }
 }
 
