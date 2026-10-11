@@ -9,6 +9,7 @@ logs/
 *.tmp
 
 admin/logs/
+admin/backups/
 fronter/dist/
 
 # 真实密码只留在本地 .env，示例文件 .env.example 可以提交
