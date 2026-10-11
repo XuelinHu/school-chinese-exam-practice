@@ -52,7 +52,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { request } from '../api/client.js';
+import { qs, request } from '../api/client.js';
 import { state, t } from '../i18n/index.js';
 
 const route = useRoute();
@@ -66,7 +66,18 @@ const current = computed(() => paper.value?.questions[index.value] || {});
 const selectedIds = computed(() => answers[current.value.id] || []);
 
 async function load() {
-  paper.value = await request(`/learning/papers/${route.params.id}?lang=${state.lang}`);
+  const pageSize = 100;
+  const first = await request(`/learning/papers/${route.params.id}${qs({ lang: state.lang, page: 1, pageSize })}`);
+  const questionPage = first.questions;
+  const pages = await Promise.all(
+    Array.from({ length: Math.max(0, (questionPage?.totalPages || 0) - 1) }, (_, index) =>
+      request(`/learning/papers/${route.params.id}${qs({ lang: state.lang, page: index + 2, pageSize })}`)
+    )
+  );
+  paper.value = {
+    ...first,
+    questions: [...(questionPage?.list ?? []), ...pages.flatMap((item) => item.questions?.list ?? [])]
+  };
   index.value = 0;
   result.value = null;
 }

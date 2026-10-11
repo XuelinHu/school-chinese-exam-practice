@@ -224,7 +224,7 @@
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue';
-import { request, qs } from '../../api/client.js';
+import { request, requestAllPages, qs } from '../../api/client.js';
 import { usePagedTable } from '../../composables/usePagedTable.js';
 import Pagination from '../../components/Pagination.vue';
 import AppModal from '../../components/AppModal.vue';
@@ -325,11 +325,11 @@ function removeOption(index) {
 async function loadOptions() {
   try {
     const [levels, categories] = await Promise.all([
-      request(`/admin/levels${qs({ pageSize: 100, lang: i18nState.lang })}`),
-      request(`/admin/categories${qs({ pageSize: 100, lang: i18nState.lang })}`)
+      requestAllPages('/admin/levels', { lang: i18nState.lang }),
+      requestAllPages('/admin/categories', { lang: i18nState.lang })
     ]);
-    levelOptions.value = levels?.list ?? [];
-    categoryOptions.value = categories?.list ?? [];
+    levelOptions.value = levels;
+    categoryOptions.value = categories;
   } catch {
     // 下拉数据失败不阻塞列表，留空即可
   }

@@ -153,10 +153,11 @@ Four roles, defined once in `admin/src/middleware/role.js`:
   `{ list, total, page, pageSize, totalPages }`. `/api/learning/{papers,records,wrong-questions}`
   and `/api/teaching/*` follow the same envelope. Run `npm run check:pagination` after adding a
   list endpoint and add it to that script's `CASES`.
-- **Two deliberate exceptions to pagination**, both documented where they live:
-  `/api/learning/{levels,categories}` return bare arrays because they fill `<select>` elements,
-  and `GET /api/admin/papers/:id` returns the full question list because the composer submits a
-  whole-set replacement — a truncated page there would delete the questions it did not show.
+- Learning level/category choices and paper question collections also use pagination. Their
+  frontend consumers must aggregate all pages before displaying a complete selector, taking an
+  exam, or submitting the composer's whole-set replacement; use `requestAllPages` for complete
+  selector collections. Searchable collections such as the composer candidate picker must expose
+  page navigation instead of silently stopping at the first page.
 - Frontend list pages use `usePagedTable` (`fronter/src/composables/usePagedTable.js`).
   Language is passed via `extra: () => ({ lang: state.lang })`, **not** through `filters`, so
   that `reset()` cannot roll it back to a stale language. Extra envelope fields (`summary`,

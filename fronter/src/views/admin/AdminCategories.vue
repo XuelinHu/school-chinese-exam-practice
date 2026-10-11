@@ -147,7 +147,7 @@
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue';
-import { request, qs } from '../../api/client.js';
+import { request, requestAllPages, qs } from '../../api/client.js';
 import { usePagedTable } from '../../composables/usePagedTable.js';
 import Pagination from '../../components/Pagination.vue';
 import AppModal from '../../components/AppModal.vue';
@@ -207,11 +207,10 @@ function mergeTranslations(fields, loaded) {
   return merged;
 }
 
-/** 父级下拉的数据源，父级本身不参与筛选，取前 100 条足够。 */
+/** 父级下拉的数据源，父级本身不参与筛选。 */
 async function loadParents() {
   try {
-    const data = await request(`/admin/categories${qs({ pageSize: 100, lang: i18nState.lang })}`);
-    parentOptions.value = data?.list ?? [];
+    parentOptions.value = await requestAllPages('/admin/categories', { lang: i18nState.lang });
   } catch {
     parentOptions.value = [];
   }

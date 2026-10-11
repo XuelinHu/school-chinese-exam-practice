@@ -83,7 +83,7 @@
 
 <script setup>
 import { onMounted, ref, watch } from 'vue';
-import { request } from '../api/client.js';
+import { requestAllPages } from '../api/client.js';
 import { usePagedTable } from '../composables/usePagedTable.js';
 import Pagination from '../components/Pagination.vue';
 import { state, t, label } from '../i18n/index.js';
@@ -101,7 +101,7 @@ const levels = ref([]);
 
 async function loadLevels() {
   try {
-    levels.value = await request(`/learning/levels?lang=${state.lang}`);
+    levels.value = await requestAllPages('/learning/levels', { lang: state.lang });
   } catch {
     levels.value = [];
   }

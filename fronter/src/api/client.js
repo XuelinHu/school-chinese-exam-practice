@@ -61,6 +61,17 @@ export async function request(path, options = {}) {
   return unwrap(response);
 }
 
+/** Read a complete paginated collection for selectors and other all-items consumers. */
+export async function requestAllPages(path, params = {}, pageSize = 100) {
+  const first = await request(`${path}${qs({ ...params, page: 1, pageSize })}`);
+  const pages = await Promise.all(
+    Array.from({ length: Math.max(0, (first?.totalPages || 0) - 1) }, (_, index) =>
+      request(`${path}${qs({ ...params, page: index + 2, pageSize })}`)
+    )
+  );
+  return [...(first?.list ?? []), ...pages.flatMap((page) => page?.list ?? [])];
+}
+
 /**
  * 上传二进制（头像）。
  *

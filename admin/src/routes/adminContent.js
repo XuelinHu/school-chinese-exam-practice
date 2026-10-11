@@ -652,20 +652,21 @@ router.get(
       table: 'paper_translations', foreignKey: 'paper_id', id, fields: PAPER_FIELDS
     });
 
-    // 题目列表**故意不分页**：这是组卷编辑器的输入，而 PUT /papers/:id/questions
-    // 是「整体替换」。只给一页的话，保存时会把没显示出来的题目全部删掉 —— 那是数据丢失，
-    // 不是少看几条。列表页 /papers 已分页，这里面试卷最多几十题，可控。
     const lang = listLang(req);
-    const [questions] = await pool.execute(
-      `SELECT pq.id, pq.question_id, pq.sort_order, pq.score,
-              COALESCE(qt.title, qz.title) AS title, q.question_type, q.difficulty
-       FROM paper_questions pq
-       JOIN questions q ON q.id = pq.question_id
-       LEFT JOIN question_translations qt ON qt.question_id = q.id AND qt.language_code = ?
-       LEFT JOIN question_translations qz ON qz.question_id = q.id AND qz.language_code = ?
-       WHERE pq.paper_id = ? ORDER BY pq.sort_order, pq.id`,
-      [lang, PRIMARY_LANGUAGE, id]
-    );
+    const { page, pageSize } = pageParams(req.query);
+    const questions = await queryPage({
+      columns: `pq.id, pq.question_id, pq.sort_order, pq.score,
+                COALESCE(qt.title, qz.title) AS title, q.question_type, q.difficulty`,
+      from: `FROM paper_questions pq
+             JOIN questions q ON q.id = pq.question_id
+             LEFT JOIN question_translations qt ON qt.question_id = q.id AND qt.language_code = ?
+             LEFT JOIN question_translations qz ON qz.question_id = q.id AND qz.language_code = ?`,
+      conditions: ['pq.paper_id = ?'],
+      params: [lang, PRIMARY_LANGUAGE, id],
+      orderBy: 'pq.sort_order ASC, pq.id ASC',
+      page,
+      pageSize
+    });
     paper.questions = questions;
     ok(res, paper);
   })

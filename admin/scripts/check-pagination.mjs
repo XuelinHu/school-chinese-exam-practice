@@ -1,7 +1,6 @@
 /**
  * 分页信封断言：每个列表端点都必须返回 { list, total, page, pageSize, totalPages }，
- * 且 list.length <= pageSize。字典表端点（/learning/levels、/learning/categories）
- * 是**有意例外**，这里单独断言它们仍是裸数组。
+ * 且 list.length <= pageSize。组卷和考试详情中的题目集合也必须逐页读取。
  *
  * 新增列表端点时把它加进 CASES；漏加不会报错，但 README 的「分页覆盖范围」会失真。
  *
@@ -36,6 +35,8 @@ const CASES = [
   ['学员端 试卷', '/learning/papers?page=1&pageSize=1', studentToken],
   ['学员端 成绩', '/learning/records?page=1&pageSize=1', studentToken],
   ['学员端 错题', '/learning/wrong-questions?page=1&pageSize=1', studentToken],
+  ['学员端 等级选项', '/learning/levels?page=1&pageSize=1', studentToken],
+  ['学员端 分类选项', '/learning/categories?page=1&pageSize=1', studentToken],
   ['教学 学员列表', '/teaching/students?page=1&pageSize=1', teacherToken],
   ['教学 成绩记录', `/teaching/students/${teachingStudentId}/records?page=1&pageSize=1`, teacherToken],
   ['教学 错题', `/teaching/students/${teachingStudentId}/wrong-questions?page=1&pageSize=1`, teacherToken],
@@ -126,15 +127,43 @@ if (recordId) {
   console.log('skip 成绩明细 answers：库里没有成绩记录');
 }
 
-// 有意例外：字典表保持裸数组，供 <select> 一次性填充
-for (const [label, path, bearer] of [
-  ['字典 等级', '/learning/levels', studentToken],
-  ['字典 分类', '/learning/categories', studentToken]
-]) {
-  const res = await fetch(`${BASE}${path}`, { headers: { Authorization: `Bearer ${bearer}` } });
-  const data = (await res.json()).data;
-  if (Array.isArray(data)) console.log(`ok   ${label.padEnd(16)} 裸数组（有意例外）${data.length} 行`);
-  else fail(label, '字典表被改成信封了，会破坏下拉框');
+// 组卷器和考试详情先读题目分页信封，再比对第 2 页。客户端必须逐页汇总后才可整体提交/作答。
+async function checkNestedQuestions(label, path, bearer) {
+  const auth = { Authorization: `Bearer ${bearer}` };
+  const first = (await (await fetch(`${BASE}${path}&page=1&pageSize=1`, { headers: auth })).json()).data;
+  const page = first?.questions;
+  if (!page || !Array.isArray(page.list) || page.page !== 1 || page.pageSize !== 1 || page.list.length > 1) {
+    fail(label, 'questions 未返回分页信封');
+    return;
+  }
+  if (page.totalPages > 1) {
+    const second = (await (await fetch(`${BASE}${path}&page=2&pageSize=1`, { headers: auth })).json()).data?.questions;
+    if (!second?.list?.length || page.list[0]?.id === second.list[0]?.id) {
+      fail(`${label} 第二页`, '题目跨页内容缺失或重复');
+      return;
+    }
+    console.log(`ok   ${label} 题目第 2 页内容与第 1 页不同`);
+  } else {
+    console.log(`skip ${label} 题目第二页比对：数据不足一页以上`);
+  }
+}
+
+const adminPapers = (await (await fetch(`${BASE}/admin/papers?page=1&pageSize=1`, {
+  headers: { Authorization: `Bearer ${adminToken}` }
+})).json()).data;
+if (adminPapers?.list?.[0]?.id) {
+  await checkNestedQuestions('后台组卷器', `/admin/papers/${adminPapers.list[0].id}?lang=zh-CN`, adminToken);
+} else {
+  console.log('skip 后台组卷器题目分页：没有试卷');
+}
+
+const studentPapers = (await (await fetch(`${BASE}/learning/papers?page=1&pageSize=1`, {
+  headers: { Authorization: `Bearer ${studentToken}` }
+})).json()).data;
+if (studentPapers?.list?.[0]?.id) {
+  await checkNestedQuestions('学员考试', `/learning/papers/${studentPapers.list[0].id}?lang=zh-CN`, studentToken);
+} else {
+  console.log('skip 学员考试题目分页：没有已发布试卷');
 }
 
 console.log(failures ? `\n${failures} 项未通过` : '\n全部通过');

@@ -168,13 +168,13 @@
         <div class="composer">
           <!-- 候选题 -->
           <div class="stack">
-            <p class="hint">{{ t('questions') }} · {{ picker.rows.length }}</p>
+            <p class="hint">{{ t('questions') }} · {{ picker.total }}</p>
             <div class="filters">
               <label class="grow">
                 {{ t('search') }}
-                <input v-model="picker.keyword" type="search" @keyup.enter="loadPicker()" />
+                <input v-model="picker.keyword" type="search" @keyup.enter="searchPicker()" />
               </label>
-              <button class="btn ghost" type="button" @click="loadPicker()">{{ t('search') }}</button>
+              <button class="btn ghost" type="button" @click="searchPicker()">{{ t('search') }}</button>
             </div>
             <div class="table-wrap">
               <table>
@@ -211,6 +211,15 @@
             </div>
             <p v-if="picker.loading" class="muted">{{ t('loading') }}</p>
             <p v-else-if="!picker.rows.length" class="muted">{{ t('empty') }}</p>
+            <Pagination
+              :page="picker.page"
+              :page-size="picker.pageSize"
+              :total="picker.total"
+              :total-pages="picker.totalPages"
+              :loading="picker.loading"
+              @page="changePickerPage"
+              @size="changePickerSize"
+            />
           </div>
 
           <!-- 已选题与分值 -->
@@ -281,7 +290,7 @@
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue';
-import { request, qs } from '../../api/client.js';
+import { request, requestAllPages, qs } from '../../api/client.js';
 import { usePagedTable } from '../../composables/usePagedTable.js';
 import Pagination from '../../components/Pagination.vue';
 import AppModal from '../../components/AppModal.vue';
@@ -315,7 +324,7 @@ const composerSaving = ref(false);
 const composerError = ref('');
 const composerPaper = ref(null);
 const composerItems = ref([]);
-const picker = reactive({ keyword: '', loading: false, rows: [] });
+const picker = reactive({ keyword: '', loading: false, rows: [], page: 1, pageSize: 10, total: 0, totalPages: 1 });
 
 const form = reactive({
   id: null,
@@ -357,8 +366,7 @@ function mergeTranslations(fields, loaded) {
 
 async function loadLevels() {
   try {
-    const data = await request(`/admin/levels${qs({ pageSize: 100, lang: i18nState.lang })}`);
-    levelOptions.value = data?.list ?? [];
+    levelOptions.value = await requestAllPages('/admin/levels', { lang: i18nState.lang });
   } catch {
     levelOptions.value = [];
   }
@@ -469,27 +477,62 @@ async function loadPicker() {
   picker.loading = true;
   composerError.value = '';
   try {
-    const data = await request(
-      `/admin/questions${qs({ pageSize: 100, status: 'published', keyword: picker.keyword, lang: i18nState.lang })}`
-    );
+    const data = await request(`/admin/questions${qs({
+      page: picker.page,
+      pageSize: picker.pageSize,
+      status: 'published',
+      keyword: picker.keyword,
+      lang: i18nState.lang
+    })}`);
     picker.rows = data?.list ?? [];
+    picker.total = data?.total ?? 0;
+    picker.page = data?.page ?? picker.page;
+    picker.pageSize = data?.pageSize ?? picker.pageSize;
+    picker.totalPages = data?.totalPages ?? 1;
   } catch (err) {
     composerError.value = err.message;
     picker.rows = [];
+    picker.total = 0;
+    picker.totalPages = 1;
   } finally {
     picker.loading = false;
   }
+}
+
+function changePickerPage(page) {
+  picker.page = page;
+  loadPicker();
+}
+
+function changePickerSize(pageSize) {
+  picker.page = 1;
+  picker.pageSize = pageSize;
+  loadPicker();
+}
+
+function searchPicker() {
+  picker.page = 1;
+  loadPicker();
 }
 
 async function openComposer(row) {
   composerPaper.value = row;
   composerError.value = '';
   picker.keyword = '';
+  picker.page = 1;
   composerItems.value = [];
   composerOpen.value = true;
   try {
-    const data = await request(`/admin/papers/${row.id}${qs({ lang: i18nState.lang })}`);
-    composerItems.value = (data.questions ?? []).map((item) => ({
+    const pageSize = 100;
+    const data = await request(`/admin/papers/${row.id}${qs({ lang: i18nState.lang, page: 1, pageSize })}`);
+    const first = data.questions;
+    const pages = await Promise.all(
+      Array.from({ length: Math.max(0, (first?.totalPages || 0) - 1) }, (_, index) =>
+        request(`/admin/papers/${row.id}${qs({ lang: i18nState.lang, page: index + 2, pageSize })}`)
+      )
+    );
+    const questions = [...(first?.list ?? []), ...pages.flatMap((page) => page.questions?.list ?? [])];
+    composerItems.value = questions.map((item) => ({
       question_id: item.question_id,
       title: item.title,
       question_type: item.question_type,

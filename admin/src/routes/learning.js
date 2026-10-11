@@ -11,23 +11,25 @@ function lang(req) {
   return req.query.lang || req.body.language || 'zh-CN';
 }
 
-async function getQuestionsByPaper(paperId, language) {
-  const [rows] = await pool.execute(
-    `SELECT q.id, q.question_type, q.difficulty, pq.score, qt.title, qt.content, qt.analysis,
-            l.code level_code, lt.name level_name, c.code category_code, ct.name category_name
-     FROM paper_questions pq
-     JOIN questions q ON q.id = pq.question_id
-     JOIN question_translations qt ON qt.question_id = q.id AND qt.language_code = ?
-     JOIN levels l ON l.id = q.level_id
-     JOIN level_translations lt ON lt.level_id = l.id AND lt.language_code = ?
-     JOIN question_categories c ON c.id = q.category_id
-     JOIN question_category_translations ct ON ct.category_id = c.id AND ct.language_code = ?
-     WHERE pq.paper_id = ? AND q.status = 'published'
-     ORDER BY pq.sort_order ASC`,
-    [language, language, language, paperId]
-  );
-  if (!rows.length) return [];
-  const ids = rows.map((row) => row.id);
+async function getQuestionsByPaper(paperId, language, { page, pageSize }) {
+  const result = await queryPage({
+    columns: `q.id, q.question_type, q.difficulty, pq.score, qt.title, qt.content, qt.analysis,
+              l.code level_code, lt.name level_name, c.code category_code, ct.name category_name`,
+    from: `FROM paper_questions pq
+           JOIN questions q ON q.id = pq.question_id
+           JOIN question_translations qt ON qt.question_id = q.id AND qt.language_code = ?
+           JOIN levels l ON l.id = q.level_id
+           JOIN level_translations lt ON lt.level_id = l.id AND lt.language_code = ?
+           JOIN question_categories c ON c.id = q.category_id
+           JOIN question_category_translations ct ON ct.category_id = c.id AND ct.language_code = ?`,
+    conditions: ['pq.paper_id = ?', "q.status = 'published'"],
+    params: [language, language, language, paperId],
+    orderBy: 'pq.sort_order ASC, pq.id ASC',
+    page,
+    pageSize
+  });
+  if (!result.list.length) return result;
+  const ids = result.list.map((row) => row.id);
   const [options] = await pool.query(
     `SELECT o.id, o.question_id, o.option_key, ot.content
      FROM question_options o
@@ -36,36 +38,41 @@ async function getQuestionsByPaper(paperId, language) {
      ORDER BY o.question_id, o.sort_order`,
     [language, ids]
   );
-  return rows.map((question) => ({
+  result.list = result.list.map((question) => ({
     ...question,
     options: options.filter((option) => option.question_id === question.id).map(({ question_id, ...option }) => option)
   }));
+  return result;
 }
 
 router.get('/levels', asyncHandler(async (req, res) => {
   const language = lang(req);
-  const [rows] = await pool.execute(
-    `SELECT l.id, l.code, lt.name, lt.description
-     FROM levels l
-     JOIN level_translations lt ON lt.level_id = l.id AND lt.language_code = ?
-     WHERE l.status = 'active'
-     ORDER BY l.sort_order`,
-    [language]
-  );
-  ok(res, rows);
+  const { page, pageSize } = pageParams(req.query);
+  const data = await queryPage({
+    columns: 'l.id, l.code, lt.name, lt.description',
+    from: 'FROM levels l JOIN level_translations lt ON lt.level_id = l.id AND lt.language_code = ?',
+    conditions: ["l.status = 'active'"],
+    params: [language],
+    orderBy: 'l.sort_order ASC, l.id ASC',
+    page,
+    pageSize
+  });
+  ok(res, data);
 }));
 
 router.get('/categories', asyncHandler(async (req, res) => {
   const language = lang(req);
-  const [rows] = await pool.execute(
-    `SELECT c.id, c.code, ct.name, ct.description
-     FROM question_categories c
-     JOIN question_category_translations ct ON ct.category_id = c.id AND ct.language_code = ?
-     WHERE c.status = 'active'
-     ORDER BY c.sort_order`,
-    [language]
-  );
-  ok(res, rows);
+  const { page, pageSize } = pageParams(req.query);
+  const data = await queryPage({
+    columns: 'c.id, c.code, ct.name, ct.description',
+    from: 'FROM question_categories c JOIN question_category_translations ct ON ct.category_id = c.id AND ct.language_code = ?',
+    conditions: ["c.status = 'active'"],
+    params: [language],
+    orderBy: 'c.sort_order ASC, c.id ASC',
+    page,
+    pageSize
+  });
+  ok(res, data);
 }));
 
 router.get('/papers', asyncHandler(async (req, res) => {
@@ -90,6 +97,7 @@ router.get('/papers', asyncHandler(async (req, res) => {
 router.get('/papers/:id', auth(), asyncHandler(async (req, res) => {
   const language = lang(req);
   const paperId = Number(req.params.id);
+  const { page, pageSize } = pageParams(req.query);
   const [[paper]] = await pool.execute(
     `SELECT p.id, p.paper_type, p.total_score, p.duration_minutes, pt.title, pt.description
      FROM papers p
@@ -98,7 +106,7 @@ router.get('/papers/:id', auth(), asyncHandler(async (req, res) => {
     [language, paperId]
   );
   if (!paper) throw new HttpError(404, 'Paper not found');
-  paper.questions = await getQuestionsByPaper(paperId, language);
+  paper.questions = await getQuestionsByPaper(paperId, language, { page, pageSize });
   ok(res, paper);
 }));
 
