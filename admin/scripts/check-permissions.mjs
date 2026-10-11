@@ -6,13 +6,15 @@
  * 前置：后端已启动（npm run dev），且已执行过 npm run seed:users。
  * 用法：npm run check:permissions
  */
+import { requiredSeedPassword } from './testCredentials.mjs';
+
 const BASE = process.env.CHECK_BASE || 'http://127.0.0.1:8033/api';
 
 const ACCOUNTS = {
-  admin: 'admin123456',
-  content: 'content123456',
-  teacher: 'teacher123456',
-  student: 'student123456'
+  admin: requiredSeedPassword('SEED_ADMIN_PASSWORD'),
+  content: requiredSeedPassword('SEED_CONTENT_PASSWORD'),
+  teacher: requiredSeedPassword('SEED_TEACHER_PASSWORD'),
+  student: requiredSeedPassword('SEED_STUDENT_PASSWORD')
 };
 
 // [方法, 路径, 各角色期望状态码]  200=通过 403=拒绝

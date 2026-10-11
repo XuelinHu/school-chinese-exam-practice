@@ -10,7 +10,9 @@
     "db:backup": "node scripts/database-snapshot.js backup",
     "db:restore": "node scripts/database-snapshot.js restore",
     "seed:users": "node src/utils/seedUsers.js",
+    "admin:bootstrap": "node src/utils/bootstrapAdmin.js",
     "test": "node --test",
+    "test:integration": "node scripts/integration-checks.mjs",
     "check:permissions": "node scripts/check-permissions.mjs",
     "check:pagination": "node scripts/check-pagination.mjs"
   },

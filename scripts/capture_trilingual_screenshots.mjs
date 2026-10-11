@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { requiredSeedPassword } from '../admin/scripts/testCredentials.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const outDir = path.join(root, 'docs', 'assets', 'screenshots_trilingual_raw');
@@ -130,12 +131,12 @@ async function main() {
     const student = await json(`${api}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: 'student', password: 'student123456' })
+      body: JSON.stringify({ username: 'student', password: requiredSeedPassword('SEED_STUDENT_PASSWORD') })
     });
     const admin = await json(`${api}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: 'admin', password: 'admin123456' })
+      body: JSON.stringify({ username: 'admin', password: requiredSeedPassword('SEED_ADMIN_PASSWORD') })
     });
 
     for (const page of pages) {

@@ -1,17 +1,19 @@
 import bcrypt from 'bcryptjs';
 import { pool } from '../config/db.js';
 import { logger } from './logger.js';
+import { assertDemoSeedAllowed } from './demoSeedGuard.js';
 
-// 四类角色各至少一个演示账号，方便逐接口核对权限矩阵（见 README「角色与权限」）。
+const passwords = assertDemoSeedAllowed();
+// 四类角色各至少一个演示账号，用于隔离环境下的权限和分页验收。
 const users = [
-  ['admin', 'admin123456', '系统管理员', 'admin', 'admin@example.local', 'Malaysia'],
-  ['content', 'content123456', '内容管理员', 'content_admin', 'content@example.local', 'Malaysia'],
-  ['teacher', 'teacher123456', '陈老师', 'teacher', 'teacher@example.local', 'Malaysia'],
-  ['student', 'student123456', 'Amin', 'student', 'student@example.local', 'Malaysia'],
-  ['nurul', 'student123456', 'Nurul Aisyah', 'student', 'nurul@example.local', 'Malaysia'],
-  ['weijie', 'student123456', 'Tan Wei Jie', 'student', 'weijie@example.local', 'Malaysia'],
-  ['siti', 'student123456', 'Siti Mariam', 'student', 'siti@example.local', 'Malaysia'],
-  ['raj', 'student123456', 'Raj Kumar', 'student', 'raj@example.local', 'Malaysia']
+  ['admin', passwords.admin, '系统管理员', 'admin', 'admin@example.local', 'Malaysia'],
+  ['content', passwords.content, '内容管理员', 'content_admin', 'content@example.local', 'Malaysia'],
+  ['teacher', passwords.teacher, '陈老师', 'teacher', 'teacher@example.local', 'Malaysia'],
+  ['student', passwords.student, 'Amin', 'student', 'student@example.local', 'Malaysia'],
+  ['nurul', passwords.student, 'Nurul Aisyah', 'student', 'nurul@example.local', 'Malaysia'],
+  ['weijie', passwords.student, 'Tan Wei Jie', 'student', 'weijie@example.local', 'Malaysia'],
+  ['siti', passwords.student, 'Siti Mariam', 'student', 'siti@example.local', 'Malaysia'],
+  ['raj', passwords.student, 'Raj Kumar', 'student', 'raj@example.local', 'Malaysia']
 ];
 
 for (const [username, password, name, role, email, nationality] of users) {

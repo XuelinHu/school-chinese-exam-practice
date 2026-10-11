@@ -17,7 +17,9 @@
 - Frontend dev: `cd fronter && npm run dev`.
 - **Verification scripts** (need the backend running and seeded):
   `npm run check:permissions` (role matrix, 21 cases) and `npm run check:pagination`
-  (pagination envelope on every list endpoint). Both live in `admin/scripts/`.
+  (pagination envelope on every list endpoint). `npm run test:integration` runs both against
+  a temporary API and requires an isolated `_test` database plus explicit demo-seed config.
+  All scripts live in `admin/scripts/`.
 
 ## Database
 
@@ -27,6 +29,12 @@
 - Variables: `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `JWT_SECRET`.
 - Schema: `admin/sql/schema.sql`.
 - Seed: `admin/sql/seed.sql`, plus `npm run db:init` and `npm run seed:users`.
+- `seed:users` is demo-only: it requires `ALLOW_DEMO_SEED=1`, a `DB_NAME` ending in `_dev`,
+  `_test`, or `_demo`, and four distinct 16+ character role passwords in local `admin/.env`.
+  It updates demo account passwords and sample learning rows; never run it against production.
+- For a new deployment, `npm run admin:bootstrap -- --username admin --password-stdin` creates
+  the first super admin only when no non-deleted admin exists. It also requires
+  `CONFIRM_ADMIN_BOOTSTRAP=1` and a 16-64 character password on stdin; never pass passwords as args.
 - **Migrations: `npm run db:migrate`.** `db:init` uses the validated `DB_NAME`, runs `schema.sql`,
   applies migrations, then seeds data. Schema changes for deployed instances go in
   `admin/sql/migrations/NNN_*.js` (idempotent, SHA-256 tracked in `schema_migrations`); add the

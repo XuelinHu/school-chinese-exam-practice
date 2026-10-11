@@ -7,6 +7,8 @@
  * 前置：后端已启动（npm run dev），且已执行过 npm run seed:users。
  * 用法：npm run check:pagination
  */
+import { requiredSeedPassword } from './testCredentials.mjs';
+
 const BASE = process.env.CHECK_BASE || 'http://127.0.0.1:8033/api';
 
 async function token(username, password) {
@@ -20,9 +22,9 @@ async function token(username, password) {
   return body.data.token;
 }
 
-const adminToken = await token('admin', 'admin123456');
-const studentToken = await token('student', 'student123456');
-const teacherToken = await token('teacher', 'teacher123456');
+const adminToken = await token('admin', requiredSeedPassword('SEED_ADMIN_PASSWORD'));
+const studentToken = await token('student', requiredSeedPassword('SEED_STUDENT_PASSWORD'));
+const teacherToken = await token('teacher', requiredSeedPassword('SEED_TEACHER_PASSWORD'));
 const teachingStudentsResponse = await fetch(`${BASE}/teaching/students?page=1&pageSize=100`, {
   headers: { Authorization: `Bearer ${teacherToken}` }
 });

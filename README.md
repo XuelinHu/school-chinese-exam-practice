@@ -93,7 +93,6 @@ npm install
 cp .env.example .env          # 必填：DB_PASSWORD、JWT_SECRET
 npm run db:init
 npm run db:migrate            # 幂等核对增量迁移；db:init 也会执行迁移
-npm run seed:users
 npm run dev
 ```
 
@@ -101,6 +100,21 @@ npm run dev
 
 `.env` 现在是**必需**的：`DB_PASSWORD` 与 `JWT_SECRET` 缺一个，进程会带着明确提示退出，
 不再回落到代码里的默认口令。
+
+新部署的首个超级管理员通过一次性 `admin:bootstrap` 创建；命令会在 MySQL advisory lock 下确认不存在未软删除的超级管理员，成功后后续执行将被拒绝。密码只从标准输入读取，长度必须为 16–64 位：
+
+```powershell
+$env:CONFIRM_ADMIN_BOOTSTRAP = '1'
+try {
+  Read-Host '管理员密码' -AsSecureString | ForEach-Object {
+    $p = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($_)
+    try { [Runtime.InteropServices.Marshal]::PtrToStringBSTR($p) }
+    finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($p) }
+  } | npm run admin:bootstrap -- --username admin --password-stdin
+} finally {
+  Remove-Item Env:CONFIRM_ADMIN_BOOTSTRAP -ErrorAction SilentlyContinue
+}
+```
 
 ### 数据库备份与恢复
 
@@ -127,20 +141,20 @@ npm install
 npm run dev
 ```
 
-默认账号（`npm run seed:users` 写入，四类角色各一个，便于逐接口核对权限）：
+演示账号只用于 `_dev`、`_test` 或 `_demo` 隔离库。只有显式设置 `ALLOW_DEMO_SEED=1`，并在本机 `admin/.env` 配置四种互不相同、至少 16 位的 `SEED_ADMIN_PASSWORD`、`SEED_CONTENT_PASSWORD`、`SEED_TEACHER_PASSWORD`、`SEED_STUDENT_PASSWORD` 后，`npm run seed:users` 才会执行。该脚本会重置这些演示账号密码并刷新样例学习数据，因此绝不可连接生产库或含真实用户数据的库。
 
-| 角色 | 账号 | 密码 |
-|---|---|---|
-| 超级管理员 | `admin` | `admin123456` |
-| 内容管理员 | `content` | `content123456` |
-| 教师 | `teacher` | `teacher123456` |
-| 学员 | `student` | `student123456` |
+| 角色 | 隔离测试账号 |
+|---|---|
+| 超级管理员 | `admin` |
+| 内容管理员 | `content` |
+| 教师 | `teacher` |
+| 学员 | `student` |
 
 默认 API 地址为 `http://localhost:8033/api`。如需修改，前端可设置 `VITE_API_BASE`。
 
 ### 自检脚本
 
-后端跑起来并执行过 `seed:users` 之后：
+在隔离测试库运行 `seed:users`、启动后端，并在本机 `admin/.env` 配置对应的四个 `SEED_*_PASSWORD` 后：
 
 ```bash
 cd admin
@@ -149,6 +163,8 @@ npm run check:pagination      # 每个列表端点的分页信封
 ```
 
 改权限或加列表端点后跑一遍；两个脚本同时是这两条约定的可执行文档。
+
+也可在同一隔离配置下运行 `npm run test:integration`，自动初始化 `_test` 数据库、播种演示账号、启动临时 API，并执行完整权限矩阵与分页检查。测试数据保留在 `_test` 数据库供复核。
 
 ### 智能体准备
 
