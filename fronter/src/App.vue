@@ -10,6 +10,7 @@
         <!-- 教学查看区：教师与超管可见（后端 TEACHING_ROLES 同口径） -->
         <router-link v-if="auth.canTeach" to="/teaching">{{ t('teaching') }}</router-link>
         <router-link v-if="auth.user" to="/profile">{{ t('profile') }}</router-link>
+        <a :href="imagegenUrl" target="_blank" rel="noopener noreferrer">AI 绘画</a>
         <router-link v-if="auth.isStaff" to="/admin">{{ t('dashboard') }}</router-link>
         <router-link v-if="!auth.user" to="/login">{{ t('login') }}</router-link>
         <router-link v-if="!auth.user" to="/register">{{ t('register') }}</router-link>
@@ -38,6 +39,7 @@ import { request } from './api/client.js';
 
 const route = useRoute();
 const router = useRouter();
+const imagegenUrl = `http://${window.location.hostname}:4050/`;
 
 const isAdminRoute = computed(() => route.path.startsWith('/admin'));
 
